@@ -1,5 +1,20 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
+export interface HealthResponse {
+  status: string;
+  service: string;
+}
+
+export async function checkHealth(): Promise<HealthResponse> {
+  const response = await fetch(`${API_URL}/api/health`);
+
+  if (!response.ok) {
+    throw new Error("Unable to connect to TokTickIT API");
+  }
+
+  return response.json();
+}
+
 export interface Category {
   id: number;
   name: string;
