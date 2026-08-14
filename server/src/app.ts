@@ -34,4 +34,25 @@ app.get("/api/health", (_req: Request, res: Response) => {
 // TODO(Issue 4): implement the route here.
 // ---------------------------------------------------------------------------
 
+app.get("/api/categories", async (_req: Request, res: Response) => {
+  try {
+    const categories = await getPrisma().category.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        id: "asc",
+      },
+    });
+
+    res.status(200).json(categories);
+  } catch (error) {
+    console.error("Unable to load request categories:", error);
+    res.status(500).json({
+      error: "Unable to load request categories",
+    });
+  }
+});
+
 export default app;

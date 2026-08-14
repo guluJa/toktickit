@@ -1,16 +1,19 @@
 import { useState } from "react";
-import { checkHealth } from "./api.js";
+import { checkSystem, Category } from "./api.js";
 
 type UiState = "idle" | "loading" | "success" | "error";
 
 export default function App() {
   const [state, setState] = useState<UiState>("idle");
+  const [categories, setCategories] = useState<Category[]>([]);
 
   async function handleCheck() {
     setState("loading");
+    setCategories([]);
 
     try {
-      await checkHealth();
+      const result = await checkSystem();
+      setCategories(result.categories);
       setState("success");
     } catch {
       setState("error");
@@ -32,8 +35,23 @@ export default function App() {
       </button>
 
       {state === "success" && (
-        <div className="alert alert-success mt-4">
-          System Status: Online
+        <div className="mt-4">
+          <div className="alert alert-success">
+            System Status: Online
+          </div>
+
+          <h2 className="h5">Supported Request Categories</h2>
+
+          <ol className="list-group list-group-numbered">
+            {categories.map((category) => (
+              <li
+                className="list-group-item"
+                key={category.id}
+              >
+                {category.name}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 

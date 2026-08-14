@@ -1,17 +1,79 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { checkSystem } from "../../src/api.js";
 import App from "../../src/App.js";
 
+vi.mock("../../src/api.js", () => ({
+  checkSystem: vi.fn(),
+}));
+
+const mockedCheckSystem = vi.mocked(checkSystem);
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
+
 describe("App", () => {
-  // WORKED EXAMPLE — provided for you.
   it("renders the TokTickIT heading", () => {
     render(<App />);
-    expect(screen.getByText(/TokTickIT/i)).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/TokTickIT/i),
+    ).toBeInTheDocument();
   });
 
-  // Issue 4 — write these yourself. Hint: mock the api module with
-  // vi.spyOn(api, "checkSystem").mockResolvedValue(...) / .mockRejectedValue(...)
-  // then click the button and assert the Online list / Offline message.
-  it.todo("shows Online and the seeded categories on success");
-  it.todo("shows an Offline error message when the API is unavailable");
+  it("shows Online and the seeded categories on success", async () => {
+    mockedCheckSystem.mockResolvedValueOnce({
+      online: true,
+      categories: [
+        { id: 1, name: "Account and Access" },
+        { id: 2, name: "Hardware" },
+        { id: 3, name: "Software" },
+        { id: 4, name: "Network" },
+      ],
+    });
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(
+      screen.getByRole("button", { name: /check system/i }),
+    );
+
+    expect(
+      await screen.findByText(/System Status: Online/i),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText("Account and Access"),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("Hardware")).toBeInTheDocument();
+    expect(screen.getByText("Software")).toBeInTheDocument();
+    expect(screen.getByText("Network")).toBeInTheDocument();
+  });
+
+  it("shows an Offline error message when the API is unavailable", async () => {
+    mockedCheckSystem.mockRejectedValueOnce(
+      new Error("Unable to connect"),
+    );
+
+    const user = userEvent.setup();
+
+    render(<App />);
+
+    await user.click(
+      screen.getByRole("button", { name: /check system/i }),
+    );
+
+    expect(
+      await screen.findByText(/System Status: Offline/i),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/Unable to connect to TokTickIT API/i),
+    ).toBeInTheDocument();
+  });
 });
