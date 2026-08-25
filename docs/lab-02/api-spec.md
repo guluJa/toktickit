@@ -221,8 +221,36 @@ Validation:
 
 Success:
 
-- HTTP 201 เมื่อสร้าง Ticket ใหม่ พร้อม Ticket Detail และ `replayed: false`
-- HTTP 200 เมื่อ Requester เดิมส่ง `submissionKey` เดิมซ้ำ พร้อม Ticket Detail รายการเดิมและ `replayed: true`
+- HTTP 201 เมื่อสร้าง Ticket ใหม่ โดย `ticket` เป็น Ticket Detail object และ `replayed` เป็น `false`
+- HTTP 200 เมื่อ Requester เดิมส่ง `submissionKey` เดิมซ้ำ โดย `ticket` เป็น Ticket Detail object รายการเดิมและ `replayed` เป็น `true`
+
+ตัวอย่าง Response envelope (โครงสร้างเดียวกันสำหรับทั้ง HTTP 201 และ HTTP 200):
+
+```json
+{
+  "ticket": {
+    "id": 15,
+    "ticketNumber": "TKT-20260825-A1B2C3",
+    "requester": {
+      "id": 1,
+      "name": "Narin Chaiyasit",
+      "email": "narin@example.test"
+    },
+    "category": { "id": 2, "name": "Hardware" },
+    "relatedSystem": { "id": 2, "name": "Campus Wi-Fi" },
+    "summary": "Laptop cannot connect to Wi-Fi",
+    "requestedPriority": "MEDIUM",
+    "description": "The connection disconnects after a few minutes.",
+    "currentStatus": "NEW",
+    "createdAt": "2026-08-25T03:20:00.000Z",
+    "updatedAt": "2026-08-25T03:20:00.000Z",
+    "attachments": []
+  },
+  "replayed": false
+}
+```
+
+Field `replayed` อยู่ระดับบนสุดข้าง `ticket` เสมอ Frontend ต้องอ่านข้อมูล Ticket จาก `response.ticket`
 
 Backend ต้อง:
 

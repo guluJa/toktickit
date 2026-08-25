@@ -326,6 +326,15 @@ Requester-specific Endpoints ใช้ Header X-Development-Requester-Id ซึ�
 
 Success responses คืน JSON Resource หรือ Paginated Result ตาม Endpoint
 
+Create Ticket ใช้ Response envelope เดียวกันทั้งการสร้างใหม่และ Idempotent Replay:
+
+    {
+      "ticket": { "id": 15, "ticketNumber": "TKT-20260825-A1B2C3" },
+      "replayed": false
+    }
+
+HTTP 201 ใช้ `replayed: false` สำหรับ Ticket ใหม่ ส่วน HTTP 200 ใช้ `replayed: true` และคืน Ticket เดิมเมื่อได้รับ `submissionKey` เดิมจาก Requester เดิม โดย `ticket` เป็น Ticket Detail object ตาม API Contract
+
 Safe Error:
 
     {
@@ -348,7 +357,7 @@ fields เป็น Optional และ API ห้ามคืน Stack Trace, SQ
 | GET | /api/related-systems | None | 200 Active RelatedSystem array | 500 |
 | GET | /api/development-requesters | None | 200 Active Requester array | 500 |
 | GET | /api/development-requesters/:requesterId | requesterId | 200 Active Requester | 400, 403, 404, 500 |
-| POST | /api/tickets | Requester header + submissionKey, categoryId, relatedSystemId, summary, requestedPriority, description | 201 New Ticket หรือ 200 Replayed Ticket พร้อม Official Ticket Number | 400, 403, 409, 500 |
+| POST | /api/tickets | Requester header + submissionKey, categoryId, relatedSystemId, summary, requestedPriority, description | 201/200 `{ ticket, replayed }`; 200 คืน Ticket เดิมเมื่อ Replay | 400, 403, 409, 500 |
 | GET | /api/tickets | Requester header + search/filter/sort/page query | 200 Paginated owned Tickets | 400, 403, 500 |
 | GET | /api/tickets/:ticketId | Requester header + ticketId | 200 Owned Ticket Detail | 400, 403, 404, 500 |
 | POST | /api/tickets/:ticketId/attachments | Requester header + multipart file | 201 Active Attachment metadata | 400, 403, 404, 409, 413, 415, 500 |
@@ -397,10 +406,10 @@ Invalid Query คืน 400 ส่วน Missing หรือ Cross-owner Resour
 
 - AC-07 กำหนดให้ข้อมูล Ticket ถูกต้อง เมื่อ Requester ที่เลือกกด Submit ต้องบันทึก Ticket หนึ่งรายการด้วย `requesterId` ที่ตรงกัน สถานะเริ่มต้น `NEW` และ Official Ticket Number ที่ไม่ซ้ำ
 - AC-08 กำหนดให้ข้อมูล Required หรือข้อมูลที่จำกัดความยาวไม่ถูกต้อง เมื่อกด Submit ต้องแสดง Field-level Error และ Frontend กับ Backend ต้องบังคับใช้กฎเดียวกัน
-- AC-09 กำหนดให้ Category หรือ Related System ไม่มีอยู่หรือ Inactive เมื่อขอสร้าง Ticket API ต้องปฏิเสธคำขอและต้องไม่บันทึก Ticket
-- AC-10 กำหนดให้ Submit หรือ Retry ด้วย `submissionKey` เดิม เมื่อ Backend ประมวลผล ต้องมี Ticket ของ Requester นั้นเพียงหนึ่งรายการ โดย Request แรกคืน HTTP 201 และ Request ที่ Replay คืน Ticket เดิมด้วย HTTP 200 พร้อม `replayed: true`
+- AC-09 Reference Data ต้องผ่านสองกรณี: (1) เมื่อหน้า Create Ticket โหลด Categories และ Related Systems ต้องแสดง Loading state และ Disable Submit จนข้อมูลพร้อม; หากโหลดล้มเหลวต้องแสดง Safe Error, คง Submit เป็น Disabled และมี Retry action; เมื่อ Retry สำเร็จ Form ต้องเข้าสู่ Ready state และ (2) เมื่อ Create API ได้รับ Category หรือ Related System ที่ไม่มีอยู่หรือ Inactive ต้องปฏิเสธคำขอและไม่บันทึก Ticket
+- AC-10 กำหนดให้ Submit หรือ Retry ด้วย `submissionKey` เดิม เมื่อ Backend ประมวลผล ต้องมี Ticket ของ Requester นั้นเพียงหนึ่งรายการ โดย Request แรกคืน HTTP 201 พร้อม `{ ticket, replayed: false }` และ Request ที่ Replay คืน Ticket เดิมด้วย HTTP 200 พร้อม `{ ticket, replayed: true }`
 - AC-11 กำหนดให้การสร้าง Ticket ล้มเหลว เมื่อได้รับ Response ต้องแสดง Safe Error และคงค่า Form ที่ถูกต้องไว้
-- AC-12 กำหนดให้สร้าง Ticket สำเร็จ เมื่อแสดง Confirmation ค่า Official Ticket Number, Saved Values และ Next Action ต้องมาจาก Backend Response
+- AC-12 กำหนดให้สร้าง Ticket สำเร็จ เมื่อแสดง Confirmation ค่า Official Ticket Number, Saved Values และ Next Action ต้องอ่านจาก `response.ticket` ตาม Create Ticket Response contract
 - AC-13 กำหนดให้บันทึก Ticket แล้วแต่ Upload Attachment ล้มเหลว เมื่อประมวลผลเสร็จ Ticket ต้องยังคงอยู่และต้อง Retry ไฟล์ที่ล้มเหลวได้โดยไม่สร้าง Ticket ใหม่
 
 ### My Tickets and Ticket Detail

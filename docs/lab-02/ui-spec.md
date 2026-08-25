@@ -144,13 +144,13 @@ Icon-only control ต้องมี Accessible Label และ Tooltip; Action 
 
 ### 6.3 Screen States
 
-- Initial: โหลด Category และ Related System
-- Ready: Form ใช้งานได้เมื่อ Reference Data พร้อม
+- Reference-data Loading: แสดง Loading indicator และ Disable Submit ระหว่างโหลด Category และ Related System
+- Ready: Form ใช้งานได้และ Submit เปิดใช้งานได้เมื่อ Reference Data โหลดสำเร็จ
 - Validation Failure: แสดงข้อความราย Field และรักษาค่าที่ถูกต้อง
 - Submitting: Submit Disabled พร้อม Busy text; Form ไม่ Submit ซ้ำ และ Client เก็บ `submissionKey` ของ Submission ปัจจุบันไว้
-- Success: แสดง Official Ticket Number, Saved Values และ Actions `View Ticket`/`My Tickets`
+- Success: อ่านข้อมูลจาก `response.ticket` แล้วแสดง Official Ticket Number, Saved Values และ Actions `View Ticket`/`My Tickets`; `response.replayed` ระบุว่าเป็นผลสร้างใหม่หรือ Idempotent Replay
 - API Failure: แสดง Safe Error, Retry และรักษา Form values โดย Retry ใช้ `submissionKey` เดิม ส่วนการเริ่ม Form ใหม่หลัง Success ใช้ Key ใหม่
-- Reference-data Failure: ปิด Submit และมี Retry
+- Reference-data Failure: แสดง Safe Error, ปิด Submit และมี Retry; เมื่อ Retry สำเร็จจึงเปลี่ยนเป็น Ready
 - Attachment Invalid: แสดงเหตุผลใกล้รายการไฟล์
 - Attachment Upload Failure after Ticket saved: Ticket Success ยังคงอยู่และมี Retry เฉพาะไฟล์
 
@@ -164,6 +164,8 @@ Icon-only control ต้องมี Accessible Label และ Tooltip; Action 
 - Clear Filters
 - Pagination พร้อม Page, Page Size, Total Items และ Total Pages
 - Primary `Create Ticket` action
+
+เมื่อ Search, Filter, Sort หรือ Page Size เปลี่ยน UI ต้องส่ง Query ตาม API Contract และกลับไป Page 1 เมื่อเงื่อนไขทำให้ Page ปัจจุบันไม่เหมาะสม Pagination ต้องใช้ Metadata จาก Response และไม่คำนวณจำนวนรายการแทน Backend
 
 ### 7.2 Desktop Table
 

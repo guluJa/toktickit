@@ -45,10 +45,10 @@
 | API-REQ-01 | AC-01 | Retrieve Development Requesters | คืน HTTP 200 และเฉพาะ Active Requesters | `server/tests/lab-02/development-requesters.api.test.ts` | Planned |
 | API-REQ-02 | AC-05 | Missing, unknown และ inactive Requester context | Missing/malformed Header คืน 400; unknown/inactive context คืน Safe 403 และไม่คืน Ticket data | `server/tests/lab-02/development-requesters.api.test.ts` | Planned |
 | API-REF-01 | AC-09 | Active Category และ Related System retrieval | คืนเฉพาะ Active Reference Data | `server/tests/lab-02/reference-data.api.test.ts` | Planned |
-| API-CREATE-01 | AC-07, AC-12 | Create Ticket ด้วยข้อมูลถูกต้อง | คืน HTTP 201, บันทึก Ticket หนึ่งรายการ, requesterId ตรงกับ Header, Status `NEW` และ Ticket Number ไม่ซ้ำ | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
+| API-CREATE-01 | AC-07, AC-12 | Create Ticket ด้วยข้อมูลถูกต้อง | คืน HTTP 201 พร้อม `{ ticket, replayed: false }`, บันทึก Ticket หนึ่งรายการ, requesterId ตรงกับ Header, Status `NEW` และ Ticket Number ไม่ซ้ำ | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
 | API-CREATE-02 | AC-08 | Required, trim และ length validation | คืน HTTP 400 พร้อม Field errors และไม่บันทึก Ticket | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
 | API-CREATE-03 | AC-09 | Missing/inactive Category หรือ Related System | คืน HTTP 400 และไม่บันทึก Ticket | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
-| API-CREATE-04 | AC-10 | Idempotent duplicate submission | Request แรกด้วย `submissionKey` ใหม่คืน 201 และ `replayed: false`; Request ซ้ำด้วย Requester/Key เดิมคืน 200, `replayed: true` และ Ticket ID เดิม โดย Database มี Ticket เพียงหนึ่งรายการ | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
+| API-CREATE-04 | AC-10 | Idempotent duplicate submission | Request แรกด้วย `submissionKey` ใหม่คืน 201 พร้อม `{ ticket, replayed: false }`; Request ซ้ำด้วย Requester/Key เดิมคืน 200 พร้อม `{ ticket, replayed: true }` และ Ticket ID เดิม โดย Database มี Ticket เพียงหนึ่งรายการ | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
 | API-CREATE-05 | AC-11 | Unexpected creation failure | คืน Safe 500 โดยไม่เปิดเผยข้อมูลภายในและไม่บันทึก Partial Ticket | `server/tests/lab-02/create-ticket.api.test.ts` | Planned |
 | API-LIST-01 | AC-14 | Requester-owned Ticket list | คืนเฉพาะ Ticket ของ Current Requester | `server/tests/lab-02/my-tickets.api.test.ts` | Planned |
 | API-LIST-02 | AC-15 | Case-insensitive search, filters และ stable sort | คืนเฉพาะรายการตรงเงื่อนไขตามลำดับที่กำหนด | `server/tests/lab-02/my-tickets.api.test.ts` | Planned |
@@ -76,11 +76,13 @@
 | UI-CREATE-01 | AC-08 | Field-level validation | แสดงข้อความใกล้ Field และไม่เรียก Create API เมื่อข้อมูลไม่ถูกต้อง | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
 | UI-CREATE-02 | AC-10 | Submit busy state และ Retry identity | ปุ่ม Disabled/Busy และกดซ้ำไม่ได้; Retry Submission เดิมใช้ `submissionKey` เดิม และ Form ใหม่ใช้ Key ใหม่ | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
 | UI-CREATE-03 | AC-11 | API failure with retained values | แสดง Safe Error และค่า Form ยังอยู่ | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
-| UI-CREATE-04 | AC-12 | Successful confirmation | แสดง Ticket Number, Saved Values และ Next Action จาก API response | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
+| UI-CREATE-04 | AC-12 | Successful confirmation | อ่าน `response.ticket` แล้วแสดง Ticket Number, Saved Values และ Next Action โดยรองรับ `replayed` ตาม Response contract | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
 | UI-CREATE-05 | AC-13 | Partial Attachment failure | Ticket ยังคงสำเร็จและ Retry เฉพาะไฟล์ที่ล้มเหลวได้ | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
+| UI-CREATE-06 | AC-09 | Reference-data loading states | Loading ต้อง Disable Submit; Success ทำให้ Form พร้อมใช้; Failure แสดง Safe Error และ Retry โดยยัง Submit ไม่ได้ | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
 | UI-LIST-01 | AC-18 | Empty list | เมื่อ `totalOwnedItems = 0` แสดง Empty state และ Create Ticket action | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
 | UI-LIST-02 | AC-19 | No-results | เมื่อ `totalOwnedItems > 0` แต่ `totalItems = 0` แสดง No-results และ Clear Filters | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
 | UI-LIST-03 | AC-20 | List failure | แสดง Safe Error และ Retry | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
+| UI-LIST-04 | AC-15, AC-16 | Search, Filter, Sort and Pagination controls | การใช้ Controls ต้องส่ง Query ที่ถูกต้อง แสดง Results/Order ตาม Response และเปลี่ยน Page ได้ | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
 | UI-DETAIL-01 | AC-21 | Owned Detail rendering | Fields เป็น Read-only และ Attachment metadata แยกจาก Actions | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Planned |
 | UI-DETAIL-02 | AC-23 | Detail failure | แสดง Safe Error และ Back to My Tickets | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Planned |
 | UI-ATT-01 | AC-24, AC-25, AC-26 | Attachment selection/upload states | แสดง Active, Invalid, Uploading และ Upload-failed states ถูกต้อง | `client/tests/lab-02/AttachmentSection.test.tsx` | Planned |
@@ -97,6 +99,7 @@
 | E2E-02 | AC-04, AC-14, AC-22, AC-30 | Switch Requester and enforce ownership | Ticket ของ Requester เดิมหายจาก List และ Direct Access ถูกปฏิเสธ | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
 | E2E-03 | AC-24, AC-27, AC-28, AC-29 | Attachment lifecycle | Upload/Download/Soft-remove ทำงานและ Removed Download ถูก Block | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
 | E2E-04 | AC-06, AC-11, AC-20, AC-23 | Safe failure states | ทุกหน้าที่กำหนดแสดง Safe Error, Retry/Back และรักษาข้อมูลตาม Contract | `e2e/lab-02/requester-ticket-flow.spec.ts` | Planned |
+| E2E-05 | AC-15, AC-16 | My Tickets controls flow | ผู้ใช้ Search, Filter, Sort และเปลี่ยน Page ผ่าน UI ได้ โดย Results, Order และ Pagination ตรงตามเงื่อนไข | `e2e/lab-02/my-tickets-controls.spec.ts` | Planned |
 
 ## 3. Acceptance-Criterion Traceability
 
@@ -110,14 +113,14 @@
 | AC-06 | UI-REQ-04, E2E-04 |
 | AC-07 | UNIT-01, API-CREATE-01, E2E-01 |
 | AC-08 | UNIT-02, API-CREATE-02, UI-CREATE-01 |
-| AC-09 | API-REF-01, API-CREATE-03 |
+| AC-09 | API-REF-01, API-CREATE-03, UI-CREATE-06 |
 | AC-10 | API-CREATE-04, UI-CREATE-02 |
 | AC-11 | API-CREATE-05, UI-CREATE-03, E2E-04 |
 | AC-12 | UNIT-01, API-CREATE-01, UI-CREATE-04, E2E-01 |
 | AC-13 | API-ATT-08, UI-CREATE-05 |
 | AC-14 | API-LIST-01, E2E-01, E2E-02 |
-| AC-15 | API-LIST-02 |
-| AC-16 | API-LIST-03 |
+| AC-15 | API-LIST-02, UI-LIST-04, E2E-05 |
+| AC-16 | API-LIST-03, UI-LIST-04, E2E-05 |
 | AC-17 | UNIT-02, API-LIST-04 |
 | AC-18 | UI-LIST-01 |
 | AC-19 | UI-LIST-02 |
