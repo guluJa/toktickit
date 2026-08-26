@@ -1,6 +1,3 @@
-// Prisma schema — datasource and generator are pre-wired.
-// Your DATABASE_URL lives in server/.env (copy it from .env.example).
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,18 +7,92 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------------------------------------------------------------------------
-// Issue 3 — Create and seed IT request categories
-// Define a Category model with:
-//   id        Int      @id @default(autoincrement())
-//   name      String   @unique
-//   createdAt DateTime @default(now())
-// Then run:  npx prisma migrate dev --name init
-// TODO(Issue 3): add the Category model below.
-// ---------------------------------------------------------------------------
+enum RequestedPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  NEW
+}
+
+model RequesterUser {
+  id                 Int          @id @default(autoincrement())
+  name               String
+  email              String       @unique
+  isActive           Boolean      @default(true)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
+  tickets            Ticket[]
+  removedAttachments Attachment[] @relation("AttachmentRemovedBy")
+
+  @@index([isActive])
+}
 
 model Category {
   id        Int      @id @default(autoincrement())
   name      String   @unique
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  tickets   Ticket[]
+
+  @@index([isActive])
+}
+
+model RelatedSystem {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  tickets     Ticket[]
+
+  @@index([isActive])
+}
+
+model Ticket {
+  id                Int               @id @default(autoincrement())
+  ticketNumber      String            @unique
+  requesterId       Int
+  submissionKey     String            @db.Uuid
+  categoryId        Int
+  relatedSystemId   Int
+  summary           String            @db.VarChar(150)
+  requestedPriority RequestedPriority
+  description       String            @db.Text
+  currentStatus     TicketStatus      @default(NEW)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @default(now()) @updatedAt
+
+  requester     RequesterUser @relation(fields: [requesterId], references: [id], onDelete: Restrict)
+  category      Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
+  attachments   Attachment[]
+
+  @@unique([requesterId, submissionKey])
+  @@index([requesterId, updatedAt])
+  @@index([requesterId, currentStatus])
+  @@index([categoryId])
+  @@index([relatedSystemId])
+}
+
+model Attachment {
+  id                   Int       @id @default(autoincrement())
+  ticketId             Int
+  originalName         String
+  storageKey           String    @unique
+  mimeType             String
+  sizeBytes            Int
+  uploadedAt           DateTime  @default(now())
+  removedAt            DateTime?
+  removalReason        String?
+  removedByRequesterId Int?
+
+  ticket             Ticket         @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  removedByRequester RequesterUser? @relation("AttachmentRemovedBy", fields: [removedByRequesterId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, removedAt])
 }
