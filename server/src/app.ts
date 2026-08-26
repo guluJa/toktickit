@@ -1,6 +1,9 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import { getPrisma } from "./prisma.js";
+import {
+  parsePositiveInteger,
+} from "./requester-context.js";
 // getPrisma() is your lazy database handle. Call it INSIDE a route when you
 // need the DB (Issue 4). It is intentionally unused until then.
 void getPrisma;
@@ -54,5 +57,123 @@ app.get("/api/categories", async (_req: Request, res: Response) => {
     });
   }
 });
+
+app.get(
+  "/api/development-requesters",
+  async (_req: Request, res: Response) => {
+    try {
+      const requesters =
+        await getPrisma().requesterUser.findMany({
+          where: {
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+          orderBy: [
+            {
+              name: "asc",
+            },
+            {
+              id: "asc",
+            },
+          ],
+        });
+
+      res.status(200).json(requesters);
+    } catch (error) {
+      console.error(
+        "Unable to load development requesters:",
+        error,
+      );
+
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to load development requesters.",
+        },
+      });
+    }
+  },
+);
+
+app.get(
+  "/api/development-requesters/:requesterId",
+  async (req: Request, res: Response) => {
+    const requesterId = parsePositiveInteger(
+      req.params.requesterId,
+    );
+
+    if (requesterId === null) {
+      res.status(400).json({
+        error: {
+          code: "INVALID_REQUESTER_ID",
+          message:
+            "Requester ID must be a positive integer.",
+        },
+      });
+      return;
+    }
+
+    try {
+      const requester =
+        await getPrisma().requesterUser.findUnique({
+          where: {
+            id: requesterId,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            isActive: true,
+          },
+        });
+
+      if (!requester) {
+        res.status(404).json({
+          error: {
+            code: "REQUESTER_NOT_FOUND",
+            message:
+              "Development requester was not found.",
+          },
+        });
+        return;
+      }
+
+      if (!requester.isActive) {
+        res.status(403).json({
+          error: {
+            code: "REQUESTER_INACTIVE",
+            message:
+              "The development requester is inactive.",
+          },
+        });
+        return;
+      }
+
+      res.status(200).json({
+        id: requester.id,
+        name: requester.name,
+        email: requester.email,
+      });
+    } catch (error) {
+      console.error(
+        "Unable to validate development requester:",
+        error,
+      );
+
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to validate the development requester.",
+        },
+      });
+    }
+  },
+);
 
 export default app;
