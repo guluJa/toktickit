@@ -201,6 +201,28 @@ describe(
     );
 
     it(
+      "returns a safe 403 for an unknown positive requester context",
+      async () => {
+        const res = await request(protectedApp)
+          .get("/protected")
+          .set(
+            "X-Development-Requester-Id",
+            "2147483647",
+          );
+
+        expect(res.status).toBe(403);
+        expect(res.body).toEqual({
+          error: {
+            code: "REQUESTER_CONTEXT_FORBIDDEN",
+            message:
+              "The development requester is unavailable.",
+          },
+        });
+        expect(res.body.requester).toBeUndefined();
+      },
+    );
+
+    it(
       "returns 403 for an inactive requester context",
       async () => {
         const requester =

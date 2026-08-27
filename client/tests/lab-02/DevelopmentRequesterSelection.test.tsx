@@ -6,6 +6,7 @@ import {
   vi,
 } from "vitest";
 import {
+  act,
   render,
   screen,
   waitFor,
@@ -154,6 +155,69 @@ describe(
             "toktickit.developmentRequesterId",
           ),
         ).toBe("1");
+      },
+    );
+
+    it(
+      "disables requester controls and prevents duplicate validation while continuing",
+      async () => {
+        const user = userEvent.setup();
+
+        let resolveRequester!: (
+          requester: (typeof activeRequesters)[number],
+        ) => void;
+
+        mockedGetDevelopmentRequester
+          .mockImplementationOnce(
+            () =>
+              new Promise((resolve) => {
+                resolveRequester = resolve;
+              }),
+          );
+
+        render(<App />);
+
+        const select =
+          await screen.findByRole(
+            "combobox",
+            {
+              name: /development requester/i,
+            },
+          );
+
+        await user.selectOptions(select, "1");
+
+        const continueButton =
+          screen.getByRole("button", {
+            name: "Continue",
+          });
+
+        await user.click(continueButton);
+
+        expect(select).toBeDisabled();
+
+        const continuingButton =
+          screen.getByRole("button", {
+            name: /continuing/i,
+          });
+
+        expect(continuingButton).toBeDisabled();
+
+        await user.click(continuingButton);
+
+        expect(
+          mockedGetDevelopmentRequester,
+        ).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+          resolveRequester(activeRequesters[0]);
+        });
+
+        expect(
+          await screen.findByText(
+            /Current Requester:/i,
+          ),
+        ).toBeInTheDocument();
       },
     );
 
