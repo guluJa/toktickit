@@ -56,3 +56,41 @@ export async function checkSystem(): Promise<SystemStatus> {
     categories,
   };
 }
+
+export interface DevelopmentRequester {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export async function getDevelopmentRequesters(): Promise<
+  DevelopmentRequester[]
+> {
+  const response = await fetch(
+    `${API_URL}/api/development-requesters`,
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Unable to load development requesters.",
+    );
+  }
+
+  return response.json();
+}
+
+export async function getDevelopmentRequester(
+  requesterId: number,
+): Promise<DevelopmentRequester> {
+  const response = await fetch(
+    `${API_URL}/api/development-requesters/${requesterId}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "The selected development requester is unavailable.",
+    );
+  }
+
+  return response.json();
+}
