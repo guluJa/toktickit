@@ -25,6 +25,21 @@ vi.mock("../../src/api.js", () => ({
   getDevelopmentRequesters: vi.fn(),
 }));
 
+vi.mock(
+  "../../src/CreateTicket.js",
+  () => ({
+    default: ({
+      requesterId,
+    }: {
+      requesterId: number;
+    }) => (
+      <div data-testid="create-ticket">
+        Create Ticket for requester {requesterId}
+      </div>
+    ),
+  }),
+);
+
 const mockedCheckSystem =
   vi.mocked(checkSystem);
 

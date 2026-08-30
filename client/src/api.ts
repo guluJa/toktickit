@@ -94,3 +94,104 @@ export async function getDevelopmentRequester(
 
   return response.json();
 }
+
+export interface RelatedSystem {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+export type RequestedPriority =
+  | "LOW"
+  | "MEDIUM"
+  | "HIGH";
+
+export interface CreateTicketInput {
+  submissionKey: string;
+  categoryId: number;
+  relatedSystemId: number;
+  summary: string;
+  requestedPriority: RequestedPriority;
+  description: string;
+}
+
+export interface TicketDetail {
+  id: number;
+  ticketNumber: string;
+  requester: DevelopmentRequester;
+  category: Category;
+  relatedSystem: {
+    id: number;
+    name: string;
+  };
+  summary: string;
+  requestedPriority: RequestedPriority;
+  description: string;
+  currentStatus: "NEW";
+  createdAt: string;
+  updatedAt: string;
+  attachments: unknown[];
+}
+
+export interface CreateTicketResponse {
+  ticket: TicketDetail;
+  replayed: boolean;
+}
+
+export async function getCategories(): Promise<
+  Category[]
+> {
+  const response = await fetch(
+    `${API_URL}/api/categories`,
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Unable to load Categories.",
+    );
+  }
+
+  return response.json();
+}
+
+export async function getRelatedSystems(): Promise<
+  RelatedSystem[]
+> {
+  const response = await fetch(
+    `${API_URL}/api/related-systems`,
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Unable to load Related Systems.",
+    );
+  }
+
+  return response.json();
+}
+
+export async function createTicket(
+  requesterId: number,
+  input: CreateTicketInput,
+): Promise<CreateTicketResponse> {
+  const response = await fetch(
+    `${API_URL}/api/tickets`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Development-Requester-Id":
+          String(requesterId),
+      },
+      body: JSON.stringify(input),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      "Unable to create the Ticket.",
+    );
+  }
+
+  return response.json();
+}
