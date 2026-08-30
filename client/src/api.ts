@@ -138,6 +138,33 @@ export interface CreateTicketResponse {
   replayed: boolean;
 }
 
+interface TicketApiErrorResponse {
+  error?: {
+    code?: string;
+    message?: string;
+    fields?: Record<string, string>;
+  };
+}
+
+export class TicketApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly fields: Record<string, string>;
+
+  constructor(
+    message: string,
+    status: number,
+    code = "TICKET_REQUEST_FAILED",
+    fields: Record<string, string> = {},
+  ) {
+    super(message);
+    this.name = "TicketApiError";
+    this.status = status;
+    this.code = code;
+    this.fields = fields;
+  }
+}
+
 export async function getCategories(): Promise<
   Category[]
 > {
@@ -188,8 +215,20 @@ export async function createTicket(
   );
 
   if (!response.ok) {
-    throw new Error(
-      "Unable to create the Ticket.",
+    let responseBody: TicketApiErrorResponse = {};
+
+    try {
+      responseBody = await response.json();
+    } catch {
+      // Preserve a safe fallback when the server does not return JSON.
+    }
+
+    throw new TicketApiError(
+      responseBody.error?.message ??
+        "Unable to create the Ticket.",
+      response.status,
+      responseBody.error?.code,
+      responseBody.error?.fields,
     );
   }
 

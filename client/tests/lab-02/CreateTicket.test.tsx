@@ -18,13 +18,20 @@ import {
   CreateTicketResponse,
   getCategories,
   getRelatedSystems,
+  TicketApiError,
 } from "../../src/api.js";
 
-vi.mock("../../src/api.js", () => ({
-  createTicket: vi.fn(),
-  getCategories: vi.fn(),
-  getRelatedSystems: vi.fn(),
-}));
+vi.mock(
+  "../../src/api.js",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../src/api.js")
+    >()),
+    createTicket: vi.fn(),
+    getCategories: vi.fn(),
+    getRelatedSystems: vi.fn(),
+  }),
+);
 
 const mockedCreateTicket =
   vi.mocked(createTicket);
@@ -71,13 +78,32 @@ describe("Create Ticket", () => {
       );
 
       render(
-        <CreateTicket requesterId={1} />,
+        <CreateTicket
+          requesterId={1}
+          requesterName="Development Requester 1"
+        />,
       );
 
       expect(
         screen.getByRole("heading", {
           name: /create ticket/i,
         }),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByRole("heading", {
+          name: "System Information",
+        }),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText("Pending until saved"),
+      ).toBeInTheDocument();
+
+      expect(
+        screen.getByText(
+          "Development Requester 1",
+        ),
       ).toBeInTheDocument();
 
       expect(
@@ -171,7 +197,10 @@ describe("Create Ticket", () => {
         ]);
 
       render(
-        <CreateTicket requesterId={1} />,
+        <CreateTicket
+          requesterId={1}
+          requesterName="Development Requester 1"
+        />,
       );
 
       await screen.findByRole(
@@ -281,7 +310,10 @@ describe("Create Ticket", () => {
       );
 
       render(
-        <CreateTicket requesterId={1} />,
+        <CreateTicket
+          requesterId={1}
+          requesterName="Development Requester 1"
+        />,
       );
 
       await user.selectOptions(
@@ -407,10 +439,10 @@ describe("Create Ticket", () => {
       ).toBeInTheDocument();
 
       expect(
-        screen.getByText(
+        screen.getAllByText(
           "TKT-20260830-A1B2C3",
         ),
-      ).toBeInTheDocument();
+      ).toHaveLength(2);
 
       expect(
         screen.getByText(
@@ -419,8 +451,52 @@ describe("Create Ticket", () => {
       ).toBeInTheDocument();
 
       expect(
-        screen.getByText("NEW"),
+        screen.getAllByText("NEW"),
+      ).toHaveLength(2);
+
+      expect(
+        screen.getByRole("heading", {
+          name: "Saved Values",
+        }),
       ).toBeInTheDocument();
+
+      expect(
+        screen.getAllByText("Campus Wi-Fi")
+          .length,
+      ).toBeGreaterThanOrEqual(1);
+
+      expect(
+        screen.getByRole("button", {
+          name: "Create Another Ticket",
+        }),
+      ).toBeEnabled();
+
+      expect(
+        screen.getByRole("button", {
+          name: "View Ticket",
+        }),
+      ).toBeDisabled();
+
+      expect(
+        screen.getByRole("button", {
+          name: "My Tickets",
+        }),
+      ).toBeDisabled();
+
+      for (const label of [
+        "Category",
+        "Related System",
+        "Summary",
+        "Requested Priority",
+        "Description",
+      ]) {
+        expect(
+          screen.getByLabelText(label),
+        ).toHaveAttribute(
+          "aria-required",
+          "true",
+        );
+      }
     },
   );
 
@@ -487,7 +563,10 @@ describe("Create Ticket", () => {
         });
 
       render(
-        <CreateTicket requesterId={1} />,
+        <CreateTicket
+          requesterId={1}
+          requesterName="Development Requester 1"
+        />,
       );
 
       const categorySelect =
@@ -591,10 +670,88 @@ describe("Create Ticket", () => {
       ).toBe(firstSubmissionKey);
 
       expect(
-        await screen.findByText(
+        await screen.findAllByText(
           "TKT-20260830-D4E5F6",
         ),
+      ).toHaveLength(2);
+    },
+  );
+
+  it(
+    "maps backend validation fields to the matching form controls",
+    async () => {
+      const user = userEvent.setup();
+
+      mockedGetCategories.mockResolvedValueOnce([
+        { id: 1, name: "Hardware" },
+      ]);
+      mockedGetRelatedSystems.mockResolvedValueOnce([
+        {
+          id: 2,
+          name: "Campus Wi-Fi",
+          description: null,
+        },
+      ]);
+      mockedCreateTicket.mockRejectedValueOnce(
+        new TicketApiError(
+          "Request data is invalid.",
+          400,
+          "VALIDATION_ERROR",
+          {
+            categoryId:
+              "The selected Category is unavailable.",
+            summary:
+              "Summary contains unsupported content.",
+          },
+        ),
+      );
+
+      render(
+        <CreateTicket
+          requesterId={1}
+          requesterName="Development Requester 1"
+        />,
+      );
+
+      await user.selectOptions(
+        await screen.findByLabelText("Category"),
+        "1",
+      );
+      await user.selectOptions(
+        screen.getByLabelText("Related System"),
+        "2",
+      );
+      await user.type(
+        screen.getByLabelText("Summary"),
+        "Valid client-side summary",
+      );
+      await user.type(
+        screen.getByLabelText("Description"),
+        "A valid client-side description.",
+      );
+
+      await user.click(
+        screen.getByRole("button", {
+          name: "Create Ticket",
+        }),
+      );
+
+      expect(
+        await screen.findByText(
+          "The selected Category is unavailable.",
+        ),
       ).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Summary contains unsupported content.",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByLabelText("Category"),
+      ).toHaveAttribute("aria-invalid", "true");
+      expect(
+        screen.getByLabelText("Summary"),
+      ).toHaveAttribute("aria-invalid", "true");
     },
   );
 });

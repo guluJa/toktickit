@@ -12,10 +12,12 @@ import {
   getRelatedSystems,
   RelatedSystem,
   RequestedPriority,
+  TicketApiError,
 } from "./api.js";
 
 interface CreateTicketProps {
   requesterId: number;
+  requesterName: string;
 }
 
 type ReferenceDataState =
@@ -33,6 +35,7 @@ type TicketFieldName =
   | "categoryId"
   | "relatedSystemId"
   | "summary"
+  | "requestedPriority"
   | "description";
 
 type TicketFieldErrors = Partial<
@@ -41,6 +44,7 @@ type TicketFieldErrors = Partial<
 
 export default function CreateTicket({
   requesterId,
+  requesterName,
 }: CreateTicketProps) {
   const [
     referenceDataState,
@@ -230,9 +234,42 @@ export default function CreateTicket({
 
       setCreatedTicket(response);
       setSubmissionState("success");
-    } catch {
+    } catch (error) {
+      if (error instanceof TicketApiError) {
+        const backendErrors: TicketFieldErrors = {};
+        const editableFields: TicketFieldName[] = [
+          "categoryId",
+          "relatedSystemId",
+          "summary",
+          "requestedPriority",
+          "description",
+        ];
+
+        for (const field of editableFields) {
+          const message = error.fields[field];
+
+          if (message) {
+            backendErrors[field] = message;
+          }
+        }
+
+        setFieldErrors(backendErrors);
+      }
+
       setSubmissionState("error");
     }
+  }
+
+  function handleCreateAnotherTicket() {
+    setCategoryId("");
+    setRelatedSystemId("");
+    setSummary("");
+    setRequestedPriority("MEDIUM");
+    setDescription("");
+    setFieldErrors({});
+    setSubmissionKey(null);
+    setCreatedTicket(null);
+    setSubmissionState("idle");
   }
 
   const formReady =
@@ -254,6 +291,56 @@ export default function CreateTicket({
         >
           Create Ticket
         </h2>
+
+        <section
+          className="border rounded p-3 mb-3 bg-body-tertiary"
+          aria-labelledby="ticket-system-information"
+        >
+          <h3
+            id="ticket-system-information"
+            className="h6"
+          >
+            System Information
+          </h3>
+
+          <dl className="row mb-0">
+            <dt className="col-sm-4">
+              Ticket Number
+            </dt>
+            <dd className="col-sm-8">
+              {createdTicket
+                ? createdTicket.ticket.ticketNumber
+                : "Pending until saved"}
+            </dd>
+
+            <dt className="col-sm-4">
+              Ticket Date
+            </dt>
+            <dd className="col-sm-8">
+              {createdTicket
+                ? new Date(
+                    createdTicket.ticket.createdAt,
+                  ).toLocaleString()
+                : "Assigned when saved"}
+            </dd>
+
+            <dt className="col-sm-4">
+              Requester
+            </dt>
+            <dd className="col-sm-8">
+              {requesterName}
+            </dd>
+
+            <dt className="col-sm-4">
+              Current Status
+            </dt>
+            <dd className="col-sm-8">
+              {createdTicket
+                ? createdTicket.ticket.currentStatus
+                : "NEW (assigned when saved)"}
+            </dd>
+          </dl>
+        </section>
 
         {referenceDataState ===
           "loading" && (
@@ -311,7 +398,9 @@ export default function CreateTicket({
               Ticket Created
             </h3>
 
-            <dl className="mb-0">
+            <h4 className="h6">Saved Values</h4>
+
+            <dl className="mb-3">
               <dt>Official Ticket Number</dt>
               <dd>
                 {
@@ -320,9 +409,47 @@ export default function CreateTicket({
                 }
               </dd>
 
+              <dt>Ticket Date</dt>
+              <dd>
+                {new Date(
+                  createdTicket.ticket.createdAt,
+                ).toLocaleString()}
+              </dd>
+
+              <dt>Requester</dt>
+              <dd>
+                {createdTicket.ticket.requester.name}
+              </dd>
+
+              <dt>Category</dt>
+              <dd>
+                {createdTicket.ticket.category.name}
+              </dd>
+
+              <dt>Related System</dt>
+              <dd>
+                {
+                  createdTicket.ticket
+                    .relatedSystem.name
+                }
+              </dd>
+
               <dt>Summary</dt>
               <dd>
                 {createdTicket.ticket.summary}
+              </dd>
+
+              <dt>Requested Priority</dt>
+              <dd>
+                {
+                  createdTicket.ticket
+                    .requestedPriority
+                }
+              </dd>
+
+              <dt>Description</dt>
+              <dd>
+                {createdTicket.ticket.description}
               </dd>
 
               <dt>Status</dt>
@@ -333,6 +460,38 @@ export default function CreateTicket({
                 }
               </dd>
             </dl>
+
+            <div className="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-success"
+                onClick={handleCreateAnotherTicket}
+              >
+                Create Another Ticket
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-outline-success"
+                disabled
+                title="Available after the Ticket Detail increment is implemented."
+              >
+                View Ticket
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-outline-success"
+                disabled
+                title="Available after the My Tickets increment is implemented."
+              >
+                My Tickets
+              </button>
+            </div>
+
+            <p className="small mb-0 mt-2">
+              View Ticket and My Tickets will be enabled by their later Lab 2 increments.
+            </p>
           </div>
         )}
 
@@ -346,6 +505,12 @@ export default function CreateTicket({
               htmlFor="ticket-category"
             >
               Category
+              <span
+                className="text-danger"
+                aria-hidden="true"
+              >
+                {" "}*
+              </span>
             </label>
 
             <select
@@ -356,6 +521,9 @@ export default function CreateTicket({
                   : ""
               }`}
               value={categoryId}
+              required
+              aria-label="Category"
+              aria-required="true"
               disabled={formDisabled}
               aria-invalid={Boolean(
                 fieldErrors.categoryId,
@@ -406,6 +574,12 @@ export default function CreateTicket({
               htmlFor="ticket-related-system"
             >
               Related System
+              <span
+                className="text-danger"
+                aria-hidden="true"
+              >
+                {" "}*
+              </span>
             </label>
 
             <select
@@ -416,6 +590,9 @@ export default function CreateTicket({
                   : ""
               }`}
               value={relatedSystemId}
+              required
+              aria-label="Related System"
+              aria-required="true"
               disabled={formDisabled}
               aria-invalid={Boolean(
                 fieldErrors.relatedSystemId,
@@ -466,6 +643,12 @@ export default function CreateTicket({
               htmlFor="ticket-summary"
             >
               Summary
+              <span
+                className="text-danger"
+                aria-hidden="true"
+              >
+                {" "}*
+              </span>
             </label>
 
             <input
@@ -478,6 +661,9 @@ export default function CreateTicket({
               type="text"
               maxLength={150}
               value={summary}
+              required
+              aria-label="Summary"
+              aria-required="true"
               disabled={formDisabled}
               aria-invalid={Boolean(
                 fieldErrors.summary,
@@ -511,19 +697,43 @@ export default function CreateTicket({
               htmlFor="ticket-priority"
             >
               Requested Priority
+              <span
+                className="text-danger"
+                aria-hidden="true"
+              >
+                {" "}*
+              </span>
             </label>
 
             <select
               id="ticket-priority"
-              className="form-select"
+              className={`form-select${
+                fieldErrors.requestedPriority
+                  ? " is-invalid"
+                  : ""
+              }`}
               value={requestedPriority}
+              required
+              aria-label="Requested Priority"
+              aria-required="true"
               disabled={formDisabled}
-              onChange={(event) =>
+              aria-invalid={Boolean(
+                fieldErrors.requestedPriority,
+              )}
+              aria-describedby={
+                fieldErrors.requestedPriority
+                  ? "ticket-priority-error"
+                  : undefined
+              }
+              onChange={(event) => {
                 setRequestedPriority(
                   event.target
                     .value as RequestedPriority,
-                )
-              }
+                );
+                clearFieldError(
+                  "requestedPriority",
+                );
+              }}
             >
               <option value="LOW">
                 Low
@@ -535,6 +745,15 @@ export default function CreateTicket({
                 High
               </option>
             </select>
+
+            {fieldErrors.requestedPriority && (
+              <div
+                id="ticket-priority-error"
+                className="invalid-feedback"
+              >
+                {fieldErrors.requestedPriority}
+              </div>
+            )}
           </div>
 
           <div className="mb-3">
@@ -543,6 +762,12 @@ export default function CreateTicket({
               htmlFor="ticket-description"
             >
               Description
+              <span
+                className="text-danger"
+                aria-hidden="true"
+              >
+                {" "}*
+              </span>
             </label>
 
             <textarea
@@ -555,6 +780,9 @@ export default function CreateTicket({
               rows={5}
               maxLength={5000}
               value={description}
+              required
+              aria-label="Description"
+              aria-required="true"
               disabled={formDisabled}
               aria-invalid={Boolean(
                 fieldErrors.description,

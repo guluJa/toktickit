@@ -374,6 +374,7 @@ export default function App() {
       <div className="mb-4">
         <CreateTicket
           requesterId={currentRequester.id}
+          requesterName={currentRequester.name}
         />
       </div>
 

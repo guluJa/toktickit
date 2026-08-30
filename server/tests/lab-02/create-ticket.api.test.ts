@@ -9,6 +9,7 @@ import {
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
+import * as ticketNumberModule from "../../src/ticket-number.js";
 
 const prisma = getPrisma();
 
@@ -17,6 +18,15 @@ const validSubmissionKey =
 
 const replaySubmissionKey =
     "c65a1f36-f8ca-4a61-8947-44edc4176d02";
+
+const concurrentSubmissionKey =
+    "c65a1f36-f8ca-4a61-8947-44edc4176d06";
+
+const collisionSubmissionKey =
+    "c65a1f36-f8ca-4a61-8947-44edc4176d07";
+
+const existingCollisionSubmissionKey =
+    "c65a1f36-f8ca-4a61-8947-44edc4176d08";
 
 let requesterId: number;
 let categoryId: number;
@@ -66,6 +76,9 @@ describe("POST /api/tickets", () => {
                     in: [
                         validSubmissionKey,
                         replaySubmissionKey,
+                        concurrentSubmissionKey,
+                        collisionSubmissionKey,
+                        existingCollisionSubmissionKey,
                     ],
                 },
             },
@@ -81,6 +94,9 @@ describe("POST /api/tickets", () => {
                         in: [
                             validSubmissionKey,
                             replaySubmissionKey,
+                            concurrentSubmissionKey,
+                            collisionSubmissionKey,
+                            existingCollisionSubmissionKey,
                         ],
                     },
                 },
@@ -224,6 +240,118 @@ describe("POST /api/tickets", () => {
             });
 
         expect(savedTicketCount).toBe(1);
+    });
+
+    it("replays one concurrent request when the same requester submits the same submissionKey", async () => {
+        const requestBody = {
+            submissionKey: concurrentSubmissionKey,
+            categoryId,
+            relatedSystemId,
+            summary: "Concurrent Ticket submission",
+            requestedPriority: "MEDIUM",
+            description:
+                "Two concurrent requests must create only one Ticket.",
+        };
+
+        const [firstResponse, secondResponse] =
+            await Promise.all([
+                request(app)
+                    .post("/api/tickets")
+                    .set(
+                        "X-Development-Requester-Id",
+                        String(requesterId),
+                    )
+                    .send(requestBody),
+                request(app)
+                    .post("/api/tickets")
+                    .set(
+                        "X-Development-Requester-Id",
+                        String(requesterId),
+                    )
+                    .send(requestBody),
+            ]);
+
+        expect(
+            [firstResponse.status, secondResponse.status].sort(),
+        ).toEqual([200, 201]);
+
+        expect(
+            [
+                firstResponse.body.replayed,
+                secondResponse.body.replayed,
+            ].sort(),
+        ).toEqual([false, true]);
+
+        expect(firstResponse.body.ticket.id).toBe(
+            secondResponse.body.ticket.id,
+        );
+
+        expect(
+            await prisma.ticket.count({
+                where: {
+                    requesterId,
+                    submissionKey: concurrentSubmissionKey,
+                },
+            }),
+        ).toBe(1);
+    });
+
+    it("retries Ticket Number allocation after a unique-number collision", async () => {
+        const collidingTicketNumber =
+            "TKT-20991231-ABCDEF";
+        const allocatedTicketNumber =
+            "TKT-20991231-FEDCBA";
+
+        await prisma.ticket.create({
+            data: {
+                ticketNumber: collidingTicketNumber,
+                requesterId,
+                submissionKey:
+                    existingCollisionSubmissionKey,
+                categoryId,
+                relatedSystemId,
+                summary: "Existing Ticket Number",
+                requestedPriority: "LOW",
+                description:
+                    "This record reserves the first generated Ticket Number.",
+                currentStatus: "NEW",
+            },
+        });
+
+        const numberSpy = vi
+            .spyOn(
+                ticketNumberModule,
+                "generateTicketNumber",
+            )
+            .mockReturnValueOnce(collidingTicketNumber)
+            .mockReturnValueOnce(allocatedTicketNumber);
+
+        try {
+            const response = await request(app)
+                .post("/api/tickets")
+                .set(
+                    "X-Development-Requester-Id",
+                    String(requesterId),
+                )
+                .send({
+                    submissionKey: collisionSubmissionKey,
+                    categoryId,
+                    relatedSystemId,
+                    summary: "Retry Ticket Number allocation",
+                    requestedPriority: "HIGH",
+                    description:
+                        "The API must retry after the first Ticket Number collides.",
+                });
+
+            expect(response.status).toBe(201);
+            expect(response.body.replayed).toBe(false);
+            expect(
+                response.body.ticket.ticketNumber,
+            ).toBe(allocatedTicketNumber);
+            expect(numberSpy).toHaveBeenCalledTimes(2);
+        } finally {
+            numberSpy.mockRestore();
+        }
     });
 
     it("returns field errors and does not save a Ticket for invalid input", async () => {

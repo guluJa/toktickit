@@ -289,6 +289,202 @@ const ticketDetailInclude = {
   },
 } satisfies Prisma.TicketInclude;
 
+const MAX_TICKET_NUMBER_ATTEMPTS = 3;
+
+class TicketNumberAllocationError extends Error {
+  constructor() {
+    super(
+      "Unable to allocate a unique Ticket Number.",
+    );
+    this.name = "TicketNumberAllocationError";
+  }
+}
+
+function isUniqueConstraintError(
+  error: unknown,
+  expectedFields: string[],
+): boolean {
+  if (
+    !(
+      error instanceof
+      Prisma.PrismaClientKnownRequestError
+    ) ||
+    error.code !== "P2002"
+  ) {
+    return false;
+  }
+
+  const target = error.meta?.target;
+  const fields = Array.isArray(target)
+    ? target.map(String)
+    : target
+      ? [String(target)]
+      : [];
+
+  return expectedFields.every((expected) =>
+    fields.some((field) =>
+      field.includes(expected),
+    ),
+  );
+}
+
+async function createOrReplayTicket(
+  requesterId: number,
+  input: ReturnType<
+    typeof validateAndNormalizeTicketInput
+  >,
+) {
+  const prisma = getPrisma();
+
+  for (
+    let attempt = 1;
+    attempt <= MAX_TICKET_NUMBER_ATTEMPTS;
+    attempt += 1
+  ) {
+    try {
+      return await prisma.$transaction(
+        async (tx) => {
+          const existingTicket =
+            await tx.ticket.findUnique({
+              where: {
+                requesterId_submissionKey: {
+                  requesterId,
+                  submissionKey:
+                    input.submissionKey,
+                },
+              },
+              include: ticketDetailInclude,
+            });
+
+          if (existingTicket) {
+            return {
+              ticket: existingTicket,
+              replayed: true,
+            };
+          }
+
+          const [category, relatedSystem] =
+            await Promise.all([
+              tx.category.findFirst({
+                where: {
+                  id: input.categoryId,
+                  isActive: true,
+                },
+                select: {
+                  id: true,
+                  name: true,
+                },
+              }),
+              tx.relatedSystem.findFirst({
+                where: {
+                  id: input.relatedSystemId,
+                  isActive: true,
+                },
+                select: {
+                  id: true,
+                  name: true,
+                },
+              }),
+            ]);
+
+          const referenceErrors: Record<
+            string,
+            string
+          > = {};
+
+          if (!category) {
+            referenceErrors.categoryId =
+              "The selected Category is unavailable.";
+          }
+
+          if (!relatedSystem) {
+            referenceErrors.relatedSystemId =
+              "The selected Related System is unavailable.";
+          }
+
+          if (
+            Object.keys(referenceErrors).length >
+            0
+          ) {
+            throw new TicketInputValidationError(
+              referenceErrors,
+            );
+          }
+
+          const createdTicket =
+            await tx.ticket.create({
+              data: {
+                ticketNumber:
+                  generateTicketNumber(),
+                requesterId,
+                submissionKey:
+                  input.submissionKey,
+                categoryId: input.categoryId,
+                relatedSystemId:
+                  input.relatedSystemId,
+                summary: input.summary,
+                requestedPriority:
+                  input.requestedPriority,
+                description: input.description,
+                currentStatus: "NEW",
+              },
+              include: ticketDetailInclude,
+            });
+
+          return {
+            ticket: createdTicket,
+            replayed: false,
+          };
+        },
+      );
+    } catch (error) {
+      if (
+        isUniqueConstraintError(error, [
+          "requesterId",
+          "submissionKey",
+        ])
+      ) {
+        const replayedTicket =
+          await prisma.ticket.findUnique({
+            where: {
+              requesterId_submissionKey: {
+                requesterId,
+                submissionKey:
+                  input.submissionKey,
+              },
+            },
+            include: ticketDetailInclude,
+          });
+
+        if (replayedTicket) {
+          return {
+            ticket: replayedTicket,
+            replayed: true,
+          };
+        }
+      }
+
+      if (
+        isUniqueConstraintError(error, [
+          "ticketNumber",
+        ])
+      ) {
+        if (
+          attempt < MAX_TICKET_NUMBER_ATTEMPTS
+        ) {
+          continue;
+        }
+
+        throw new TicketNumberAllocationError();
+      }
+
+      throw error;
+    }
+  }
+
+  throw new TicketNumberAllocationError();
+}
+
 app.post(
   "/api/tickets",
   requireDevelopmentRequester,
@@ -314,111 +510,10 @@ app.post(
         return;
       }
 
-      const result =
-        await getPrisma().$transaction(
-          async (tx) => {
-            const existingTicket =
-              await tx.ticket.findUnique({
-                where: {
-                  requesterId_submissionKey: {
-                    requesterId:
-                      requester.id,
-                    submissionKey:
-                      input.submissionKey,
-                  },
-                },
-                include:
-                  ticketDetailInclude,
-              });
-
-            if (existingTicket) {
-              return {
-                ticket: existingTicket,
-                replayed: true,
-              };
-            }
-
-            const [
-              category,
-              relatedSystem,
-            ] = await Promise.all([
-              tx.category.findFirst({
-                where: {
-                  id: input.categoryId,
-                  isActive: true,
-                },
-                select: {
-                  id: true,
-                  name: true,
-                },
-              }),
-              tx.relatedSystem.findFirst({
-                where: {
-                  id:
-                    input.relatedSystemId,
-                  isActive: true,
-                },
-                select: {
-                  id: true,
-                  name: true,
-                },
-              }),
-            ]);
-
-            const referenceErrors: Record<
-              string,
-              string
-            > = {};
-
-            if (!category) {
-              referenceErrors.categoryId =
-                "The selected Category is unavailable.";
-            }
-
-            if (!relatedSystem) {
-              referenceErrors.relatedSystemId =
-                "The selected Related System is unavailable.";
-            }
-
-            if (
-              Object.keys(referenceErrors)
-                .length > 0
-            ) {
-              throw new TicketInputValidationError(
-                referenceErrors,
-              );
-            }
-
-            const createdTicket =
-              await tx.ticket.create({
-                data: {
-                  ticketNumber:
-                    generateTicketNumber(),
-                  requesterId:
-                    requester.id,
-                  submissionKey:
-                    input.submissionKey,
-                  categoryId:
-                    input.categoryId,
-                  relatedSystemId:
-                    input.relatedSystemId,
-                  summary: input.summary,
-                  requestedPriority:
-                    input.requestedPriority,
-                  description:
-                    input.description,
-                  currentStatus: "NEW",
-                },
-                include:
-                  ticketDetailInclude,
-              });
-
-            return {
-              ticket: createdTicket,
-              replayed: false,
-            };
-          },
-        );
+      const result = await createOrReplayTicket(
+        requester.id,
+        input,
+      );
 
       const ticket = result.ticket;
 
@@ -459,6 +554,21 @@ app.post(
               "Request data is invalid.",
             fields:
               error.fieldErrors,
+          },
+        });
+        return;
+      }
+
+      if (
+        error instanceof
+        TicketNumberAllocationError
+      ) {
+        res.status(409).json({
+          error: {
+            code:
+              "TICKET_NUMBER_CONFLICT",
+            message:
+              "Unable to allocate a unique Ticket Number. Please retry.",
           },
         });
         return;
