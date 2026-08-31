@@ -180,6 +180,41 @@ describe("My Tickets", () => {
   );
 
   it(
+    "opens the selected requester-owned Ticket from the View action",
+    async () => {
+      const user = userEvent.setup();
+      const onViewTicket = vi.fn();
+
+      render(
+        <MyTickets
+          requesterId={1}
+          requesterName="Development Requester 1"
+          onCreateTicket={vi.fn()}
+          onViewTicket={onViewTicket}
+        />,
+      );
+
+      const table = await screen.findByRole(
+        "table",
+        {
+          name: "My Tickets table",
+        },
+      );
+
+      await user.click(
+        within(table).getAllByRole("button", {
+          name: "View",
+        })[0],
+      );
+
+      expect(onViewTicket).toHaveBeenCalledOnce();
+      expect(onViewTicket).toHaveBeenCalledWith(
+        firstTicket.id,
+      );
+    },
+  );
+
+  it(
     "sends Search, Filter, Sort, and Page Size controls as the API query",
     async () => {
       const user = userEvent.setup();

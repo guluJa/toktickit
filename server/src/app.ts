@@ -656,6 +656,132 @@ app.get(
   },
 );
 
+app.get(
+  "/api/tickets/:ticketId",
+  requireDevelopmentRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const ticketId = parsePositiveInteger(
+        req.params.ticketId,
+      );
+
+      if (ticketId === null) {
+        res.status(400).json({
+          error: {
+            code: "INVALID_TICKET_ID",
+            message:
+              "ticketId must be a positive integer.",
+          },
+        });
+        return;
+      }
+
+      const requester =
+        req.developmentRequester;
+
+      if (!requester) {
+        res.status(403).json({
+          error: {
+            code:
+              "REQUESTER_CONTEXT_FORBIDDEN",
+            message:
+              "The development requester is unavailable.",
+          },
+        });
+        return;
+      }
+
+      const ticket =
+        await getPrisma().ticket.findFirst({
+          where: {
+            id: ticketId,
+            requesterId: requester.id,
+          },
+          select: {
+            id: true,
+            ticketNumber: true,
+            requester: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            relatedSystem: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            summary: true,
+            requestedPriority: true,
+            description: true,
+            currentStatus: true,
+            createdAt: true,
+            updatedAt: true,
+            attachments: {
+              select: {
+                id: true,
+                ticketId: true,
+                originalName: true,
+                mimeType: true,
+                sizeBytes: true,
+                uploadedAt: true,
+                removedAt: true,
+                removalReason: true,
+              },
+              orderBy: [
+                { uploadedAt: "asc" },
+                { id: "asc" },
+              ],
+            },
+          },
+        });
+
+      if (!ticket) {
+        res.status(404).json({
+          error: {
+            code: "TICKET_NOT_FOUND",
+            message: "Ticket not found.",
+          },
+        });
+        return;
+      }
+
+      res.status(200).json({
+        ...ticket,
+        attachments: ticket.attachments.map(
+          (attachment) => ({
+            ...attachment,
+            state: attachment.removedAt
+              ? "REMOVED"
+              : "ACTIVE",
+          }),
+        ),
+      });
+    } catch (error) {
+      console.error(
+        "Unable to load Ticket Detail:",
+        error,
+      );
+
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to load the Ticket.",
+        },
+      });
+    }
+  },
+);
+
 app.post(
   "/api/tickets",
   requireDevelopmentRequester,
