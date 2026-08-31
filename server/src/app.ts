@@ -13,6 +13,10 @@ import {
   TicketInputValidationError,
   validateAndNormalizeTicketInput,
 } from "./ticket-validation.js";
+import {
+  parseTicketListQuery,
+  TicketListQueryValidationError,
+} from "./ticket-list-query.js";
 // getPrisma() is your lazy database handle. Call it INSIDE a route when you
 // need the DB (Issue 4). It is intentionally unused until then.
 void getPrisma;
@@ -289,6 +293,28 @@ const ticketDetailInclude = {
   },
 } satisfies Prisma.TicketInclude;
 
+const ticketSummarySelect = {
+  id: true,
+  ticketNumber: true,
+  summary: true,
+  requestedPriority: true,
+  currentStatus: true,
+  createdAt: true,
+  updatedAt: true,
+  category: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  relatedSystem: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} satisfies Prisma.TicketSelect;
+
 const MAX_TICKET_NUMBER_ATTEMPTS = 3;
 
 class TicketNumberAllocationError extends Error {
@@ -484,6 +510,151 @@ async function createOrReplayTicket(
 
   throw new TicketNumberAllocationError();
 }
+
+app.get(
+  "/api/tickets",
+  requireDevelopmentRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const requester =
+        req.developmentRequester;
+
+      if (!requester) {
+        res.status(403).json({
+          error: {
+            code:
+              "REQUESTER_CONTEXT_FORBIDDEN",
+            message:
+              "The development requester is unavailable.",
+          },
+        });
+        return;
+      }
+
+      const query = parseTicketListQuery(
+        req.query as Record<string, unknown>,
+      );
+
+      const ownerWhere: Prisma.TicketWhereInput = {
+        requesterId: requester.id,
+      };
+
+      const filteredWhere: Prisma.TicketWhereInput = {
+        requesterId: requester.id,
+        ...(query.search
+          ? {
+              OR: [
+                {
+                  ticketNumber: {
+                    contains: query.search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  summary: {
+                    contains: query.search,
+                    mode: "insensitive",
+                  },
+                },
+              ],
+            }
+          : {}),
+        ...(query.categoryId
+          ? { categoryId: query.categoryId }
+          : {}),
+        ...(query.relatedSystemId
+          ? {
+              relatedSystemId:
+                query.relatedSystemId,
+            }
+          : {}),
+        ...(query.requestedPriority
+          ? {
+              requestedPriority:
+                query.requestedPriority,
+            }
+          : {}),
+        ...(query.currentStatus
+          ? {
+              currentStatus:
+                query.currentStatus,
+            }
+          : {}),
+      };
+
+      const primaryOrder = {
+        [query.sortBy]: query.sortDirection,
+      } as Prisma.TicketOrderByWithRelationInput;
+
+      const prisma = getPrisma();
+      const [
+        items,
+        totalOwnedItems,
+        totalItems,
+      ] = await prisma.$transaction([
+        prisma.ticket.findMany({
+          where: filteredWhere,
+          select: ticketSummarySelect,
+          orderBy: [
+            primaryOrder,
+            { id: "desc" },
+          ],
+          skip:
+            (query.page - 1) * query.pageSize,
+          take: query.pageSize,
+        }),
+        prisma.ticket.count({
+          where: ownerWhere,
+        }),
+        prisma.ticket.count({
+          where: filteredWhere,
+        }),
+      ]);
+
+      res.status(200).json({
+        items,
+        page: query.page,
+        pageSize: query.pageSize,
+        totalOwnedItems,
+        totalItems,
+        totalPages:
+          totalItems === 0
+            ? 0
+            : Math.ceil(
+                totalItems / query.pageSize,
+              ),
+      });
+    } catch (error) {
+      if (
+        error instanceof
+        TicketListQueryValidationError
+      ) {
+        res.status(400).json({
+          error: {
+            code:
+              "INVALID_TICKET_LIST_QUERY",
+            message:
+              "One or more Ticket list query parameters are invalid.",
+            fields: error.fields,
+          },
+        });
+        return;
+      }
+
+      console.error(
+        "Unable to load Tickets:",
+        error,
+      );
+
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Unable to load Tickets.",
+        },
+      });
+    }
+  },
+);
 
 app.post(
   "/api/tickets",

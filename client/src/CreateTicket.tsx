@@ -18,6 +18,7 @@ import {
 interface CreateTicketProps {
   requesterId: number;
   requesterName: string;
+  onMyTickets?: () => void;
 }
 
 type ReferenceDataState =
@@ -45,6 +46,7 @@ type TicketFieldErrors = Partial<
 export default function CreateTicket({
   requesterId,
   requesterName,
+  onMyTickets,
 }: CreateTicketProps) {
   const [
     referenceDataState,
@@ -482,15 +484,20 @@ export default function CreateTicket({
               <button
                 type="button"
                 className="btn btn-outline-success"
-                disabled
-                title="Available after the My Tickets increment is implemented."
+                disabled={!onMyTickets}
+                title={
+                  onMyTickets
+                    ? undefined
+                    : "Available after the My Tickets increment is implemented."
+                }
+                onClick={onMyTickets}
               >
                 My Tickets
               </button>
             </div>
 
             <p className="small mb-0 mt-2">
-              View Ticket and My Tickets will be enabled by their later Lab 2 increments.
+              View Ticket will be enabled by the Ticket Detail increment.
             </p>
           </div>
         )}

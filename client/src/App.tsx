@@ -10,6 +10,9 @@ import {
   Category,
 } from "./api.js";
 import CreateTicket from "./CreateTicket.js";
+import MyTickets from "./MyTickets.js";
+
+type ActiveView = "create" | "tickets";
 
 type UiState =
   | "idle"
@@ -57,6 +60,9 @@ export default function App() {
 
   const [categories, setCategories] =
     useState<Category[]>([]);
+
+  const [activeView, setActiveView] =
+    useState<ActiveView>("create");
 
   async function loadRequesterOptions() {
     setRequesterViewState("loading");
@@ -171,6 +177,7 @@ export default function App() {
     setCurrentRequester(null);
     setState("idle");
     setCategories([]);
+    setActiveView("create");
 
     void loadRequesterOptions();
   }
@@ -343,7 +350,7 @@ export default function App() {
   return (
     <main
       className="container py-4"
-      style={{ maxWidth: 760 }}
+      style={{ maxWidth: 1200 }}
     >
       <header className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
@@ -371,18 +378,65 @@ export default function App() {
         </button>
       </header>
 
-      <div className="mb-4">
-        <CreateTicket
-          requesterId={currentRequester.id}
-          requesterName={currentRequester.name}
-        />
-      </div>
-
-      <section
-        className="card shadow-sm"
-        aria-labelledby="system-check-title"
+      <nav
+        className="nav nav-pills gap-2 mb-4"
+        aria-label="Requester workspace"
       >
-        <div className="card-body">
+        <button
+          type="button"
+          className={`nav-link ${
+            activeView === "create"
+              ? "active"
+              : "text-success"
+          }`}
+          aria-current={
+            activeView === "create"
+              ? "page"
+              : undefined
+          }
+          onClick={() =>
+            setActiveView("create")
+          }
+        >
+          Create Ticket
+        </button>
+        <button
+          type="button"
+          className={`nav-link ${
+            activeView === "tickets"
+              ? "active"
+              : "text-success"
+          }`}
+          aria-current={
+            activeView === "tickets"
+              ? "page"
+              : undefined
+          }
+          onClick={() =>
+            setActiveView("tickets")
+          }
+        >
+          My Tickets
+        </button>
+      </nav>
+
+      {activeView === "create" ? (
+        <>
+          <div className="mb-4">
+            <CreateTicket
+              requesterId={currentRequester.id}
+              requesterName={currentRequester.name}
+              onMyTickets={() =>
+                setActiveView("tickets")
+              }
+            />
+          </div>
+
+          <section
+            className="card shadow-sm"
+            aria-labelledby="system-check-title"
+          >
+            <div className="card-body">
           <h2
             id="system-check-title"
             className="h5"
@@ -439,8 +493,18 @@ export default function App() {
               </div>
             </div>
           )}
-        </div>
-      </section>
+            </div>
+          </section>
+        </>
+      ) : (
+        <MyTickets
+          requesterId={currentRequester.id}
+          requesterName={currentRequester.name}
+          onCreateTicket={() =>
+            setActiveView("create")
+          }
+        />
+      )}
     </main>
   );
 }
