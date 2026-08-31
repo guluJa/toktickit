@@ -115,6 +115,18 @@ export interface CreateTicketInput {
   description: string;
 }
 
+export interface AttachmentMetadata {
+  id: number;
+  ticketId: number;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  state: "ACTIVE" | "REMOVED";
+  uploadedAt: string;
+  removedAt: string | null;
+  removalReason: string | null;
+}
+
 export interface TicketDetail {
   id: number;
   ticketNumber: string;
@@ -130,7 +142,7 @@ export interface TicketDetail {
   currentStatus: "NEW";
   createdAt: string;
   updatedAt: string;
-  attachments: unknown[];
+  attachments: AttachmentMetadata[];
 }
 
 export interface CreateTicketResponse {
@@ -284,6 +296,42 @@ export async function getMyTickets(
       response.status,
       responseBody.error?.code ??
         "TICKET_LIST_REQUEST_FAILED",
+      responseBody.error?.fields,
+    );
+  }
+
+  return response.json();
+}
+
+export async function getTicketDetail(
+  requesterId: number,
+  ticketId: number,
+): Promise<TicketDetail> {
+  const response = await fetch(
+    `${API_URL}/api/tickets/${ticketId}`,
+    {
+      headers: {
+        "X-Development-Requester-Id":
+          String(requesterId),
+      },
+    },
+  );
+
+  if (!response.ok) {
+    let responseBody: TicketApiErrorResponse = {};
+
+    try {
+      responseBody = await response.json();
+    } catch {
+      // Preserve a safe fallback when the server does not return JSON.
+    }
+
+    throw new TicketApiError(
+      responseBody.error?.message ??
+        "Unable to load Ticket Detail.",
+      response.status,
+      responseBody.error?.code ??
+        "TICKET_DETAIL_REQUEST_FAILED",
       responseBody.error?.fields,
     );
   }

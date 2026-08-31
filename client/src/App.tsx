@@ -11,8 +11,12 @@ import {
 } from "./api.js";
 import CreateTicket from "./CreateTicket.js";
 import MyTickets from "./MyTickets.js";
+import RequesterTicketDetail from "./RequesterTicketDetail.js";
 
-type ActiveView = "create" | "tickets";
+type ActiveView =
+  | "create"
+  | "tickets"
+  | "detail";
 
 type UiState =
   | "idle"
@@ -63,6 +67,9 @@ export default function App() {
 
   const [activeView, setActiveView] =
     useState<ActiveView>("create");
+
+  const [selectedTicketId, setSelectedTicketId] =
+    useState<number | null>(null);
 
   async function loadRequesterOptions() {
     setRequesterViewState("loading");
@@ -178,6 +185,7 @@ export default function App() {
     setState("idle");
     setCategories([]);
     setActiveView("create");
+    setSelectedTicketId(null);
 
     void loadRequesterOptions();
   }
@@ -394,27 +402,31 @@ export default function App() {
               ? "page"
               : undefined
           }
-          onClick={() =>
-            setActiveView("create")
-          }
+          onClick={() => {
+            setSelectedTicketId(null);
+            setActiveView("create");
+          }}
         >
           Create Ticket
         </button>
         <button
           type="button"
           className={`nav-link ${
-            activeView === "tickets"
+            activeView === "tickets" ||
+            activeView === "detail"
               ? "active"
               : "text-success"
           }`}
           aria-current={
-            activeView === "tickets"
+            activeView === "tickets" ||
+            activeView === "detail"
               ? "page"
               : undefined
           }
-          onClick={() =>
-            setActiveView("tickets")
-          }
+          onClick={() => {
+            setSelectedTicketId(null);
+            setActiveView("tickets");
+          }}
         >
           My Tickets
         </button>
@@ -496,6 +508,27 @@ export default function App() {
             </div>
           </section>
         </>
+      ) : activeView === "tickets" ? (
+        <MyTickets
+          requesterId={currentRequester.id}
+          requesterName={currentRequester.name}
+          onCreateTicket={() =>
+            setActiveView("create")
+          }
+          onViewTicket={(ticketId) => {
+            setSelectedTicketId(ticketId);
+            setActiveView("detail");
+          }}
+        />
+      ) : selectedTicketId ? (
+        <RequesterTicketDetail
+          requesterId={currentRequester.id}
+          ticketId={selectedTicketId}
+          onBack={() => {
+            setSelectedTicketId(null);
+            setActiveView("tickets");
+          }}
+        />
       ) : (
         <MyTickets
           requesterId={currentRequester.id}
@@ -503,6 +536,10 @@ export default function App() {
           onCreateTicket={() =>
             setActiveView("create")
           }
+          onViewTicket={(ticketId) => {
+            setSelectedTicketId(ticketId);
+            setActiveView("detail");
+          }}
         />
       )}
     </main>
