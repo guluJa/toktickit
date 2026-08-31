@@ -169,6 +169,64 @@ describe("GET /api/tickets", () => {
     });
   });
 
+  it(
+    "returns a safe 400 response when the requester context header is missing",
+    async () => {
+      const res = await request(app).get(
+        "/api/tickets",
+      );
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        error: {
+          code: "INVALID_REQUESTER_CONTEXT",
+          message: expect.any(String),
+        },
+      });
+    },
+  );
+
+  it(
+    "returns a safe 400 response when the requester context header is malformed",
+    async () => {
+      const res = await request(app)
+        .get("/api/tickets")
+        .set(
+          "X-Development-Requester-Id",
+          "invalid",
+        );
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe(
+        "INVALID_REQUESTER_CONTEXT",
+      );
+    },
+  );
+
+  it(
+    "returns a safe 403 response for an unknown positive requester context",
+    async () => {
+      const res = await request(app)
+        .get("/api/tickets")
+        .set(
+          "X-Development-Requester-Id",
+          "2147483647",
+        );
+
+      expect(res.status).toBe(403);
+      expect(res.body).toEqual({
+        error: {
+          code: "REQUESTER_CONTEXT_FORBIDDEN",
+          message:
+            "The development requester is unavailable.",
+        },
+      });
+      expect(JSON.stringify(res.body)).not.toMatch(
+        /password|DATABASE_URL|stack|Prisma|SQL/i,
+      );
+    },
+  );
+
   afterAll(async () => {
     if (ownerId && otherOwnerId) {
       await prisma.ticket.deleteMany({
