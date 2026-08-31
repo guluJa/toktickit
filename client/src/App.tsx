@@ -9,6 +9,7 @@ import {
   getDevelopmentRequesters,
   Category,
 } from "./api.js";
+import CreateTicket from "./CreateTicket.js";
 
 type UiState =
   | "idle"
@@ -370,13 +371,11 @@ export default function App() {
         </button>
       </header>
 
-      <div
-        className="alert alert-success"
-        role="status"
-      >
-        Development Requester context is
-        active. Ticket features will be added
-        in the next Lab 2 increments.
+      <div className="mb-4">
+        <CreateTicket
+          requesterId={currentRequester.id}
+          requesterName={currentRequester.name}
+        />
       </div>
 
       <section

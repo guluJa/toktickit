@@ -3,7 +3,7 @@ import request from "supertest";
 import { app } from "../../src/app.js";
 
 describe("GET /api/categories", () => {
-  it("returns the four seeded categories in id order", async () => {
+  it("returns the four seeded active categories in deterministic name order", async () => {
     const res = await request(app).get("/api/categories");
 
     expect(res.status).toBe(200);
@@ -14,15 +14,9 @@ describe("GET /api/categories", () => {
     ).toEqual([
       "Account and Access",
       "Hardware",
-      "Software",
       "Network",
+      "Software",
     ]);
-
-    const ids = res.body.map(
-      (category: { id: number }) => category.id,
-    );
-
-    expect(ids).toEqual([...ids].sort((a, b) => a - b));
 
     for (const category of res.body) {
       expect(category).toEqual({
