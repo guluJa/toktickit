@@ -8,6 +8,7 @@ import {
   TicketApiError,
   TicketDetail,
 } from "./api.js";
+import AttachmentSection from "./AttachmentSection.js";
 
 type DetailViewState =
   | "loading"
@@ -32,21 +33,6 @@ function formatDate(value: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
-}
-
-function formatFileSize(sizeBytes: number): string {
-  if (sizeBytes < 1024) {
-    return `${sizeBytes} B`;
-  }
-
-  if (sizeBytes < 1024 * 1024) {
-    return `${(sizeBytes / 1024).toFixed(1)} KB`;
-  }
-
-  return `${(
-    sizeBytes /
-    (1024 * 1024)
-  ).toFixed(1)} MB`;
 }
 
 export default function RequesterTicketDetail({
@@ -350,108 +336,13 @@ export default function RequesterTicketDetail({
         </div>
 
         <div className="col-12">
-          <section
-            className="card shadow-sm"
-            aria-labelledby="attachments-title"
-          >
-            <div className="card-body">
-              <div className="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-3">
-                <h3
-                  id="attachments-title"
-                  className="h5 mb-0"
-                >
-                  Attachments
-                </h3>
-                <span className="text-body-secondary">
-                  Metadata only
-                </span>
-              </div>
-
-              {ticket.attachments.length === 0 ? (
-                <p className="text-body-secondary mb-0">
-                  No Attachments are associated with
-                  this Ticket.
-                </p>
-              ) : (
-                <div className="row g-3">
-                  {ticket.attachments.map(
-                    (attachment) => (
-                      <div
-                        className="col-12 col-md-6"
-                        key={attachment.id}
-                      >
-                        <article className="border rounded p-3 h-100">
-                          <div className="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-2">
-                            <strong className="text-break">
-                              {attachment.originalName}
-                            </strong>
-                            <span
-                              className={`badge align-self-start ${
-                                attachment.state ===
-                                "ACTIVE"
-                                  ? "text-bg-success"
-                                  : "text-bg-secondary"
-                              }`}
-                            >
-                              {attachment.state}
-                            </span>
-                          </div>
-                          <dl className="row small mb-0">
-                            <dt className="col-5">
-                              MIME Type
-                            </dt>
-                            <dd className="col-7 text-break">
-                              {attachment.mimeType}
-                            </dd>
-                            <dt className="col-5">
-                              File Size
-                            </dt>
-                            <dd className="col-7">
-                              {formatFileSize(
-                                attachment.sizeBytes,
-                              )}
-                            </dd>
-                            <dt className="col-5">
-                              Uploaded At
-                            </dt>
-                            <dd className="col-7">
-                              {formatDate(
-                                attachment.uploadedAt,
-                              )}
-                            </dd>
-                            {attachment.removedAt && (
-                              <>
-                                <dt className="col-5">
-                                  Removed At
-                                </dt>
-                                <dd className="col-7">
-                                  {formatDate(
-                                    attachment.removedAt,
-                                  )}
-                                </dd>
-                              </>
-                            )}
-                            {attachment.removalReason && (
-                              <>
-                                <dt className="col-5">
-                                  Removal Reason
-                                </dt>
-                                <dd className="col-7 text-break">
-                                  {
-                                    attachment.removalReason
-                                  }
-                                </dd>
-                              </>
-                            )}
-                          </dl>
-                        </article>
-                      </div>
-                    ),
-                  )}
-                </div>
-              )}
-            </div>
-          </section>
+          <AttachmentSection
+            requesterId={requesterId}
+            ticketId={ticket.id}
+            initialAttachments={
+              ticket.attachments
+            }
+          />
         </div>
       </div>
     </section>

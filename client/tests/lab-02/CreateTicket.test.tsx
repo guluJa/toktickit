@@ -19,6 +19,7 @@ import {
   getCategories,
   getRelatedSystems,
   TicketApiError,
+  uploadAttachment,
 } from "../../src/api.js";
 
 vi.mock(
@@ -30,6 +31,7 @@ vi.mock(
     createTicket: vi.fn(),
     getCategories: vi.fn(),
     getRelatedSystems: vi.fn(),
+    uploadAttachment: vi.fn(),
   }),
 );
 
@@ -41,6 +43,9 @@ const mockedGetCategories =
 
 const mockedGetRelatedSystems =
   vi.mocked(getRelatedSystems);
+
+const mockedUploadAttachment =
+  vi.mocked(uploadAttachment);
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -752,6 +757,148 @@ describe("Create Ticket", () => {
       expect(
         screen.getByLabelText("Summary"),
       ).toHaveAttribute("aria-invalid", "true");
+    },
+  );
+
+  it(
+    "keeps the created Ticket when Attachment upload fails and retries only the file",
+    async () => {
+      const user = userEvent.setup();
+      mockedGetCategories.mockResolvedValueOnce([
+        { id: 1, name: "Hardware" },
+      ]);
+      mockedGetRelatedSystems.mockResolvedValueOnce([
+        {
+          id: 2,
+          name: "Campus Wi-Fi",
+          description: null,
+        },
+      ]);
+      mockedCreateTicket.mockResolvedValueOnce({
+        ticket: {
+          id: 19,
+          ticketNumber:
+            "TKT-20260831-A1B2C3",
+          requester: {
+            id: 1,
+            name: "Development Requester 1",
+            email:
+              "requester1@toktickit.test",
+          },
+          category: {
+            id: 1,
+            name: "Hardware",
+          },
+          relatedSystem: {
+            id: 2,
+            name: "Campus Wi-Fi",
+          },
+          summary:
+            "Laptop cannot connect to Wi-Fi",
+          requestedPriority: "MEDIUM",
+          description:
+            "The connection disconnects after a few minutes.",
+          currentStatus: "NEW",
+          createdAt:
+            "2026-08-31T14:00:00.000Z",
+          updatedAt:
+            "2026-08-31T14:00:00.000Z",
+          attachments: [],
+        },
+        replayed: false,
+      });
+      mockedUploadAttachment
+        .mockRejectedValueOnce(
+          new TicketApiError(
+            "Unable to upload this file.",
+            500,
+            "INTERNAL_ERROR",
+          ),
+        )
+        .mockResolvedValueOnce({
+          id: 90,
+          ticketId: 19,
+          originalName: "evidence.pdf",
+          mimeType: "application/pdf",
+          sizeBytes: 3,
+          state: "ACTIVE",
+          uploadedAt:
+            "2026-08-31T14:01:00.000Z",
+          removedAt: null,
+          removalReason: null,
+        });
+
+      render(
+        <CreateTicket
+          requesterId={1}
+          requesterName="Development Requester 1"
+        />,
+      );
+
+      await user.selectOptions(
+        await screen.findByLabelText("Category"),
+        "1",
+      );
+      await user.selectOptions(
+        screen.getByLabelText("Related System"),
+        "2",
+      );
+      await user.type(
+        screen.getByLabelText("Summary"),
+        "Laptop cannot connect to Wi-Fi",
+      );
+      await user.type(
+        screen.getByLabelText("Description"),
+        "The connection disconnects after a few minutes.",
+      );
+      const file = new File(
+        ["pdf"],
+        "evidence.pdf",
+        { type: "application/pdf" },
+      );
+      await user.upload(
+        screen.getByLabelText(
+          "Select supporting files",
+        ),
+        file,
+      );
+
+      await user.click(
+        screen.getByRole("button", {
+          name: "Create Ticket",
+        }),
+      );
+
+      expect(
+        await screen.findByRole("heading", {
+          name: "Ticket Created",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        await screen.findByText(
+          "Unable to upload this file.",
+        ),
+      ).toBeInTheDocument();
+      expect(mockedCreateTicket).toHaveBeenCalledTimes(1);
+      expect(mockedUploadAttachment).toHaveBeenCalledWith(
+        1,
+        19,
+        file,
+      );
+
+      await user.click(
+        screen.getByRole("button", {
+          name: "Retry",
+        }),
+      );
+
+      await waitFor(() => {
+        expect(mockedUploadAttachment).toHaveBeenCalledTimes(2);
+      });
+      expect(mockedCreateTicket).toHaveBeenCalledTimes(1);
+      expect(
+        await screen.findByText(/· ACTIVE/),
+      ).toBeInTheDocument();
     },
   );
 });
