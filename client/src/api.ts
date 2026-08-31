@@ -138,6 +138,51 @@ export interface CreateTicketResponse {
   replayed: boolean;
 }
 
+export interface TicketSummary {
+  id: number;
+  ticketNumber: string;
+  summary: string;
+  category: Category;
+  relatedSystem: {
+    id: number;
+    name: string;
+  };
+  requestedPriority: RequestedPriority;
+  currentStatus: "NEW";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type MyTicketsSortField =
+  | "updatedAt"
+  | "createdAt"
+  | "ticketNumber";
+
+export type MyTicketsSortDirection =
+  | "asc"
+  | "desc";
+
+export interface MyTicketsQuery {
+  search?: string;
+  categoryId?: number;
+  relatedSystemId?: number;
+  requestedPriority?: RequestedPriority;
+  currentStatus?: "NEW";
+  sortBy: MyTicketsSortField;
+  sortDirection: MyTicketsSortDirection;
+  page: number;
+  pageSize: 10 | 20 | 50;
+}
+
+export interface MyTicketsResponse {
+  items: TicketSummary[];
+  page: number;
+  pageSize: number;
+  totalOwnedItems: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 interface TicketApiErrorResponse {
   error?: {
     code?: string;
@@ -163,6 +208,87 @@ export class TicketApiError extends Error {
     this.code = code;
     this.fields = fields;
   }
+}
+
+export async function getMyTickets(
+  requesterId: number,
+  query: MyTicketsQuery,
+): Promise<MyTicketsResponse> {
+  const parameters = new URLSearchParams();
+
+  if (query.search?.trim()) {
+    parameters.set("search", query.search.trim());
+  }
+
+  if (query.categoryId) {
+    parameters.set(
+      "categoryId",
+      String(query.categoryId),
+    );
+  }
+
+  if (query.relatedSystemId) {
+    parameters.set(
+      "relatedSystemId",
+      String(query.relatedSystemId),
+    );
+  }
+
+  if (query.requestedPriority) {
+    parameters.set(
+      "requestedPriority",
+      query.requestedPriority,
+    );
+  }
+
+  if (query.currentStatus) {
+    parameters.set(
+      "currentStatus",
+      query.currentStatus,
+    );
+  }
+
+  parameters.set("sortBy", query.sortBy);
+  parameters.set(
+    "sortDirection",
+    query.sortDirection,
+  );
+  parameters.set("page", String(query.page));
+  parameters.set(
+    "pageSize",
+    String(query.pageSize),
+  );
+
+  const response = await fetch(
+    `${API_URL}/api/tickets?${parameters.toString()}`,
+    {
+      headers: {
+        "X-Development-Requester-Id":
+          String(requesterId),
+      },
+    },
+  );
+
+  if (!response.ok) {
+    let responseBody: TicketApiErrorResponse = {};
+
+    try {
+      responseBody = await response.json();
+    } catch {
+      // Preserve a safe fallback when the server does not return JSON.
+    }
+
+    throw new TicketApiError(
+      responseBody.error?.message ??
+        "Unable to load your Tickets.",
+      response.status,
+      responseBody.error?.code ??
+        "TICKET_LIST_REQUEST_FAILED",
+      responseBody.error?.fields,
+    );
+  }
+
+  return response.json();
 }
 
 export async function getCategories(): Promise<
