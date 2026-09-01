@@ -441,6 +441,10 @@ export default function App() {
               onMyTickets={() =>
                 setActiveView("tickets")
               }
+              onViewTicket={(ticketId) => {
+                setSelectedTicketId(ticketId);
+                setActiveView("detail");
+              }}
             />
           </div>
 

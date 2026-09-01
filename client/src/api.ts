@@ -339,6 +339,126 @@ export async function getTicketDetail(
   return response.json();
 }
 
+async function throwAttachmentApiError(
+  response: Response,
+  fallbackMessage: string,
+): Promise<never> {
+  let responseBody: TicketApiErrorResponse = {};
+
+  try {
+    responseBody = await response.json();
+  } catch {
+    // Preserve a safe fallback when the server does not return JSON.
+  }
+
+  throw new TicketApiError(
+    responseBody.error?.message ??
+      fallbackMessage,
+    response.status,
+    responseBody.error?.code ??
+      "ATTACHMENT_REQUEST_FAILED",
+    responseBody.error?.fields,
+  );
+}
+
+export async function uploadAttachment(
+  requesterId: number,
+  ticketId: number,
+  file: File,
+): Promise<AttachmentMetadata> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${API_URL}/api/tickets/${ticketId}/attachments`,
+    {
+      method: "POST",
+      headers: {
+        "X-Development-Requester-Id":
+          String(requesterId),
+      },
+      body: formData,
+    },
+  );
+
+  if (!response.ok) {
+    return throwAttachmentApiError(
+      response,
+      "Unable to upload the Attachment.",
+    );
+  }
+
+  return response.json();
+}
+
+export async function removeAttachment(
+  requesterId: number,
+  attachmentId: number,
+  removalReason: string,
+): Promise<AttachmentMetadata> {
+  const response = await fetch(
+    `${API_URL}/api/attachments/${attachmentId}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Development-Requester-Id":
+          String(requesterId),
+      },
+      body: JSON.stringify({ removalReason }),
+    },
+  );
+
+  if (!response.ok) {
+    return throwAttachmentApiError(
+      response,
+      "Unable to remove the Attachment.",
+    );
+  }
+
+  return response.json();
+}
+
+export interface AttachmentDownload {
+  blob: Blob;
+  filename: string;
+}
+
+export async function downloadAttachment(
+  requesterId: number,
+  attachmentId: number,
+): Promise<AttachmentDownload> {
+  const response = await fetch(
+    `${API_URL}/api/attachments/${attachmentId}/download`,
+    {
+      headers: {
+        "X-Development-Requester-Id":
+          String(requesterId),
+      },
+    },
+  );
+
+  if (!response.ok) {
+    return throwAttachmentApiError(
+      response,
+      "Unable to download the Attachment.",
+    );
+  }
+
+  const disposition =
+    response.headers.get("Content-Disposition") ??
+    "";
+  const filenameMatch = disposition.match(
+    /filename="?([^";]+)"?/i,
+  );
+
+  return {
+    blob: await response.blob(),
+    filename:
+      filenameMatch?.[1] ?? "attachment",
+  };
+}
+
 export async function getCategories(): Promise<
   Category[]
 > {

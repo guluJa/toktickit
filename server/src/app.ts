@@ -1,5 +1,12 @@
-import express, { Request, Response } from "express";
+import fs from "node:fs/promises";
+import path from "node:path";
+import express, {
+  NextFunction,
+  Request,
+  Response,
+} from "express";
 import cors from "cors";
+import multer from "multer";
 import { Prisma } from "@prisma/client";
 import { getPrisma } from "./prisma.js";
 import {
@@ -17,6 +24,13 @@ import {
   parseTicketListQuery,
   TicketListQueryValidationError,
 } from "./ticket-list-query.js";
+import {
+  AttachmentValidationError,
+  generateAttachmentStorageKey,
+  MAX_ATTACHMENT_SIZE_BYTES,
+  validateAttachment,
+  validateRemovalReason,
+} from "./attachment-validation.js";
 // getPrisma() is your lazy database handle. Call it INSIDE a route when you
 // need the DB (Issue 4). It is intentionally unused until then.
 void getPrisma;
@@ -314,6 +328,133 @@ const ticketSummarySelect = {
     },
   },
 } satisfies Prisma.TicketSelect;
+
+const attachmentMetadataSelect = {
+  id: true,
+  ticketId: true,
+  originalName: true,
+  mimeType: true,
+  sizeBytes: true,
+  uploadedAt: true,
+  removedAt: true,
+  removalReason: true,
+} satisfies Prisma.AttachmentSelect;
+
+const attachmentStorageSelect = {
+  ...attachmentMetadataSelect,
+  storageKey: true,
+} satisfies Prisma.AttachmentSelect;
+
+const attachmentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    files: 1,
+    fileSize: MAX_ATTACHMENT_SIZE_BYTES,
+  },
+});
+
+class AttachmentResourceNotFoundError extends Error {
+  constructor(
+    public readonly code:
+      | "TICKET_NOT_FOUND"
+      | "ATTACHMENT_NOT_FOUND" =
+      "ATTACHMENT_NOT_FOUND",
+  ) {
+    super(
+      code === "TICKET_NOT_FOUND"
+        ? "Ticket not found."
+        : "Attachment not found.",
+    );
+    this.name = "AttachmentResourceNotFoundError";
+  }
+}
+
+class AttachmentAlreadyRemovedError extends Error {
+  constructor() {
+    super("Attachment is already removed.");
+    this.name = "AttachmentAlreadyRemovedError";
+  }
+}
+
+function getUploadDirectory(): string {
+  return path.resolve(
+    process.env.UPLOAD_DIR ??
+      path.join(process.cwd(), "uploads"),
+  );
+}
+
+function resolveStoragePath(
+  storageKey: string,
+): string {
+  const uploadDirectory = getUploadDirectory();
+  const storagePath = path.resolve(
+    uploadDirectory,
+    storageKey,
+  );
+
+  if (path.dirname(storagePath) !== uploadDirectory) {
+    throw new Error("Invalid Attachment storage key.");
+  }
+
+  return storagePath;
+}
+
+function toAttachmentMetadata<
+  T extends {
+    removedAt: Date | null;
+  },
+>(attachment: T) {
+  return {
+    ...attachment,
+    state: attachment.removedAt
+      ? ("REMOVED" as const)
+      : ("ACTIVE" as const),
+  };
+}
+
+function sendAttachmentError(
+  res: Response,
+  error: unknown,
+): boolean {
+  if (error instanceof AttachmentValidationError) {
+    res.status(error.status).json({
+      error: {
+        code: error.code,
+        message: error.message,
+        fields: error.fields,
+      },
+    });
+    return true;
+  }
+
+  if (
+    error instanceof
+    AttachmentResourceNotFoundError
+  ) {
+    res.status(404).json({
+      error: {
+        code: error.code,
+        message: error.message,
+      },
+    });
+    return true;
+  }
+
+  if (
+    error instanceof AttachmentAlreadyRemovedError
+  ) {
+    res.status(409).json({
+      error: {
+        code: "ATTACHMENT_ALREADY_REMOVED",
+        message:
+          "The Attachment has already been removed.",
+      },
+    });
+    return true;
+  }
+
+  return false;
+}
 
 const MAX_TICKET_NUMBER_ATTEMPTS = 3;
 
@@ -783,6 +924,499 @@ app.get(
 );
 
 app.post(
+  "/api/tickets/:ticketId/attachments",
+  requireDevelopmentRequester,
+  attachmentUpload.single("file"),
+  async (req: Request, res: Response) => {
+    let writtenStoragePath: string | null = null;
+
+    try {
+      const ticketId = parsePositiveInteger(
+        req.params.ticketId,
+      );
+
+      if (ticketId === null) {
+        res.status(400).json({
+          error: {
+            code: "INVALID_TICKET_ID",
+            message:
+              "ticketId must be a positive integer.",
+          },
+        });
+        return;
+      }
+
+      const requester = req.developmentRequester;
+
+      if (!requester) {
+        res.status(403).json({
+          error: {
+            code:
+              "REQUESTER_CONTEXT_FORBIDDEN",
+            message:
+              "The development requester is unavailable.",
+          },
+        });
+        return;
+      }
+
+      const file = req.file;
+      const attachment =
+        await getPrisma().$transaction(
+          async (tx) => {
+            await tx.$queryRaw`
+              SELECT pg_advisory_xact_lock(${ticketId})::text AS lock
+            `;
+
+            const ticket =
+              await tx.ticket.findFirst({
+                where: {
+                  id: ticketId,
+                  requesterId: requester.id,
+                },
+                select: { id: true },
+              });
+
+            if (!ticket) {
+              throw new AttachmentResourceNotFoundError(
+                "TICKET_NOT_FOUND",
+              );
+            }
+
+            const activeAttachmentCount =
+              await tx.attachment.count({
+                where: {
+                  ticketId,
+                  removedAt: null,
+                },
+              });
+
+            const validated =
+              validateAttachment(
+                file,
+                activeAttachmentCount,
+              );
+            const storageKey =
+              generateAttachmentStorageKey(
+                validated.extension,
+              );
+            const storagePath =
+              resolveStoragePath(storageKey);
+
+            await fs.mkdir(getUploadDirectory(), {
+              recursive: true,
+            });
+            await fs.writeFile(
+              storagePath,
+              file!.buffer,
+              { flag: "wx" },
+            );
+            writtenStoragePath = storagePath;
+
+            return tx.attachment.create({
+              data: {
+                ticketId,
+                originalName:
+                  validated.originalName,
+                storageKey,
+                mimeType: validated.mimeType,
+                sizeBytes: validated.sizeBytes,
+              },
+              select: attachmentMetadataSelect,
+            });
+          },
+        );
+
+      res
+        .status(201)
+        .json(toAttachmentMetadata(attachment));
+    } catch (error) {
+      if (writtenStoragePath) {
+        await fs.unlink(writtenStoragePath).catch(
+          () => undefined,
+        );
+      }
+
+      if (sendAttachmentError(res, error)) {
+        return;
+      }
+
+      console.error(
+        "Unable to upload Attachment:",
+        error,
+      );
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to upload the Attachment.",
+        },
+      });
+    }
+  },
+);
+
+app.get(
+  "/api/tickets/:ticketId/attachments",
+  requireDevelopmentRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const ticketId = parsePositiveInteger(
+        req.params.ticketId,
+      );
+
+      if (ticketId === null) {
+        res.status(400).json({
+          error: {
+            code: "INVALID_TICKET_ID",
+            message:
+              "ticketId must be a positive integer.",
+          },
+        });
+        return;
+      }
+
+      const requester = req.developmentRequester;
+
+      if (!requester) {
+        res.status(403).json({
+          error: {
+            code:
+              "REQUESTER_CONTEXT_FORBIDDEN",
+            message:
+              "The development requester is unavailable.",
+          },
+        });
+        return;
+      }
+
+      const ticket =
+        await getPrisma().ticket.findFirst({
+          where: {
+            id: ticketId,
+            requesterId: requester.id,
+          },
+          select: { id: true },
+        });
+
+      if (!ticket) {
+        throw new AttachmentResourceNotFoundError(
+          "TICKET_NOT_FOUND",
+        );
+      }
+
+      const attachments =
+        await getPrisma().attachment.findMany({
+          where: { ticketId },
+          select: attachmentMetadataSelect,
+          orderBy: [
+            { uploadedAt: "asc" },
+            { id: "asc" },
+          ],
+        });
+
+      res.status(200).json({
+        items: attachments.map(
+          toAttachmentMetadata,
+        ),
+      });
+    } catch (error) {
+      if (sendAttachmentError(res, error)) {
+        return;
+      }
+
+      console.error(
+        "Unable to load Attachments:",
+        error,
+      );
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to load Attachments.",
+        },
+      });
+    }
+  },
+);
+
+app.get(
+  "/api/attachments/:attachmentId",
+  requireDevelopmentRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const attachmentId = parsePositiveInteger(
+        req.params.attachmentId,
+      );
+
+      if (attachmentId === null) {
+        res.status(400).json({
+          error: {
+            code: "INVALID_ATTACHMENT_ID",
+            message:
+              "attachmentId must be a positive integer.",
+          },
+        });
+        return;
+      }
+
+      const requester = req.developmentRequester;
+
+      if (!requester) {
+        res.status(403).json({
+          error: {
+            code:
+              "REQUESTER_CONTEXT_FORBIDDEN",
+            message:
+              "The development requester is unavailable.",
+          },
+        });
+        return;
+      }
+
+      const attachment =
+        await getPrisma().attachment.findFirst({
+          where: {
+            id: attachmentId,
+            ticket: {
+              requesterId: requester.id,
+            },
+          },
+          select: attachmentMetadataSelect,
+        });
+
+      if (!attachment) {
+        throw new AttachmentResourceNotFoundError();
+      }
+
+      res
+        .status(200)
+        .json(toAttachmentMetadata(attachment));
+    } catch (error) {
+      if (sendAttachmentError(res, error)) {
+        return;
+      }
+
+      console.error(
+        "Unable to load Attachment metadata:",
+        error,
+      );
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to load the Attachment.",
+        },
+      });
+    }
+  },
+);
+
+app.get(
+  "/api/attachments/:attachmentId/download",
+  requireDevelopmentRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const attachmentId = parsePositiveInteger(
+        req.params.attachmentId,
+      );
+
+      if (attachmentId === null) {
+        res.status(400).json({
+          error: {
+            code: "INVALID_ATTACHMENT_ID",
+            message:
+              "attachmentId must be a positive integer.",
+          },
+        });
+        return;
+      }
+
+      const requester = req.developmentRequester;
+
+      if (!requester) {
+        res.status(403).json({
+          error: {
+            code:
+              "REQUESTER_CONTEXT_FORBIDDEN",
+            message:
+              "The development requester is unavailable.",
+          },
+        });
+        return;
+      }
+
+      const attachment =
+        await getPrisma().attachment.findFirst({
+          where: {
+            id: attachmentId,
+            ticket: {
+              requesterId: requester.id,
+            },
+          },
+          select: attachmentStorageSelect,
+        });
+
+      if (!attachment) {
+        throw new AttachmentResourceNotFoundError();
+      }
+
+      if (attachment.removedAt) {
+        res.status(410).json({
+          error: {
+            code: "ATTACHMENT_REMOVED",
+            message:
+              "The Attachment is no longer available for download.",
+          },
+        });
+        return;
+      }
+
+      const content = await fs.readFile(
+        resolveStoragePath(
+          attachment.storageKey,
+        ),
+      );
+
+      res.attachment(attachment.originalName);
+      res.setHeader(
+        "Content-Type",
+        attachment.mimeType,
+      );
+      res.status(200).send(content);
+    } catch (error) {
+      if (sendAttachmentError(res, error)) {
+        return;
+      }
+
+      console.error(
+        "Unable to download Attachment:",
+        error,
+      );
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to download the Attachment.",
+        },
+      });
+    }
+  },
+);
+
+app.delete(
+  "/api/attachments/:attachmentId",
+  requireDevelopmentRequester,
+  async (req: Request, res: Response) => {
+    try {
+      const attachmentId = parsePositiveInteger(
+        req.params.attachmentId,
+      );
+
+      if (attachmentId === null) {
+        res.status(400).json({
+          error: {
+            code: "INVALID_ATTACHMENT_ID",
+            message:
+              "attachmentId must be a positive integer.",
+          },
+        });
+        return;
+      }
+
+      const requester = req.developmentRequester;
+
+      if (!requester) {
+        res.status(403).json({
+          error: {
+            code:
+              "REQUESTER_CONTEXT_FORBIDDEN",
+            message:
+              "The development requester is unavailable.",
+          },
+        });
+        return;
+      }
+
+      const removalReason = validateRemovalReason(
+        req.body?.removalReason,
+      );
+
+      const attachment =
+        await getPrisma().$transaction(
+          async (tx) => {
+            const ownedAttachment =
+              await tx.attachment.findFirst({
+                where: {
+                  id: attachmentId,
+                  ticket: {
+                    requesterId:
+                      requester.id,
+                  },
+                },
+                select: {
+                  id: true,
+                  removedAt: true,
+                },
+              });
+
+            if (!ownedAttachment) {
+              throw new AttachmentResourceNotFoundError();
+            }
+
+            if (ownedAttachment.removedAt) {
+              throw new AttachmentAlreadyRemovedError();
+            }
+
+            const update =
+              await tx.attachment.updateMany({
+                where: {
+                  id: attachmentId,
+                  removedAt: null,
+                },
+                data: {
+                  removedAt: new Date(),
+                  removalReason,
+                  removedByRequesterId:
+                    requester.id,
+                },
+              });
+
+            if (update.count !== 1) {
+              throw new AttachmentAlreadyRemovedError();
+            }
+
+            return tx.attachment.findUniqueOrThrow({
+              where: { id: attachmentId },
+              select: attachmentMetadataSelect,
+            });
+          },
+        );
+
+      res
+        .status(200)
+        .json(toAttachmentMetadata(attachment));
+    } catch (error) {
+      if (sendAttachmentError(res, error)) {
+        return;
+      }
+
+      console.error(
+        "Unable to remove Attachment:",
+        error,
+      );
+      res.status(500).json({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to remove the Attachment.",
+        },
+      });
+    }
+  },
+);
+
+app.post(
   "/api/tickets",
   requireDevelopmentRequester,
   async (req: Request, res: Response) => {
@@ -884,6 +1518,43 @@ app.post(
         },
       });
     }
+  },
+);
+
+app.use(
+  (
+    error: unknown,
+    _req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        res.status(413).json({
+          error: {
+            code: "ATTACHMENT_TOO_LARGE",
+            message:
+              "The Attachment exceeds the 5 MB limit.",
+            fields: {
+              file:
+                "The file must not exceed 5 MB.",
+            },
+          },
+        });
+        return;
+      }
+
+      res.status(400).json({
+        error: {
+          code: "INVALID_ATTACHMENT_UPLOAD",
+          message:
+            "The Attachment upload is invalid.",
+        },
+      });
+      return;
+    }
+
+    next(error);
   },
 );
 

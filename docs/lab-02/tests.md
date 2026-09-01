@@ -35,8 +35,8 @@
 |---|---|---|---|---|---|
 | UNIT-01 | AC-07, AC-12 | Official Ticket Number generation | ได้รูปแบบ `TKT-YYYYMMDD-XXXXXX` และจัดการ Unique Conflict ได้ | `server/tests/lab-02/ticket-number.unit.test.ts` | Planned |
 | UNIT-02 | AC-08, AC-17 | Trim, length limits และ query normalization | Valid input ถูก Normalize; Invalid input ถูก Reject ด้วยรายละเอียด Field/Parameter | `server/tests/lab-02/validation.unit.test.ts` | Planned |
-| UNIT-03 | AC-24, AC-25, AC-26 | Attachment type, MIME/extension, size และ active-count rules | ยอมรับเฉพาะไฟล์ที่ผ่านกฎและปฏิเสธ Boundary ที่ไม่ถูกต้อง | `server/tests/lab-02/attachment-validation.unit.test.ts` | Planned |
-| UNIT-04 | AC-28 | Removal Reason validation | Trim แล้วต้องยาว 5-250 ตัวอักษร | `server/tests/lab-02/attachment-validation.unit.test.ts` | Planned |
+| UNIT-03 | AC-24, AC-25, AC-26 | Attachment type, MIME/extension, size และ active-count rules | ยอมรับเฉพาะไฟล์ที่ผ่านกฎและปฏิเสธ Boundary ที่ไม่ถูกต้อง | `server/tests/lab-02/attachment-validation.unit.test.ts` | Pass on feature branch |
+| UNIT-04 | AC-28 | Removal Reason validation | Trim แล้วต้องยาว 5-250 ตัวอักษร | `server/tests/lab-02/attachment-validation.unit.test.ts` | Pass on feature branch |
 
 ### 2.2 API and Integration Tests
 
@@ -56,14 +56,14 @@
 | API-LIST-04 | AC-17 | Invalid list query | คืน HTTP 400 พร้อม Safe Error สำหรับ Search/Filter/Sort/Pagination ที่ไม่ถูกต้อง | `server/tests/lab-02/my-tickets.api.test.ts` | Planned |
 | API-DETAIL-01 | AC-21 | Retrieve owned Ticket Detail | คืน HTTP 200 พร้อม Read-only Ticket data และ Attachment metadata | `server/tests/lab-02/ticket-detail.api.test.ts` | Planned |
 | API-DETAIL-02 | AC-22 | Missing และ cross-owner Ticket | คืน Safe 404 และไม่เปิดเผย Ticket หรือ Owner data | `server/tests/lab-02/ticket-detail.api.test.ts` | Planned |
-| API-ATT-01 | AC-24 | Upload valid Attachment | คืน HTTP 201 และบันทึก Active Metadata/Private File ถูกต้อง | `server/tests/lab-02/attachments.api.test.ts` | Planned |
-| API-ATT-02 | AC-25 | Unsupported type, MIME mismatch และขนาดเกิน 5 MB | คืน 415 หรือ 413 ตาม Contract และไม่สร้าง Metadata/File ค้าง | `server/tests/lab-02/attachments.api.test.ts` | Planned |
-| API-ATT-03 | AC-26 | Maximum five Active Attachments | ไฟล์ที่หกถูกปฏิเสธและ Active count ยังเป็นห้า | `server/tests/lab-02/attachments.api.test.ts` | Planned |
-| API-ATT-04 | AC-27 | Download active owned Attachment | คืน Safe Filename, Correct Content Type และ File content ที่ถูกต้อง | `server/tests/lab-02/attachments.api.test.ts` | Planned |
-| API-ATT-05 | AC-28 | Soft-remove with valid reason | บันทึก removedAt, removalReason และ removedByRequesterId โดยไม่ลบ Record | `server/tests/lab-02/attachments.api.test.ts` | Planned |
-| API-ATT-06 | AC-29 | Removed Attachment metadata/download | Metadata แสดง Removed; Download คืน 410 | `server/tests/lab-02/attachments.api.test.ts` | Planned |
-| API-ATT-07 | AC-30 | Cross-owner Attachment operations | Metadata, Download และ Removal คืน Safe 404 | `server/tests/lab-02/attachments.api.test.ts` | Planned |
-| API-ATT-08 | AC-13, AC-24 | File/metadata compensation | Metadata failure ลบไฟล์ที่เขียนไว้; Upload failure ไม่ Rollback Ticket | `server/tests/lab-02/attachments.api.test.ts` | Planned |
+| API-ATT-01 | AC-24 | Upload valid Attachment | คืน HTTP 201 และบันทึก Active Metadata/Private File ถูกต้อง | `server/tests/lab-02/attachments.api.test.ts` | Pass on feature branch |
+| API-ATT-02 | AC-25 | Unsupported type, MIME mismatch และขนาดเกิน 5 MB | คืน 415 หรือ 413 ตาม Contract และไม่สร้าง Metadata/File ค้าง | `server/tests/lab-02/attachments.api.test.ts` | Pass on feature branch |
+| API-ATT-03 | AC-26 | Maximum five Active Attachments | ไฟล์ที่หกถูกปฏิเสธและ Active count ยังเป็นห้า | `server/tests/lab-02/attachments.api.test.ts` | Pass on feature branch |
+| API-ATT-04 | AC-27 | Download active owned Attachment | คืน Safe Filename, Correct Content Type และ File content ที่ถูกต้อง | `server/tests/lab-02/attachments.api.test.ts` | Pass on feature branch |
+| API-ATT-05 | AC-28 | Soft-remove with valid reason | บันทึก removedAt, removalReason และ removedByRequesterId โดยไม่ลบ Record | `server/tests/lab-02/attachments.api.test.ts` | Pass on feature branch |
+| API-ATT-06 | AC-29 | Removed Attachment metadata/download | Metadata แสดง Removed; Download คืน 410 | `server/tests/lab-02/attachments.api.test.ts` | Pass on feature branch |
+| API-ATT-07 | AC-30 | Cross-owner Attachment operations | Metadata, Download และ Removal คืน Safe 404 | `server/tests/lab-02/attachments.api.test.ts` | Pass on feature branch |
+| API-ATT-08 | AC-13, AC-24 | File/metadata compensation | Metadata failure ลบไฟล์ที่เขียนไว้; Upload failure ไม่ Rollback Ticket | `server/tests/lab-02/attachments.api.test.ts` | Pass on feature branch |
 
 ### 2.3 UI Component, Style and Accessibility Tests
 
@@ -77,7 +77,7 @@
 | UI-CREATE-02 | AC-10 | Submit busy state และ Retry identity | ปุ่ม Disabled/Busy และกดซ้ำไม่ได้; Retry Submission เดิมใช้ `submissionKey` เดิม และ Form ใหม่ใช้ Key ใหม่ | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
 | UI-CREATE-03 | AC-11 | API failure with retained values | แสดง Safe Error และค่า Form ยังอยู่ | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
 | UI-CREATE-04 | AC-12 | Successful confirmation | อ่าน `response.ticket` แล้วแสดง Ticket Number, Saved Values และ Next Action โดยรองรับ `replayed` ตาม Response contract | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
-| UI-CREATE-05 | AC-13 | Partial Attachment failure | Ticket ยังคงสำเร็จและ Retry เฉพาะไฟล์ที่ล้มเหลวได้ | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
+| UI-CREATE-05 | AC-13 | Partial Attachment failure | Ticket ยังคงสำเร็จและ Retry เฉพาะไฟล์ที่ล้มเหลวได้ | `client/tests/lab-02/CreateTicket.test.tsx` | Pass on feature branch |
 | UI-CREATE-06 | AC-09 | Reference-data loading states | Loading ต้อง Disable Submit; Success ทำให้ Form พร้อมใช้; Failure แสดง Safe Error และ Retry โดยยัง Submit ไม่ได้ | `client/tests/lab-02/CreateTicket.test.tsx` | Planned |
 | UI-LIST-01 | AC-18 | Empty list | เมื่อ `totalOwnedItems = 0` แสดง Empty state และ Create Ticket action | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
 | UI-LIST-02 | AC-19 | No-results | เมื่อ `totalOwnedItems > 0` แต่ `totalItems = 0` แสดง No-results และ Clear Filters | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
@@ -85,8 +85,8 @@
 | UI-LIST-04 | AC-15, AC-16 | Search, Filter, Sort and Pagination controls | การใช้ Controls ต้องส่ง Query ที่ถูกต้อง แสดง Results/Order ตาม Response และเปลี่ยน Page ได้ | `client/tests/lab-02/MyTickets.test.tsx` | Planned |
 | UI-DETAIL-01 | AC-21 | Owned Detail rendering | Fields เป็น Read-only และ Attachment metadata แยกจาก Actions | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Planned |
 | UI-DETAIL-02 | AC-23 | Detail failure | แสดง Safe Error และ Back to My Tickets | `client/tests/lab-02/RequesterTicketDetail.test.tsx` | Planned |
-| UI-ATT-01 | AC-24, AC-25, AC-26 | Attachment selection/upload states | แสดง Active, Invalid, Uploading และ Upload-failed states ถูกต้อง | `client/tests/lab-02/AttachmentSection.test.tsx` | Planned |
-| UI-ATT-02 | AC-27, AC-28, AC-29 | Download, confirmation และ Removed state | Active Download ได้; Remove ต้องมี Reason; Removed ไม่มี Download | `client/tests/lab-02/AttachmentSection.test.tsx` | Planned |
+| UI-ATT-01 | AC-24, AC-25, AC-26 | Attachment selection/upload states | แสดง Active, Invalid, Uploading และ Upload-failed states ถูกต้อง | `client/tests/lab-02/AttachmentSection.test.tsx` | Pass on feature branch |
+| UI-ATT-02 | AC-27, AC-28, AC-29 | Download, confirmation และ Removed state | Active Download ได้; Remove ต้องมี Reason; Removed ไม่มี Download | `client/tests/lab-02/AttachmentSection.test.tsx` | Pass on feature branch |
 | UI-STYLE-01 | AC-31, AC-33 | Zen Green classes, badges และ non-color states | Tokens/Classes และข้อความสถานะแสดงตาม `ui-spec.md` | `client/tests/lab-02/ZenGreenStyle.test.tsx` | Planned |
 | UI-A11Y-01 | AC-32, AC-34 | Keyboard, Visible Focus, labels และ error association | Control ใช้งานด้วย Keyboard และ Error เชื่อมกับ Field | `client/tests/lab-02/accessibility.test.tsx` | Planned |
 
@@ -150,7 +150,7 @@
 | Development Requester Selection และ States | Not run | Not run | Not run | `artifacts/lab-02/screenshots/create-ticket/` | Not run |
 | Create Ticket initial/validation/submitting/success/failure | Not run | Not run | Not run | `artifacts/lab-02/screenshots/create-ticket/` | Not run |
 | My Tickets table/card, controls, empty/no-results/failure | Not run | Not run | Not run | `artifacts/lab-02/screenshots/my-tickets/` | Not run |
-| Ticket Detail และ Attachment states | Not run | Not run | Not run | `artifacts/lab-02/screenshots/ticket-detail/` | Not run |
+| Ticket Detail และ Attachment states | Pass | Pass | Pass | `artifacts/lab-02/screenshots/ticket-detail/` | Pass on feature branch |
 | No clipping, overlap, hidden button or horizontal overflow | Not run | Not run | Not run | Same screen folders | Not run |
 | Editable/Read-only/Invalid/Disabled/Focused styles | Not run | Not run | Not run | Same screen folders | Not run |
 | Priority/Status badges and non-color indicators | Not run | Not run | Not run | Same screen folders | Not run |

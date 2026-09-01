@@ -57,9 +57,12 @@ VITE_API_URL="http://localhost:3000"
 ```env
 DATABASE_URL="postgresql://USERNAME:PASSWORD@localhost:5432/toktickit?schema=public"
 PORT=3000
+UPLOAD_DIR="./uploads"
 ```
 
 เปลี่ยน `USERNAME` และ `PASSWORD` เป็นข้อมูล PostgreSQL ของเครื่อง
+
+`UPLOAD_DIR` เป็นโฟลเดอร์เก็บ Attachment แบบ Private ของ Backend ระบบจะสร้างโฟลเดอร์นี้เมื่อจำเป็น ไฟล์ภายในไม่ถูกเปิดเป็น Static Files และไม่ควร Commit ขึ้น GitHub
 
 > ห้ามใส่ Password จริงใน `.env.example`, README หรือ Source Code และห้าม Commit ไฟล์ `.env` ขึ้น GitHub
 
@@ -156,6 +159,7 @@ npm.cmd run build
 node_modules/
 dist/
 build/
+server/uploads/
 ```
 
 Commit ได้เฉพาะ `.env.example` ที่ไม่มี Password หรือข้อมูลลับ

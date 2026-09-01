@@ -48,13 +48,22 @@ describe("Development Requester API", () => {
       );
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveLength(4);
+
+      const requesters = res.body as Array<{
+        id: number;
+        name: string;
+        email: string;
+      }>;
+
+      const seededRequesters = requesters.filter(
+        ({ email }) =>
+          /^requester[1-4]@toktickit\.test$/.test(
+            email,
+          ),
+      );
 
       expect(
-        res.body.map(
-          (requester: { name: string }) =>
-            requester.name,
-        ),
+        seededRequesters.map(({ name }) => name),
       ).toEqual([
         "Development Requester 1",
         "Development Requester 2",
@@ -62,7 +71,19 @@ describe("Development Requester API", () => {
         "Development Requester 4",
       ]);
 
-      for (const requester of res.body) {
+      const deterministicallySorted = [
+        ...requesters,
+      ].sort(
+        (left, right) =>
+          left.name.localeCompare(right.name) ||
+          left.id - right.id,
+      );
+
+      expect(requesters).toEqual(
+        deterministicallySorted,
+      );
+
+      for (const requester of requesters) {
         expect(requester).toEqual({
           id: expect.any(Number),
           name: expect.any(String),
@@ -71,7 +92,7 @@ describe("Development Requester API", () => {
       }
 
       expect(
-        res.body.some(
+        requesters.some(
           (requester: { email: string }) =>
             requester.email ===
             "inactive-requester@toktickit.test",

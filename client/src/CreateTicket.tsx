@@ -14,11 +14,13 @@ import {
   RequestedPriority,
   TicketApiError,
 } from "./api.js";
+import AttachmentSection from "./AttachmentSection.js";
 
 interface CreateTicketProps {
   requesterId: number;
   requesterName: string;
   onMyTickets?: () => void;
+  onViewTicket?: (ticketId: number) => void;
 }
 
 type ReferenceDataState =
@@ -47,6 +49,7 @@ export default function CreateTicket({
   requesterId,
   requesterName,
   onMyTickets,
+  onViewTicket,
 }: CreateTicketProps) {
   const [
     referenceDataState,
@@ -107,6 +110,9 @@ export default function CreateTicket({
   ] = useState<CreateTicketResponse | null>(
     null,
   );
+
+  const [attachmentResetToken, setAttachmentResetToken] =
+    useState(0);
 
   const loadReferenceData =
     useCallback(async () => {
@@ -272,6 +278,9 @@ export default function CreateTicket({
     setSubmissionKey(null);
     setCreatedTicket(null);
     setSubmissionState("idle");
+    setAttachmentResetToken(
+      (current) => current + 1,
+    );
   }
 
   const formReady =
@@ -475,8 +484,12 @@ export default function CreateTicket({
               <button
                 type="button"
                 className="btn btn-outline-success"
-                disabled
-                title="Available after the Ticket Detail increment is implemented."
+                disabled={!onViewTicket}
+                onClick={() =>
+                  onViewTicket?.(
+                    createdTicket.ticket.id,
+                  )
+                }
               >
                 View Ticket
               </button>
@@ -496,9 +509,6 @@ export default function CreateTicket({
               </button>
             </div>
 
-            <p className="small mb-0 mt-2">
-              View Ticket will be enabled by the Ticket Detail increment.
-            </p>
           </div>
         )}
 
@@ -818,6 +828,15 @@ export default function CreateTicket({
               </div>
             )}
           </div>
+
+          <AttachmentSection
+            requesterId={requesterId}
+            ticketId={
+              createdTicket?.ticket.id ?? null
+            }
+            disabled={formDisabled}
+            resetToken={attachmentResetToken}
+          />
 
           <button
             type="submit"

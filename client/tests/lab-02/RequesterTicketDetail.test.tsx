@@ -164,7 +164,7 @@ describe("Requester Ticket Detail", () => {
   );
 
   it(
-    "presents Active and Removed Attachment metadata separately without management actions",
+    "presents Active Attachment actions and keeps Removed metadata without actions",
     async () => {
       render(
         <RequesterTicketDetail
@@ -187,22 +187,32 @@ describe("Requester Ticket Detail", () => {
         screen.getByText("old-log.pdf"),
       ).toBeInTheDocument();
       expect(
-        screen.getByText("ACTIVE"),
+        screen.getByText(/· ACTIVE/),
       ).toBeInTheDocument();
       expect(
-        screen.getByText("REMOVED"),
+        screen.getByText(/· REMOVED/),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(
-          "The attachment is no longer relevant.",
+        screen.getByText((_, element) =>
+          Boolean(
+            element?.classList.contains("small") &&
+              element.textContent?.includes(
+                "Reason: The attachment is no longer relevant.",
+              ),
+          ),
         ),
       ).toBeInTheDocument();
 
       expect(
-        screen.queryByRole("button", {
-          name: /download|remove|upload/i,
+        screen.getAllByRole("button", {
+          name: "Download",
         }),
-      ).not.toBeInTheDocument();
+      ).toHaveLength(1);
+      expect(
+        screen.getAllByRole("button", {
+          name: "Remove",
+        }),
+      ).toHaveLength(1);
     },
   );
 
