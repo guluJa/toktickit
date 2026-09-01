@@ -39,7 +39,11 @@ void getPrisma;
 // Supertest can import `app` without opening a port. Do not merge these files.
 export const app = express();
 
-app.use(cors());          // already wired: lets the Vite dev server call this API
+app.use(
+  cors({
+    exposedHeaders: ["Content-Disposition"],
+  }),
+); // lets the Vite client read the original Attachment filename safely
 app.use(express.json());
 
 // ---------------------------------------------------------------------------

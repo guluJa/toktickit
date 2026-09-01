@@ -304,7 +304,8 @@ export default function CreateTicket({
         </h2>
 
         <section
-          className="border rounded p-3 mb-3 bg-body-tertiary"
+          className="border rounded p-3 mb-3 toktickit-readonly"
+          data-readonly="true"
           aria-labelledby="ticket-system-information"
         >
           <h3

@@ -223,7 +223,8 @@ export default function RequesterTicketDetail({
       <div className="row g-4">
         <div className="col-12 col-lg-6">
           <section
-            className="card shadow-sm h-100"
+            className="card shadow-sm h-100 toktickit-readonly"
+            data-readonly="true"
             aria-labelledby="ticket-information-title"
           >
             <div className="card-body">
@@ -279,7 +280,8 @@ export default function RequesterTicketDetail({
 
         <div className="col-12 col-lg-6">
           <section
-            className="card shadow-sm h-100"
+            className="card shadow-sm h-100 toktickit-readonly"
+            data-readonly="true"
             aria-labelledby="requester-information-title"
           >
             <div className="card-body">
@@ -310,7 +312,8 @@ export default function RequesterTicketDetail({
 
         <div className="col-12">
           <section
-            className="card shadow-sm"
+            className="card shadow-sm toktickit-readonly"
+            data-readonly="true"
             aria-labelledby="request-description-title"
           >
             <div className="card-body">
