@@ -168,6 +168,55 @@ describe("Attachment Section", () => {
     expect(mockedUploadAttachment).not.toHaveBeenCalled();
   });
 
+  it("keeps an invalid file error while uploading a valid file selected at the same time", async () => {
+    const user = userEvent.setup({
+      applyAccept: false,
+    });
+    const validFile = new File(
+      ["pdf-content"],
+      "evidence.pdf",
+      { type: "application/pdf" },
+    );
+    const invalidFile = new File(
+      ["unsafe-content"],
+      "script.exe",
+      { type: "application/octet-stream" },
+    );
+
+    mockedUploadAttachment.mockResolvedValueOnce(
+      activeAttachment,
+    );
+
+    render(
+      <AttachmentSection
+        requesterId={1}
+        ticketId={20}
+      />,
+    );
+
+    await user.upload(
+      screen.getByLabelText(
+        "Select supporting files",
+      ),
+      [invalidFile, validFile],
+    );
+
+    expect(
+      screen.getByText(
+        /use jpg, jpeg, png, webp, or pdf/i,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/· ACTIVE/),
+    ).toBeInTheDocument();
+    expect(mockedUploadAttachment).toHaveBeenCalledTimes(1);
+    expect(mockedUploadAttachment).toHaveBeenCalledWith(
+      1,
+      20,
+      validFile,
+    );
+  });
+
   it("shows a safe upload failure and retries only that file", async () => {
     const user = userEvent.setup();
     mockedUploadAttachment
@@ -218,6 +267,10 @@ describe("Attachment Section", () => {
 
   it("downloads an active Attachment and soft-removes it only with a valid reason", async () => {
     const user = userEvent.setup();
+    const createElementSpy = vi.spyOn(
+      document,
+      "createElement",
+    );
     mockedDownloadAttachment.mockResolvedValueOnce({
       blob: new Blob(["pdf"]),
       filename: "evidence.pdf",
@@ -250,6 +303,30 @@ describe("Attachment Section", () => {
       1,
       51,
     );
+    expect(URL.createObjectURL).toHaveBeenCalledWith(
+      expect.any(Blob),
+    );
+    const downloadAnchor =
+      createElementSpy.mock.results
+        .map(({ value }) => value)
+        .find(
+          (value) =>
+            value instanceof HTMLAnchorElement,
+        ) as HTMLAnchorElement | undefined;
+    expect(downloadAnchor).toBeDefined();
+    expect(downloadAnchor?.href).toBe(
+      "blob:attachment-test",
+    );
+    expect(downloadAnchor?.download).toBe(
+      "evidence.pdf",
+    );
+    expect(
+      HTMLAnchorElement.prototype.click,
+    ).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(
+      "blob:attachment-test",
+    );
+    createElementSpy.mockRestore();
 
     await user.click(
       screen.getByRole("button", {

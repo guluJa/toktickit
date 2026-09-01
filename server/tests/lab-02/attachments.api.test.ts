@@ -318,7 +318,9 @@ describe("Requester-owned Attachment lifecycle", () => {
     );
     expect(
       res.headers["content-disposition"],
-    ).toContain("attachment");
+    ).toMatch(
+      /^attachment;\s*filename="evidence\.pdf"$/i,
+    );
     expect(
       Buffer.from(res.body).toString(),
     ).toBe("valid-pdf-content");
@@ -394,6 +396,50 @@ describe("Requester-owned Attachment lifecycle", () => {
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe(
       "ATTACHMENT_LIMIT_REACHED",
+    );
+    expect(
+      await prisma.attachment.count({
+        where: {
+          ticketId: ownedTicketId,
+          removedAt: null,
+        },
+      }),
+    ).toBe(5);
+  });
+
+  it("allows one replacement upload after one of five active Attachments is soft-removed", async () => {
+    const existingAttachments =
+      await prisma.attachment.createManyAndReturn({
+        data: Array.from(
+          { length: 5 },
+          (_, index) => ({
+            ticketId: ownedTicketId,
+            originalName: `replaceable-${index}.pdf`,
+            storageKey: `replaceable-${index}.pdf`,
+            mimeType: "application/pdf",
+            sizeBytes: 10,
+          }),
+        ),
+      });
+
+    const removalResponse = await request(app)
+      .delete(
+        `/api/attachments/${existingAttachments[0].id}`,
+      )
+      .set(
+        "X-Development-Requester-Id",
+        String(ownerId),
+      )
+      .send({
+        removalReason:
+          "Replace this Attachment with the corrected file.",
+      });
+    const replacementResponse = await uploadPdf();
+
+    expect(removalResponse.status).toBe(200);
+    expect(replacementResponse.status).toBe(201);
+    expect(replacementResponse.body.state).toBe(
+      "ACTIVE",
     );
     expect(
       await prisma.attachment.count({
@@ -565,6 +611,68 @@ describe("Requester-owned Attachment lifecycle", () => {
     expect(crossOwnerRemoval.body).toEqual(
       missingRemoval.body,
     );
+  });
+
+  it("returns the same safe 404 for a missing and cross-owner Ticket Attachment list", async () => {
+    const crossOwnerList = await request(app)
+      .get(
+        `/api/tickets/${otherTicketId}/attachments`,
+      )
+      .set(
+        "X-Development-Requester-Id",
+        String(ownerId),
+      );
+    const missingTicketList = await request(app)
+      .get(
+        "/api/tickets/2147483647/attachments",
+      )
+      .set(
+        "X-Development-Requester-Id",
+        String(ownerId),
+      );
+
+    expect(crossOwnerList.status).toBe(404);
+    expect(crossOwnerList.body).toEqual(
+      missingTicketList.body,
+    );
+    expect(JSON.stringify(crossOwnerList.body)).not.toMatch(
+      /other owner|requesterId|ownerId|storageKey/i,
+    );
+  });
+
+  it("returns a safe 500 when the Attachment download database query fails", async () => {
+    const findFirstSpy = vi
+      .spyOn(prisma.attachment, "findFirst")
+      .mockRejectedValueOnce(
+        new Error(
+          "Private SQL, local path, and database password details",
+        ),
+      );
+
+    try {
+      const res = await request(app)
+        .get(
+          "/api/attachments/2147483646/download",
+        )
+        .set(
+          "X-Development-Requester-Id",
+          String(ownerId),
+        );
+
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({
+        error: {
+          code: "INTERNAL_ERROR",
+          message:
+            "Unable to download the Attachment.",
+        },
+      });
+      expect(JSON.stringify(res.body)).not.toMatch(
+        /password|DATABASE_URL|stack|Prisma|SQL|local path|storageKey/i,
+      );
+    } finally {
+      findFirstSpy.mockRestore();
+    }
   });
 
   it("removes a written file when metadata creation fails", async () => {
