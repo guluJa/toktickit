@@ -71,6 +71,9 @@ export default function App() {
   const [selectedTicketId, setSelectedTicketId] =
     useState<number | null>(null);
 
+  const [isMobileNavigationOpen, setIsMobileNavigationOpen] =
+    useState(true);
+
   async function loadRequesterOptions() {
     setRequesterViewState("loading");
     setRequesters([]);
@@ -186,6 +189,7 @@ export default function App() {
     setCategories([]);
     setActiveView("create");
     setSelectedTicketId(null);
+    setIsMobileNavigationOpen(true);
 
     void loadRequesterOptions();
   }
@@ -375,6 +379,9 @@ export default function App() {
               {currentRequester.name}
             </strong>
           </p>
+          <p className="small text-body-secondary mb-0">
+            Development Testing Context - not authentication
+          </p>
         </div>
 
         <button
@@ -386,8 +393,25 @@ export default function App() {
         </button>
       </header>
 
+      <button
+        type="button"
+        className="btn btn-outline-success d-sm-none mb-3 w-100"
+        aria-controls="requester-workspace-navigation"
+        aria-expanded={isMobileNavigationOpen}
+        onClick={() =>
+          setIsMobileNavigationOpen((current) => !current)
+        }
+      >
+        {isMobileNavigationOpen
+          ? "Hide workspace navigation"
+          : "Show workspace navigation"}
+      </button>
+
       <nav
-        className="nav nav-pills gap-2 mb-4"
+        id="requester-workspace-navigation"
+        className={`nav nav-pills flex-column flex-sm-row gap-2 mb-4 ${
+          isMobileNavigationOpen ? "d-flex" : "d-none d-sm-flex"
+        }`}
         aria-label="Requester workspace"
       >
         <button
@@ -405,6 +429,7 @@ export default function App() {
           onClick={() => {
             setSelectedTicketId(null);
             setActiveView("create");
+            setIsMobileNavigationOpen(false);
           }}
         >
           Create Ticket
@@ -426,6 +451,7 @@ export default function App() {
           onClick={() => {
             setSelectedTicketId(null);
             setActiveView("tickets");
+            setIsMobileNavigationOpen(false);
           }}
         >
           My Tickets

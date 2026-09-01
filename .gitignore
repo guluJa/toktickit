@@ -7,6 +7,9 @@ node_modules/
 # build output
 dist/
 build/
+test-results/
+playwright-report/
+e2e/downloads/
 # prisma
 server/prisma/*.db
 # private uploaded Attachment content

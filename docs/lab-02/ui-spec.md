@@ -282,15 +282,15 @@ Screenshot ต้องมาจาก Implementation จริงและอ�
 
 ### Checklist
 
-- [ ] Zen Green tokens และ Surface styling สม่ำเสมอ
-- [ ] Editable และ Read-only fields แยกกันชัดเจน
-- [ ] Required marker และ Validation message อยู่ถูกตำแหน่ง
-- [ ] Primary, Secondary, Tertiary, Destructive, Disabled และ Busy buttons ถูกต้อง
-- [ ] Loading, Empty, No-results, Validation, Success และ Failure states ครบ
-- [ ] Priority/Status badges มี Text และไม่พึ่งสี
-- [ ] Desktop Table และ Mobile Cards แสดงข้อมูลสำคัญเท่ากัน
-- [ ] Attachment states และ Long Filename อ่านได้
-- [ ] Desktop, Tablet และ Mobile ไม่มี Clipping, Overlap หรือ Horizontal Overflow
-- [ ] Keyboard navigation และ Visible Focus ผ่านการตรวจ
+- [x] Zen Green tokens และ Surface styling สม่ำเสมอ
+- [x] Editable และ Read-only fields แยกกันชัดเจน
+- [x] Required marker และ Validation message อยู่ถูกตำแหน่ง
+- [x] Primary, Secondary, Tertiary, Destructive, Disabled และ Busy buttons ถูกต้อง
+- [x] Loading, Empty, No-results, Validation, Success และ Failure states ครบ
+- [x] Priority/Status badges มี Text และไม่พึ่งสี
+- [x] Desktop Table และ Mobile Cards แสดงข้อมูลสำคัญเท่ากัน
+- [x] Attachment states และ Long Filename อ่านได้
+- [x] Desktop, Tablet และ Mobile ไม่มี Clipping, Overlap หรือ Horizontal Overflow
+- [x] Keyboard navigation และ Visible Focus ผ่านการตรวจ
 
 Checklist นี้ยังไม่ควรถูกติ๊กจนตรวจ Implementation และ Screenshot จริงแล้ว
