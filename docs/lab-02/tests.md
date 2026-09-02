@@ -101,6 +101,29 @@ Test IDs และ Paths ในเอกสารนี้ตรงกับ Aut
 | E2E-04 | AC-06, AC-11, AC-20, AC-23 | Safe failure states | ทุกหน้าที่กำหนดแสดง Safe Error, Retry/Back และรักษาข้อมูลตาม Contract | `e2e/lab-02/requester-ticket-flow.spec.ts` | Pass — lab2-staging |
 | E2E-05 | AC-15, AC-16 | My Tickets controls flow | ผู้ใช้ Search, Filter, Sort และเปลี่ยน Page ผ่าน UI ได้ โดย Results, Order และ Pagination ตรงตามเงื่อนไข | `e2e/lab-02/my-tickets-controls.spec.ts` | Pass — lab2-staging |
 
+### 2.5 Repository Evidence Path Verification
+
+ตรวจ Exact Paths จาก Repository แล้ว โดยชื่อไฟล์ รวมตัวพิมพ์เล็ก/ใหญ่ และนามสกุลตรงกับไฟล์จริงทั้งหมด:
+
+| Evidence | Exact Repository Path | Verification |
+|---|---|---|
+| Zen Green style test | [`client/tests/lab-02/ZenGreenStyle.test.tsx`](../../client/tests/lab-02/ZenGreenStyle.test.tsx) | Exists |
+| Responsive test | [`e2e/lab-02/responsive.spec.ts`](../../e2e/lab-02/responsive.spec.ts) | Exists |
+| Requester Ticket flow | [`e2e/lab-02/requester-ticket-flow.spec.ts`](../../e2e/lab-02/requester-ticket-flow.spec.ts) | Exists |
+| My Tickets controls flow | [`e2e/lab-02/my-tickets-controls.spec.ts`](../../e2e/lab-02/my-tickets-controls.spec.ts) | Exists |
+| Test paths referenced by this document | 19 unique paths | 19/19 exist |
+
+Screenshot evidence เป็นไฟล์ที่ Merge อยู่ใน `lab2-staging` ก่อนเปิด Documentation PR จึงไม่ถูกเขียนทับหรือเพิ่มเป็น Binary Diff ใน PR นี้:
+
+| Screenshot Directory | File Count | Repository Location |
+|---|---:|---|
+| Create Ticket และ Development Requester Selection | 13 | [`artifacts/lab-02/screenshots/create-ticket/`](../../artifacts/lab-02/screenshots/create-ticket/) |
+| My Tickets | 8 | [`artifacts/lab-02/screenshots/my-tickets/`](../../artifacts/lab-02/screenshots/my-tickets/) |
+| Ticket Detail และ Attachment | 4 | [`artifacts/lab-02/screenshots/ticket-detail/`](../../artifacts/lab-02/screenshots/ticket-detail/) |
+| **รวม** | **25** | **25/25 files exist** |
+
+รายชื่อและ Exact Path ของภาพทั้ง 25 ไฟล์อยู่ใน [`ui-spec.md` หัวข้อ Final Evidence Paths](ui-spec.md#final-evidence-paths)
+
 ## 3. Acceptance-Criterion Traceability
 
 | AC | Planned Test Evidence |
