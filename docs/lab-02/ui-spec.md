@@ -261,20 +261,29 @@ Lab 2 ไม่ทำ Inline Preview; Active Attachment ใช้ Download เ�
 
 Screenshot ต้องมาจาก Implementation จริงและอ่านได้ ไม่ใช้ Mockup แทน Evidence
 
-### Planned Paths
+### Final Evidence Paths
 
 - `artifacts/lab-02/screenshots/create-ticket/requester-selection.png`
+- `artifacts/lab-02/screenshots/create-ticket/requester-selection-tablet.png`
+- `artifacts/lab-02/screenshots/create-ticket/requester-selection-mobile.png`
+- `artifacts/lab-02/screenshots/create-ticket/requester-loading.png`
+- `artifacts/lab-02/screenshots/create-ticket/requester-failure.png`
 - `artifacts/lab-02/screenshots/create-ticket/desktop-initial.png`
 - `artifacts/lab-02/screenshots/create-ticket/desktop-validation.png`
 - `artifacts/lab-02/screenshots/create-ticket/desktop-submitting.png`
 - `artifacts/lab-02/screenshots/create-ticket/desktop-success.png`
 - `artifacts/lab-02/screenshots/create-ticket/desktop-failure.png`
+- `artifacts/lab-02/screenshots/create-ticket/invalid-attachment.png`
+- `artifacts/lab-02/screenshots/create-ticket/tablet.png`
 - `artifacts/lab-02/screenshots/create-ticket/mobile.png`
 - `artifacts/lab-02/screenshots/my-tickets/desktop.png`
 - `artifacts/lab-02/screenshots/my-tickets/tablet.png`
 - `artifacts/lab-02/screenshots/my-tickets/mobile.png`
+- `artifacts/lab-02/screenshots/my-tickets/filters-sort-pagination.png`
+- `artifacts/lab-02/screenshots/my-tickets/requester-switch.png`
 - `artifacts/lab-02/screenshots/my-tickets/empty.png`
 - `artifacts/lab-02/screenshots/my-tickets/no-results.png`
+- `artifacts/lab-02/screenshots/my-tickets/failure.png`
 - `artifacts/lab-02/screenshots/ticket-detail/desktop.png`
 - `artifacts/lab-02/screenshots/ticket-detail/tablet.png`
 - `artifacts/lab-02/screenshots/ticket-detail/mobile.png`
@@ -293,4 +302,12 @@ Screenshot ต้องมาจาก Implementation จริงและอ�
 - [x] Desktop, Tablet และ Mobile ไม่มี Clipping, Overlap หรือ Horizontal Overflow
 - [x] Keyboard navigation และ Visible Focus ผ่านการตรวจ
 
-Checklist นี้ยังไม่ควรถูกติ๊กจนตรวจ Implementation และ Screenshot จริงแล้ว
+### PDF Evidence Mapping
+
+- Answer Part 5 ใช้ Requester Selection ในสถานะ Ready, Loading และ Failure จาก `requester-selection.png`, `requester-selection-tablet.png`, `requester-selection-mobile.png`, `requester-loading.png` และ `requester-failure.png` เพื่อแสดงการเลือก Development Requester, Responsive layout และ Safe Retry behavior
+- Answer Part 6 ใช้ Create Ticket Initial, Validation, Submitting, Success, API Failure และ Invalid Attachment โดย `desktop-success.png` แสดง Official Ticket Number กับ Saved Values จาก response ของ Backend และใช้ API/Database evidence ยืนยันว่า saved `requesterId` ตรงกับ Development Requester ที่เลือก
+- Answer Part 7 ใช้ Desktop/Tablet/Mobile, Filters-Sort-Pagination, Requester Switch, Empty, No-results และ Failure ของ My Tickets
+- Answer Part 8 ใช้ Owned Ticket Detail และ Removed Attachment ร่วมกับผล E2E ที่ยืนยัน Upload, Download, Soft-remove, blocked removed download และ cross-requester rejection
+- Answer Part 9 ใช้ Desktop/Tablet/Mobile ของทั้งสามหน้าร่วมกับ Checklist ด้านบน เพื่อแสดง Zen Green tokens, field states, validation placement, button hierarchy และการไม่มี clipping, overlap หรือ horizontal page overflow
+
+ภาพทุกไฟล์ในรายการนี้มาจาก Implementation และ Browser flow จริง ไม่ใช่ Mockup

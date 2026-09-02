@@ -480,3 +480,7 @@ Invalid Query คืน 400 ส่วน Missing หรือ Cross-owner Resour
 - AD-08 Pagination เริ่ม Page 1, Default Page Size 10 และอนุญาต 10, 20 หรือ 50
 - AD-09 Attachment content เก็บใน Private Local Upload Directory ที่กำหนดด้วย Environment Configuration และ Ignore โดย Git; Metadata เก็บใน PostgreSQL
 - AD-10 Lab 2 ไม่ทำ Inline Preview และสร้าง Ticket ก่อน Upload Attachments เพื่อให้ Failed Upload Retry ได้โดยไม่สร้าง Ticket ซ้ำ
+
+## 12. หลักฐานสำหรับ PDF — Answer Part 2
+
+Answer Part 2 ใช้เอกสาร `specification.md` ฉบับนี้เป็นหลักฐานของ Engineering Contract โดยแสดง Scope, Functional Requirements, Business Rules, Acceptance Criteria และ Definition of Done ที่ใช้ควบคุมการพัฒนา Lab 2 พร้อมอ้างอิงไฟล์จริงใน Repository และประวัติ Issue/PR ที่ยืนยันว่า Contract ผ่านการ Review ก่อน Feature Implementation เสร็จสมบูรณ์
