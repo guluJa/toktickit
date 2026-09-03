@@ -1,6 +1,6 @@
 # TokTickIT
 
-TokTickIT เป็น IT Service Desk Application สำหรับตรวจสอบสถานะระบบและแสดงประเภทคำขอบริการ ได้แก่ Account and Access, Hardware, Software และ Network
+TokTickIT เป็นระบบศูนย์บริการด้านไอทีสำหรับสร้างและติดตามคำขอของ Development Requester รองรับการสร้าง Ticket การดูรายการ My Tickets การดูรายละเอียด Ticket ที่ตนเองเป็นเจ้าของ และการจัดการ Attachment ตลอดวงจรชีวิต ระบบควบคุมการเข้าถึงตาม Requester จัดการข้อผิดพลาดโดยไม่เปิดเผยข้อมูลภายใน และแสดงผลด้วย Zen Green UI ที่รองรับหลายขนาดหน้าจอ
 
 ## Technology Stack
 
@@ -150,7 +150,7 @@ npm.cmd test
 
 Playwright E2E และ Responsive Tests:
 ```powershell
-cd ..\e2e
+cd .\e2e
 npm.cmd test
 ```
 
