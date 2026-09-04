@@ -1,6 +1,6 @@
 # Lab 2 Test Plan and Staging Results
 
-เอกสารนี้เป็น Test Plan, Acceptance-Criterion Traceability และผลทดสอบ Integration บน `lab2-staging` หลัง Feature PR #14 ถึง PR #28 ถูกรวมครบแล้ว สถานะ `Pass — lab2-staging` ไม่ใช่ผลยืนยันจาก Final `main`; ส่วน Final `main` ยังคง `Pending` จนกว่า Release PR จะ Merge และรัน VERIFY-01/VERIFY-02 จาก Commit บน `main` จริง
+เอกสารนี้เป็น Test Plan, Acceptance-Criterion Traceability และผลทดสอบ Integration บน `lab2-staging` หลัง Feature/Documentation PR #14, #16, #18, #20, #22, #24, #26, #28, #30, #31 และ #33 ถูกรวมครบแล้ว สถานะ `Pass — lab2-staging` ไม่ใช่ผลยืนยันจาก Final `main`; ส่วน Final `main` ยังคง `Pending` จนกว่า Release PR จะ Merge และรัน VERIFY-01/VERIFY-02 จาก Commit บน `main` จริง
 
 Test IDs และ Paths ในเอกสารนี้ตรงกับ Automated Tests ที่อยู่ใน Repository ไม่มีการระบุผลล่วงหน้าและไม่มี Required Test ที่ถูก Skip
 
@@ -210,11 +210,11 @@ npm.cmd run build
 
 ## 6. Staging Integration Test Results
 
-ผลต่อไปนี้รันเมื่อวันที่ 1 September 2026 จาก Source code ของ Lab 2 ที่รวม Feature PR #14 ถึง PR #28 ครบแล้วบน `lab2-staging` commit [`8ac1ca4`](https://github.com/guluJa/toktickit/commit/8ac1ca46f47d32fa6536cd34fd8e332a77fceb3c) ผ่าน Branch เอกสาร `docs/lab2-final-documentation` โดยไม่มี Source-code difference จาก Integration commit
+ผลต่อไปนี้รันเมื่อวันที่ 4 September 2026 เวลา 19:55 น. จาก Source code ล่าสุดบน `lab2-staging` หลัง PR #33 ถูก Merge แล้ว ที่ commit [`a41bcc3`](https://github.com/guluJa/toktickit/commit/a41bcc32796424b2f34a4af8e88217f44e4b5872) ผ่าน Branch เอกสาร `docs/lab2-staging-documentation-update` ผลชุดนี้เป็น Staging Verification เท่านั้น ไม่ใช่ Final `main` verification
 
 | Test Suite | Command | Result | Evidence |
 |---|---|---|---|
-| Server full test suite | `server: npm.cmd test` | Pass — 91 tests in 11 files | Terminal output for this branch and PR verification |
+| Server full test suite | `server: npm.cmd test` | Pass — 92 tests in 11 files | Terminal output for this branch and PR verification |
 | Server build | `server: npm.cmd run build` | Pass | TypeScript build completed with exit code 0 |
 | Client full test suite | `client: npm.cmd test` | Pass — 39 tests in 8 files | Terminal output for this branch and PR verification |
 | Client build | `client: npm.cmd run build` | Pass | TypeScript and Vite build completed with exit code 0 |
