@@ -113,7 +113,7 @@ Test IDs และ Paths ในเอกสารนี้ตรงกับ Aut
 | My Tickets controls flow | [`e2e/lab-02/my-tickets-controls.spec.ts`](../../e2e/lab-02/my-tickets-controls.spec.ts) | Exists |
 | Test paths referenced by this document | 19 unique paths | 19/19 exist |
 
-Screenshot evidence เป็นไฟล์ที่ Merge อยู่ใน `lab2-staging` ก่อนเปิด Documentation PR จึงไม่ถูกเขียนทับหรือเพิ่มเป็น Binary Diff ใน PR นี้:
+Screenshot evidence จำนวน 25 ไฟล์ถูกรวมอยู่ใน Release PR นี้ สามารถตรวจสอบได้จาก Files changed และ Exact Paths ใน `ui-spec.md` โดยมีไฟล์จริงครบ 25/25 ไฟล์:
 
 | Screenshot Directory | File Count | Repository Location |
 |---|---:|---|
