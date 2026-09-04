@@ -28,6 +28,12 @@ const collisionSubmissionKey =
 const existingCollisionSubmissionKey =
     "c65a1f36-f8ca-4a61-8947-44edc4176d08";
 
+const exhaustedCollisionSubmissionKey =
+    "c65a1f36-f8ca-4a61-8947-44edc4176d09";
+
+const existingExhaustedCollisionSubmissionKey =
+    "c65a1f36-f8ca-4a61-8947-44edc4176d10";
+
 let requesterId: number;
 let categoryId: number;
 let relatedSystemId: number;
@@ -79,6 +85,8 @@ describe("POST /api/tickets", () => {
                         concurrentSubmissionKey,
                         collisionSubmissionKey,
                         existingCollisionSubmissionKey,
+                        exhaustedCollisionSubmissionKey,
+                        existingExhaustedCollisionSubmissionKey,
                     ],
                 },
             },
@@ -97,6 +105,8 @@ describe("POST /api/tickets", () => {
                             concurrentSubmissionKey,
                             collisionSubmissionKey,
                             existingCollisionSubmissionKey,
+                            exhaustedCollisionSubmissionKey,
+                            existingExhaustedCollisionSubmissionKey,
                         ],
                     },
                 },
@@ -353,6 +363,77 @@ describe("POST /api/tickets", () => {
             numberSpy.mockRestore();
         }
     });
+
+    it(
+        "returns 409 after exhausting Ticket Number retries without saving a Ticket",
+        async () => {
+            const collidingTicketNumber =
+                "TKT-20991230-ABCDEF";
+
+            await prisma.ticket.create({
+                data: {
+                    ticketNumber: collidingTicketNumber,
+                    requesterId,
+                    submissionKey:
+                        existingExhaustedCollisionSubmissionKey,
+                    categoryId,
+                    relatedSystemId,
+                    summary:
+                        "Existing collision reservation",
+                    requestedPriority: "LOW",
+                    description:
+                        "This record reserves the Ticket Number for retry exhaustion.",
+                    currentStatus: "NEW",
+                },
+            });
+
+            const numberSpy = vi
+                .spyOn(
+                    ticketNumberModule,
+                    "generateTicketNumber",
+                )
+                .mockReturnValue(collidingTicketNumber);
+
+            try {
+                const response = await request(app)
+                    .post("/api/tickets")
+                    .set(
+                        "X-Development-Requester-Id",
+                        String(requesterId),
+                    )
+                    .send({
+                        submissionKey:
+                            exhaustedCollisionSubmissionKey,
+                        categoryId,
+                        relatedSystemId,
+                        summary:
+                            "Ticket Number conflict test",
+                        requestedPriority: "HIGH",
+                        description:
+                            "The API must return a safe conflict after all retries fail.",
+                    });
+
+                expect(response.status).toBe(409);
+                expect(response.body.error.code).toBe(
+                    "TICKET_NUMBER_CONFLICT",
+                );
+                expect(numberSpy).toHaveBeenCalledTimes(3);
+
+                const savedTicketCount =
+                    await prisma.ticket.count({
+                        where: {
+                            requesterId,
+                            submissionKey:
+                                exhaustedCollisionSubmissionKey,
+                        },
+                    });
+
+                expect(savedTicketCount).toBe(0);
+            } finally {
+                numberSpy.mockRestore();
+            }
+        },
+    );
 
     it("returns field errors and does not save a Ticket for invalid input", async () => {
         const submissionKey =
