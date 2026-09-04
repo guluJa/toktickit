@@ -1,6 +1,6 @@
 # TokTickIT
 
-TokTickIT เป็น IT Service Desk Application สำหรับตรวจสอบสถานะระบบและแสดงประเภทคำขอบริการ ได้แก่ Account and Access, Hardware, Software และ Network
+TokTickIT เป็นระบบศูนย์บริการด้านไอทีสำหรับสร้างและติดตามคำขอของ Development Requester รองรับการสร้าง Ticket การดูรายการ My Tickets การดูรายละเอียด Ticket ที่ตนเองเป็นเจ้าของ และการจัดการ Attachment ตลอดวงจรชีวิต ระบบควบคุมการเข้าถึงตาม Requester จัดการข้อผิดพลาดโดยไม่เปิดเผยข้อมูลภายใน และแสดงผลด้วย Zen Green UI ที่รองรับหลายขนาดหน้าจอ
 
 ## Technology Stack
 
@@ -8,7 +8,7 @@ TokTickIT เป็น IT Service Desk Application สำหรับตรว�
 - Backend: Node.js, Express และ TypeScript
 - Database: PostgreSQL
 - ORM: Prisma
-- Testing: Vitest และ Supertest
+- Testing: Vitest, Supertest และ Playwright
 
 ## Prerequisites
 
@@ -40,6 +40,14 @@ npm.cmd install
 cd ..
 ```
 
+ติดตั้ง E2E Test Dependencies สำหรับ Playwright:
+```powershell
+cd .\e2e
+npm.cmd install
+npx.cmd playwright install chromium
+cd ..
+```
+
 ## Environment Setup
 
 สร้างไฟล์ `.env` จาก `.env.example`:
@@ -57,9 +65,12 @@ VITE_API_URL="http://localhost:3000"
 ```env
 DATABASE_URL="postgresql://USERNAME:PASSWORD@localhost:5432/toktickit?schema=public"
 PORT=3000
+UPLOAD_DIR="./uploads"
 ```
 
 เปลี่ยน `USERNAME` และ `PASSWORD` เป็นข้อมูล PostgreSQL ของเครื่อง
+
+`UPLOAD_DIR` เป็นโฟลเดอร์เก็บ Attachment แบบ Private ของ Backend ระบบจะสร้างโฟลเดอร์นี้เมื่อจำเป็น ไฟล์ภายในไม่ถูกเปิดเป็น Static Files และไม่ควร Commit ขึ้น GitHub
 
 > ห้ามใส่ Password จริงใน `.env.example`, README หรือ Source Code และห้าม Commit ไฟล์ `.env` ขึ้น GitHub
 
@@ -76,7 +87,7 @@ npm.cmd run prisma:seed
 cd ..
 ```
 
-คำสั่งเหล่านี้จะสร้าง Prisma Client ใช้ Migration ที่มีอยู่ และเพิ่ม Categories ทั้ง 4 รายการลงใน Database
+คำสั่งเหล่านี้จะสร้าง Prisma Client ใช้ Migration ที่มีอยู่ และเพิ่ม Categories, Related Systems และ Development Requesters สำหรับ Lab 2 ลงใน Database
 
 ## Running the Application
 
@@ -99,17 +110,29 @@ npm.cmd run dev
 
 เปิด Browser ที่: http://localhost:5173
 
-เมื่อกด `Check System` หน้าเว็บจะแสดง Backend Status และ Categories ที่โหลดจาก PostgreSQL ผ่าน API
+เลือก Development Requester เพื่อใช้งาน Create Ticket, My Tickets, Ticket Detail และ Attachment lifecycle ภายใต้ requester context เดียวกัน
 
 ## API Endpoints
 
 ```text
 GET /api/health
+GET /api/development-requesters
+GET /api/development-requesters/:requesterId
 GET /api/categories
+GET /api/related-systems
+POST /api/tickets
+GET /api/tickets
+GET /api/tickets/:ticketId
+POST /api/tickets/:ticketId/attachments
+GET /api/tickets/:ticketId/attachments
+GET /api/attachments/:attachmentId/download
+DELETE /api/attachments/:attachmentId
 ```
 
-- `/api/health` ส่งสถานะของ TokTickIT API
-- `/api/categories` ส่ง Categories ทั้ง 4 รายการตามลำดับ ID
+- Ticket และ Attachment endpoints ต้องส่ง `X-Development-Requester-Id`
+- Missing/malformed Requester header คืน HTTP 400; unknown/inactive Requester คืน Safe HTTP 403
+- Cross-owner Ticket และ Attachment access คืน Safe HTTP 404
+- Attachment content เก็บใน Private Backend Storage และดาวน์โหลดผ่าน Authorized API เท่านั้น
 
 ## Running Tests
 
@@ -125,12 +148,18 @@ cd .\client
 npm.cmd test
 ```
 
-Automated Tests ครอบคลุม:
-- Health API
-- Categories API และ Seeded Categories ทั้ง 4 รายการ
-- React UI สำหรับ Heading, Online/Success และ Offline/Error states
+Playwright E2E และ Responsive Tests:
+```powershell
+cd .\e2e
+npm.cmd test
+```
 
-เมื่อตั้งค่า PostgreSQL, Migration และ Seed ถูกต้อง Tests ทั้ง 5 รายการต้องผ่าน
+รันเฉพาะ Responsive และ Visual Evidence:
+```powershell
+npm.cmd run test:responsive
+```
+
+Automated Tests ครอบคลุม Requester context, Ticket creation/idempotency, requester-owned list/detail, Attachment lifecycle, safe failures, accessibility, Zen Green styling และ Desktop/Tablet/Mobile responsive behavior
 
 ## Production Build
 
@@ -156,6 +185,9 @@ npm.cmd run build
 node_modules/
 dist/
 build/
+server/uploads/
+test-results/
+playwright-report/
 ```
 
 Commit ได้เฉพาะ `.env.example` ที่ไม่มี Password หรือข้อมูลลับ
