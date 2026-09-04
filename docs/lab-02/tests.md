@@ -1,6 +1,6 @@
 # Lab 2 Test Plan and Staging Results
 
-เอกสารนี้เป็น Test Plan, Acceptance-Criterion Traceability และผลทดสอบ Integration บน `lab2-staging` หลัง Feature/Documentation PR #14, #16, #18, #20, #22, #24, #26, #28, #30, #31 และ #33 ถูกรวมครบแล้ว สถานะ `Pass — lab2-staging` ไม่ใช่ผลยืนยันจาก Final `main`; ส่วน Final `main` ยังคง `Pending` จนกว่า Release PR จะ Merge และรัน VERIFY-01/VERIFY-02 จาก Commit บน `main` จริง
+เอกสารนี้เป็น Test Plan, Acceptance-Criterion Traceability และผลทดสอบ Integration ของ Lab 2 ทั้งบน `lab2-staging` และ Final `main` หลัง Feature/Documentation PR #14, #16, #18, #20, #22, #24, #26, #28, #30, #31, #33 และ #34 ถูกรวมครบแล้ว โดยแยกผล Staging และ Final `main` ไว้อย่างชัดเจน
 
 Test IDs และ Paths ในเอกสารนี้ตรงกับ Automated Tests ที่อยู่ใน Repository ไม่มีการระบุผลล่วงหน้าและไม่มี Required Test ที่ถูก Skip
 
@@ -234,20 +234,20 @@ Screenshot evidence ถูกสร้างจาก Browser flow จริง�
 
 ## 8. Final `main` Verification
 
-**สถานะ: Pending**
+**สถานะ: Pass — Final `main`**
 
-Final Verification จะบันทึกหลัง Release PR จาก `lab2-staging` ถูก Peer Review และ Merge เข้า `main` แล้วเท่านั้น โดยต้อง Checkout/Pull Final `main` และรัน VERIFY-01/VERIFY-02 ซ้ำจาก Commit เดียวกัน
+Final Verification รันจาก `main` หลัง Release PR #32 ถูก Peer Review และ Merge แล้ว โดยใช้ Commit เดียวกันตลอดชุดการตรวจสอบ
 
 | Evidence | Final Result |
 |---|---|
-| Final `main` Commit SHA | Pending |
-| วันที่และเวลาที่รัน | Pending |
-| VERIFY-01: Server, Client และ Playwright tests | Pending |
-| VERIFY-02: Server และ Client builds | Pending |
-| Complete console output | Pending — บันทึกหลังรันจริงโดยไม่ใส่ Secret หรือค่าจาก `.env` |
+| Final `main` Commit SHA | [`4c6dc52`](https://github.com/guluJa/toktickit/commit/4c6dc5283266b7f42666aaaa058a931ecc9b7975) |
+| วันที่และเวลาที่รัน | 4 September 2026; เริ่มรันเวลา 20:50 น. (Asia/Bangkok) |
+| VERIFY-01: Server, Client และ Playwright tests | Pass — Server 92 tests, Client 39 tests, Playwright E2E/Responsive 6 tests |
+| VERIFY-02: Server และ Client builds | Pass — Server TypeScript build และ Client TypeScript/Vite build |
+| Complete console output | บันทึกจากการรันจริงของ Final `main` โดยไม่มี Secret หรือค่าจาก `.env` |
 
-ห้ามเปลี่ยนรายการข้างต้นเป็น Pass หรือใช้ผลจาก `lab2-staging` แทนผล Final `main`
+ผลชุดนี้เป็นหลักฐานจาก Final `main` โดยตรง ไม่ได้นำผลจาก `lab2-staging` มาแทนที่
 
 ## 9. PDF Evidence Source — Answer Part 3
 
-ใน PDF ใช้ Rendered `tests.md` เพื่อแสดง Planned-test tables, actual test-file paths, AC Traceability, ผล Staging Integration และผล Final `main` ที่จะบันทึกหลัง VERIFY-01/VERIFY-02 ผ่านจริง พร้อมภาพ Terminal output ที่อ่านได้ครบ โดย Repository และ Commit links ในเอกสารนี้เป็น Source of Truth
+ใน PDF ใช้ Rendered `tests.md` เพื่อแสดง Planned-test tables, actual test-file paths, AC Traceability, ผล Staging Integration และผล Final `main` หลัง VERIFY-01/VERIFY-02 ผ่านจริง พร้อมภาพ Terminal output ที่อ่านได้ครบ โดย Repository และ Commit links ในเอกสารนี้เป็น Source of Truth
