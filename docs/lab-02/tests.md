@@ -1,4 +1,4 @@
-# Lab 2 Test Plan and Staging Results
+# Lab 2 Test Plan and Verification Results
 
 เอกสารนี้เป็น Test Plan, Acceptance-Criterion Traceability และผลทดสอบ Integration ของ Lab 2 ทั้งบน `lab2-staging` และ Final `main` หลัง Feature/Documentation PR #14, #16, #18, #20, #22, #24, #26, #28, #30, #31, #33 และ #34 ถูกรวมครบแล้ว โดยแยกผล Staging และ Final `main` ไว้อย่างชัดเจน
 
@@ -236,17 +236,17 @@ Screenshot evidence ถูกสร้างจาก Browser flow จริง�
 
 **สถานะ: Pass — Final `main`**
 
-Final Verification รันจาก `main` หลัง Release PR #32 ถูก Peer Review และ Merge แล้ว โดยใช้ Commit เดียวกันตลอดชุดการตรวจสอบ
+Final Verification ใช้ Source code baseline จาก `main` หลัง Release PR #32 ถูก Peer Review และ Merge แล้ว โดยตรวจสอบที่ commit เดียวกันตลอดชุดการตรวจสอบ เอกสารและ Screenshot ใน Final Verification PR เป็นหลักฐานเพิ่มเติมเท่านั้น และไม่เปลี่ยน Product Source Code หรือ Automated Tests
 
 | Evidence | Final Result |
 |---|---|
-| Final `main` Commit SHA | [`4c6dc52`](https://github.com/guluJa/toktickit/commit/4c6dc5283266b7f42666aaaa058a931ecc9b7975) |
-| วันที่และเวลาที่รัน | 4 September 2026; เริ่มรันเวลา 20:50 น. (Asia/Bangkok) |
+| Verified `main` source commit at execution time | [`4c6dc52`](https://github.com/guluJa/toktickit/commit/4c6dc5283266b7f42666aaaa058a931ecc9b7975) |
+| วันที่และเวลาที่รัน | 4 September 2026; เริ่มรันเวลา 22:58 น. (Asia/Bangkok) |
 | VERIFY-01: Server, Client และ Playwright tests | Pass — Server 92 tests, Client 39 tests, Playwright E2E/Responsive 6 tests |
 | VERIFY-02: Server และ Client builds | Pass — Server TypeScript build และ Client TypeScript/Vite build |
-| Complete console output | บันทึกจากการรันจริงของ Final `main` โดยไม่มี Secret หรือค่าจาก `.env` |
+| Complete console output | [Final verification console transcript](../../artifacts/lab-02/final-verification/console-output.txt) จากการรันจริง โดยไม่มี Secret หรือค่าจาก `.env` |
 
-ผลชุดนี้เป็นหลักฐานจาก Final `main` โดยตรง ไม่ได้นำผลจาก `lab2-staging` มาแทนที่
+ผลชุดนี้เป็นหลักฐานจาก Source code baseline ของ Final `main` โดยตรง ไม่ได้นำผลจาก `lab2-staging` มาแทนที่ หลังการตรวจสอบมีการบันทึกเอกสารและหลักฐานใน Branch `docs/lab2-final-verification` เท่านั้น
 
 ## 9. PDF Evidence Source — Answer Part 3
 
