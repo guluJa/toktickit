@@ -32,6 +32,21 @@ Session ใช้ opaque token, HttpOnly, SameSite=Lax และ bounded expiry 
 
 Invalid input ใช้ `400`, missing/invalid session `401`, forbidden role `403 ROLE_FORBIDDEN`, missing ticket `404 TICKET_NOT_FOUND`, transition conflict `409 STATUS_TRANSITION_NOT_ALLOWED` และ unexpected failure `500 INTERNAL_ERROR`
 
+### Queue Query Contract
+
+`GET /staff/tickets` รองรับ query parameters ดังนี้:
+
+- `search`: ค้นใน `ticketNumber` หรือ `summary` แบบ case-insensitive
+- `status`: กรองด้วย `NEW`, `OPEN`, `IN_PROGRESS`, `WAITING_FOR_REQUESTER`, `RESOLVED`, `CLOSED`, `REOPENED` หรือ `CANCELLED`
+- `requestedPriority` และ `itPriority`: กรองด้วย `LOW`, `MEDIUM` หรือ `HIGH`
+- `ownerId`: กรองด้วย active owner ID หรือค่า `unassigned`
+- `sortBy`: `ticketNumber`, `summary`, `createdAt`, `updatedAt`, `itPriority` หรือ `currentStatus`
+- `sortOrder`: `asc` หรือ `desc`
+- `page`: จำนวนเต็มเริ่มต้น `1`
+- `pageSize`: `10`, `20` หรือ `50` โดยค่าเริ่มต้นคือ `10`
+
+ค่าเริ่มต้นของการเรียงลำดับคือ `updatedAt desc` และเมื่อค่าซ้ำให้เรียงต่อด้วย `id asc` ผลสำเร็จตอบ `200` พร้อม `{data:[...],pagination:{page,pageSize,totalItems,totalPages}}` หาก query ไม่ถูกต้องตอบ `400 INVALID_QUERY`; หาก page เกิน `totalPages` ตอบ `400 PAGE_OUT_OF_RANGE` และไม่รัน query ที่มีผลข้างเคียง
+
 ## Administrator Routes
 | Method | Endpoint | Result |
 |---|---|---|

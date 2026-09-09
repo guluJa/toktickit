@@ -80,7 +80,9 @@ Lab 2 ใช้ Prisma model `RequesterUser` และ Ticket มี `requesterI
 
 User ต้องมี `id`, `name`, `email`, `passwordHash`, `role`, `isActive`, `mustChangePassword`, `createdAt` และ `updatedAt` ส่วน Ticket เพิ่ม nullable `ownerId`, `itPriority` และ `requesterResolvedAt` โดย backfill `itPriority` จาก `requestedPriority` ส่วน Comment, Internal Note และ Session เป็นตารางใหม่ที่เชื่อมด้วย foreign key และมี index ตาม queue และเวลา
 
-Seed ต้อง idempotent และมี active Requester อย่างน้อย 4 คน, inactive Requester 1 คน, active IT Staff 3 คน, inactive IT Staff 1 คน และ active Administrator อย่างน้อย 1 คน พร้อม Ticket, Public Comments และ Internal Notes สำหรับ local development เท่านั้น ห้ามเก็บ plaintext password, secret หรือค่า `.env` จริงใน repository
+การ migrate Requester เดิมจะคง `id`, `name`, `email`, `isActive`, timestamps และ `Ticket.requesterId` เดิมไว้ทุกแถว พร้อมกำหนด `role=REQUESTER` และ `mustChangePassword=true` ให้ผู้ใช้เดิม Password hash จะถูกสร้างจาก deterministic local-development fixture ผ่าน seed/migration โดยไม่บันทึก plaintext password หรือ secret ลง repository; ผู้ใช้ต้องเปลี่ยน password ในการ login ครั้งแรก หาก fixture ไม่พร้อม ระบบต้องหยุดอย่างปลอดภัยและห้ามเขียนทับข้อมูลเดิม
+
+Seed ต้อง idempotent และมี active Requester อย่างน้อย 4 คน, inactive Requester 1 คน, active IT Staff 3 คน, inactive IT Staff 1 คน และ active Administrator อย่างน้อย 1 คน พร้อม Ticket, Public Comments และ Internal Notes สำหรับ local development เท่านั้น การทดสอบ migration/regression ต้องตรวจ row counts, preserved IDs, `Ticket.requesterId` foreign keys, Ticket/Attachment references และรัน seed ซ้ำอย่างน้อยสองครั้งโดยข้อมูลไม่ซ้ำและไม่หาย
 
 ## 8. API Contract Summary
 Base path คือ `/api` ใช้ JSON success รูปแบบ `{data: ...}` และ error รูปแบบ `{error:{code,message,fields?}}` ใช้ HttpOnly `toktickit_session` cookie สำหรับ session
