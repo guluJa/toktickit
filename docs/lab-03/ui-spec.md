@@ -15,6 +15,24 @@
 | Staff Ticket Detail | view/edit, saving, success/validation/conflict/failure | assignment, IT Priority, status, Public Comments, Internal Notes และ attachments |
 | User Management | loading, list, create, edit, reset, validation/forbidden/conflict/failure | user list, search, role filter, modal/form และ deactivation confirmation |
 
+### 2.1 User Management list and feedback
+
+เมื่อ Administrator เปิดหน้า User Management รายการต้องแสดงคอลัมน์ต่อไปนี้อย่างชัดเจน:
+
+- `Name`
+- `Email`
+- `Role`
+- `Status` โดยแสดง `Active` หรือ `Inactive` เป็นข้อความ ไม่ใช้สีเพียงอย่างเดียว
+- `Edit` action สำหรับเปิดฟอร์มแก้ไข User
+
+หลังดำเนินการสำเร็จ ให้แสดง success feedback ที่อ่านได้และประกาศผ่าน `aria-live`:
+
+- Create: `User created successfully.`
+- Edit: `User updated successfully.`
+- Reset initial password: `Initial password reset successfully.`
+
+ระหว่างบันทึกให้ปิดปุ่มที่เกี่ยวข้องและแสดง saving state; เมื่อ validation, forbidden, conflict หรือ server failure ให้แสดงข้อความที่ปลอดภัยใกล้ฟอร์มหรือรายการโดยไม่เปิดเผย password, session หรือข้อมูลภายในระบบ
+
 ## 3. Role Behavior
 - Requester เห็นเฉพาะ Create Ticket, My Tickets และ Ticket Detail ของตนเอง
 - IT Staff เห็น Staff Queue และ Staff Ticket Detail พร้อม controls ตาม authorization matrix

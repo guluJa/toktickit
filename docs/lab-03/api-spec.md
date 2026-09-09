@@ -46,6 +46,91 @@ Error response:
 }
 ```
 
+### 1.1 Shared response schemas
+
+The following schemas are normative. Every endpoint that returns the corresponding resource MUST use exactly these fields and MUST omit password, passwordHash, session tokens, storage keys, local paths and stack traces.
+
+`SafeUser`
+
+```json
+{
+  "id": 1,
+  "name": "Example User",
+  "email": "user@example.test",
+  "role": "REQUESTER",
+  "isActive": true,
+  "mustChangePassword": false
+}
+```
+
+`TicketSummary`
+
+```json
+{
+  "id": 15,
+  "ticketNumber": "TKT-20260910-00000015",
+  "summary": "Laptop cannot connect to Wi-Fi",
+  "category": { "id": 2, "name": "Hardware" },
+  "relatedSystem": { "id": 2, "name": "Network Access" },
+  "requestedPriority": "MEDIUM",
+  "itPriority": "MEDIUM",
+  "currentStatus": "OPEN",
+  "owner": null,
+  "createdAt": "2026-09-10T10:00:00.000Z",
+  "updatedAt": "2026-09-10T10:00:00.000Z"
+}
+```
+
+`TicketDetail` is the following complete shape (it includes all `TicketSummary` fields):
+
+```json
+{
+  "id": 15,
+  "ticketNumber": "TKT-20260910-00000015",
+  "summary": "Laptop cannot connect to Wi-Fi",
+  "category": { "id": 2, "name": "Hardware" },
+  "relatedSystem": { "id": 2, "name": "Network Access" },
+  "requestedPriority": "MEDIUM",
+  "itPriority": "MEDIUM",
+  "currentStatus": "OPEN",
+  "owner": null,
+  "createdAt": "2026-09-10T10:00:00.000Z",
+  "updatedAt": "2026-09-10T10:00:00.000Z",
+  "requester": { "id": 1, "name": "Example User", "email": "user@example.test" },
+  "description": "The connection disconnects after a few minutes.",
+  "requesterResolvedAt": null,
+  "attachments": [],
+  "comments": []
+}
+```
+
+`PublicComment` and `InternalNote` use the same shape; their visibility is controlled by authorization:
+
+```json
+{
+  "id": 21,
+  "author": { "id": 2, "name": "Support User" },
+  "content": "The issue is still occurring.",
+  "createdAt": "2026-09-10T10:05:00.000Z"
+}
+```
+
+`AttachmentMetadata`
+
+```json
+{
+  "id": 31,
+  "originalFilename": "network-error.png",
+  "mimeType": "image/png",
+  "sizeBytes": 38400,
+  "uploadedAt": "2026-09-10T10:00:00.000Z",
+  "removedAt": null,
+  "removalReason": null
+}
+```
+
+For a removed attachment, `removedAt` and `removalReason` are populated and download is unavailable. `storedFilename` and any storage path are never returned.
+
 ## 2. Authentication
 
 ### 2.1 POST /api/auth/login
@@ -79,7 +164,7 @@ Errors: 400 VALIDATION_ERROR เมื่อข้อมูลไม่ครบ
 
 ไม่มี request body หรือ query
 
-Success 200: { "data": { "user": <safe user> } }
+Success 200: `{ "data": { "user": SafeUser } }`
 
 Errors: 401 AUTHENTICATION_REQUIRED เมื่อไม่มี cookie, 401 SESSION_INVALID เมื่อ cookie หมดอายุ/ถูกยกเลิก/user inactive, 500 INTERNAL_ERROR
 
@@ -101,7 +186,7 @@ Request body:
 
 Validation: ทั้งสอง field เป็น required string, ยาว 12-128 ตัวอักษร, มี lowercase, uppercase, digit และ symbol และต้องตรงกัน
 
-Success 200: { "data": { "user": <safe user with mustChangePassword:false> } }
+Success 200: `{ "data": { "user": SafeUser } }` with `mustChangePassword=false`.
 
 Errors: 401 AUTHENTICATION_REQUIRED/SESSION_INVALID, 400 VALIDATION_ERROR, 500 INTERNAL_ERROR
 
@@ -145,11 +230,7 @@ Request body:
 
 Validation: submissionKey เป็น UUID; categoryId/relatedSystemId เป็น positive integer ที่อ้าง active record; summary trim 5-150 ตัวอักษร; description trim 10-5000 ตัวอักษร; requestedPriority เป็น LOW/MEDIUM/HIGH; reject requesterId, ticketNumber, status และ timestamps จาก Client
 
-Success 201 เมื่อสร้างใหม่ หรือ 200 เมื่อ replay submissionKey เดิม:
-
-```json
-{ "data": { "ticket": <ticket detail>, "replayed": false } }
-```
+Success 201 เมื่อสร้างใหม่ หรือ 200 เมื่อ replay submissionKey เดิม: `{ "data": { "ticket": TicketDetail, "replayed": false } }`
 
 Errors: 400 VALIDATION_ERROR, 401 authentication/session error, 403 PASSWORD_CHANGE_REQUIRED/ROLE_FORBIDDEN, 404 REFERENCE_NOT_FOUND, 409 TICKET_NUMBER_CONFLICT หรือ duplicate submission conflict, 500 INTERNAL_ERROR โดย transaction ที่ล้มเหลวต้องไม่เหลือ partial ticket
 
@@ -159,7 +240,7 @@ Query: search, categoryId, relatedSystemId, requestedPriority, currentStatus, so
 
 Validation: search ยาวไม่เกิน 100, IDs เป็น positive integer, enum ถูกต้อง, page เป็น positive integer, pageSize เป็น 10/20/50; invalid query ตอบ 400 INVALID_QUERY
 
-Success 200: list envelope ที่มีเฉพาะ Ticket ของ authenticated Requester; page 1 ที่ไม่มีผลลัพธ์ตอบ items: [] และ totalItems: 0 ไม่ใช่ error
+Success 200: `{ "data": { "items": [TicketSummary], "pagination": { "page": 1, "pageSize": 10, "totalItems": 0, "totalPages": 0 } } }` โดยคืนเฉพาะ Ticket ของ authenticated Requester; page 1 ที่ไม่มีผลลัพธ์ตอบ items: [] และ totalItems: 0 ไม่ใช่ error
 
 Errors: 401, 403 PASSWORD_CHANGE_REQUIRED, 400 INVALID_QUERY, 500 INTERNAL_ERROR
 
@@ -167,7 +248,7 @@ Errors: 401, 403 PASSWORD_CHANGE_REQUIRED, 400 INVALID_QUERY, 500 INTERNAL_ERROR
 
 ไม่มี body/query; ticketId ต้องเป็น positive integer
 
-Success 200: { "data": { "ticket": <ticket detail with active/removed attachment metadata> } }
+Success 200: `{ "data": { "ticket": TicketDetail } }`; the detail includes `AttachmentMetadata` for active and removed attachments.
 
 Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
@@ -175,7 +256,7 @@ Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
 ไม่มี body/query และต้องเป็น owned ticket
 
-Success 200: { "data": { "items": [{ "id": 1, "author": { "id": 2, "name": "User" }, "content": "...", "createdAt": "..." }] } }
+Success 200: `{ "data": { "items": [PublicComment] } }`
 
 Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
@@ -185,7 +266,7 @@ Request body: { "content": "The issue is still occurring." }
 
 Validation: content เป็น trimmed non-empty string ยาวไม่เกิน 5,000 ตัวอักษร; author และ ticket มาจาก session/path
 
-Success 201: { "data": { "comment": <public comment> } }
+Success 201: `{ "data": { "comment": PublicComment } }`
 
 Errors: 400 VALIDATION_ERROR, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
@@ -205,7 +286,7 @@ Request เป็น multipart/form-data field files (สูงสุด 5 ไ�
 
 Validation: .jpg/.jpeg/.png/.webp/.pdf เท่านั้น, MIME ต้องตรง extension, แต่ละไฟล์ไม่เกิน 5 MiB, active attachments รวมไม่เกิน 5, backend sanitize filename และสร้าง storage key
 
-Success 201: { "data": { "attachments": [<attachment metadata>] } }
+Success 201: `{ "data": { "attachments": [AttachmentMetadata] } }`
 
 Errors: 400 VALIDATION_ERROR, 401, 403, safe 404 TICKET_NOT_FOUND, 409 ACTIVE_ATTACHMENT_LIMIT, 413 FILE_TOO_LARGE, 415 UNSUPPORTED_MEDIA_TYPE, 500 INTERNAL_ERROR พร้อม compensation cleanup หาก metadata creation ล้มเหลว
 
@@ -213,7 +294,7 @@ Errors: 400 VALIDATION_ERROR, 401, 403, safe 404 TICKET_NOT_FOUND, 409 ACTIVE_AT
 
 ไม่มี body/query
 
-Success 200: { "data": { "items": [<attachment metadata>] } } รวม Active และ Removed เรียง uploadedAt asc, id asc
+Success 200: `{ "data": { "items": [AttachmentMetadata] } }` รวม Active และ Removed เรียง uploadedAt asc, id asc
 
 Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
@@ -231,7 +312,7 @@ Request body: { "removalReason": "The wrong screenshot was attached." }
 
 Validation: reason เป็น trimmed non-empty string ยาว 5-250 ตัวอักษร; removed-by identity มาจาก authenticated Requester ไม่รับจาก Client
 
-Success 200: { "data": { "attachment": <removed metadata> } }; record และ metadata ยังคงอยู่ แต่ Download ถูก block
+Success 200: `{ "data": { "attachment": AttachmentMetadata } }`; record และ metadata ยังคงอยู่ แต่ Download ถูก block
 
 Errors: 400 VALIDATION_ERROR/INVALID_ID, 401, 403, safe 404 ATTACHMENT_NOT_FOUND, 409 ALREADY_REMOVED, 500 INTERNAL_ERROR
 
@@ -259,7 +340,7 @@ Success 200:
 ```json
 {
   "data": {
-    "items": [<staff ticket summary>],
+    "items": [TicketSummary],
     "pagination": { "page": 1, "pageSize": 10, "totalItems": 0, "totalPages": 0 }
   }
 }
@@ -273,7 +354,7 @@ Errors: 401 AUTHENTICATION_REQUIRED/SESSION_INVALID, 403 ROLE_FORBIDDEN/PASSWORD
 
 ไม่มี body/query; ticketId เป็น positive integer
 
-Success 200: { "data": { "ticket": <staff ticket detail>, "comments": [], "internalNotes": [] } }
+Success 200: `{ "data": { "ticket": TicketDetail, "comments": [PublicComment], "internalNotes": [InternalNote] } }`
 
 Errors: 400 INVALID_ID, 401, 403 ROLE_FORBIDDEN, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
@@ -283,7 +364,7 @@ Request body: { "ownerId": 12 } หรือ { "ownerId": null }
 
 Validation: ownerId ต้องอ้าง active IT Staff หรือ Administrator; เฉพาะ IT Staff แก้ assignment ได้
 
-Success 200: { "data": { "ticket": <updated staff ticket> } }
+Success 200: `{ "data": { "ticket": TicketDetail } }`
 
 Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 TICKET_NOT_FOUND/USER_NOT_FOUND, 409 USER_UPDATE_CONFLICT, 500 INTERNAL_ERROR
 
@@ -291,7 +372,7 @@ Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 TICKET_NOT_FOUND
 
 Request body: { "itPriority": "HIGH" }; ค่าเป็น LOW/MEDIUM/HIGH เท่านั้น
 
-Success 200: { "data": { "ticket": <updated staff ticket> } }
+Success 200: `{ "data": { "ticket": TicketDetail } }`
 
 Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
@@ -299,13 +380,13 @@ Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 TICKET_NOT_FOUND
 
 Request body: { "status": "IN_PROGRESS" }; ต้องผ่าน transition matrix ใน specification.md
 
-Success 200: { "data": { "ticket": <updated staff ticket> } }
+Success 200: `{ "data": { "ticket": TicketDetail } }`
 
 Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 TICKET_NOT_FOUND, 409 STATUS_TRANSITION_NOT_ALLOWED, 500 INTERNAL_ERROR
 
 ### 6.6 Staff comments and notes
 
-GET /api/staff/tickets/:ticketId/comments และ GET /api/staff/tickets/:ticketId/notes ไม่มี body และตอบ 200 ด้วย { "data": { "items": [...] } }. POST ของแต่ละ route รับ { "content": "..." } เป็น trimmed non-empty string ยาวไม่เกิน 5,000 ตัวอักษร และตอบ 201 ด้วย resource ที่สร้าง
+GET /api/staff/tickets/:ticketId/comments และ GET /api/staff/tickets/:ticketId/notes ไม่มี body และตอบ 200 ด้วย `{ "data": { "items": [PublicComment|InternalNote] } }`. POST ของแต่ละ route รับ `{ "content": "..." }` เป็น trimmed non-empty string ยาวไม่เกิน 5,000 ตัวอักษร และตอบ 201 ด้วย `{ "data": { "comment": PublicComment } }` หรือ `{ "data": { "note": InternalNote } }` ตาม route
 
 GET อนุญาต IT Staff/Administrator; POST อนุญาต IT Staff เท่านั้น. Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
@@ -317,7 +398,7 @@ GET อนุญาต IT Staff/Administrator; POST อนุญาต IT Staff 
 
 Query: search (name/email, case-insensitive), role (REQUESTER/IT_STAFF/ADMINISTRATOR), isActive (true/false), page และ pageSize. ไม่ถูกต้องตอบ 400 INVALID_QUERY
 
-Success 200: list envelope ที่คืนเฉพาะ safe user fields และไม่คืน passwordHash
+Success 200: list envelope ที่มี `items: [SafeUser]` และไม่คืน passwordHash
 
 Errors: 401, 403 ROLE_FORBIDDEN, 400 INVALID_QUERY, 500 INTERNAL_ERROR
 
@@ -326,20 +407,20 @@ Errors: 401, 403 ROLE_FORBIDDEN, 400 INVALID_QUERY, 500 INTERNAL_ERROR
 Request body:
 
 ```json
-{ "name": "New Staff", "email": "staff@example.test", "role": "IT_STAFF", "initialPassword": "Initial-Password1!" }
+{ "name": "New Staff", "email": "staff@example.test", "role": "IT_STAFF", "isActive": true, "initialPassword": "Initial-Password1!" }
 ```
 
-Validation: name trim 1-150 ตัวอักษร, email valid และ unique แบบ case-insensitive, role ถูกต้อง, initialPassword ผ่าน policy 12-128 ตัวอักษร; ห้าม client กำหนด id หรือ session fields
+Validation: `name` เป็น trimmed string ยาว 1-150 ตัวอักษร, `email` เป็น valid string ยาวไม่เกิน 254 ตัวอักษรและ unique แบบ case-insensitive, `role` ต้องเป็น `REQUESTER|IT_STAFF|ADMINISTRATOR`, `isActive` ต้องเป็น Boolean, และ `initialPassword` ต้องผ่าน policy 12-128 ตัวอักษร; ห้าม client กำหนด id หรือ session fields. Invalid role, invalid `isActive` หรือ field type ตอบ `400 VALIDATION_ERROR`.
 
-Success 201: { "data": { "user": <safe user with mustChangePassword:true> } }
+Success 201: `{ "data": { "user": SafeUser } }` โดย User ใหม่มี `mustChangePassword=true` และ `isActive` ตาม request
 
 Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, 409 DUPLICATE_EMAIL, 500 INTERNAL_ERROR
 
 ### 7.3 PATCH /api/admin/users/:userId
 
-Request body รับเฉพาะ name, email, role และ isActive ตาม field rules เดิม. Administrator ห้าม deactivate ตนเองหรือทำให้จำนวน active Administrator เป็นศูนย์
+Request body รับเฉพาะ field ต่อไปนี้ และต้องมีอย่างน้อยหนึ่ง field: `name` (optional trimmed string 1-150), `email` (optional valid string ไม่เกิน 254 ตัวอักษรและ unique แบบ case-insensitive), `role` (optional `REQUESTER|IT_STAFF|ADMINISTRATOR`) และ `isActive` (optional Boolean). ห้ามส่ง `id`, `passwordHash`, `mustChangePassword`, `lastLoginAt`, session fields หรือ unknown fields. `userId` ต้องเป็น positive integer. Administrator ห้าม deactivate ตนเองหรือทำให้จำนวน active Administrator เป็นศูนย์
 
-Success 200: { "data": { "user": <safe updated user> } }
+Success 200: `{ "data": { "user": SafeUser } }`
 
 Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 USER_NOT_FOUND, 409 DUPLICATE_EMAIL/USER_UPDATE_CONFLICT, 500 INTERNAL_ERROR. การ deactivate ต้อง revoke sessions ของ target และ request ถัดไปตอบ 401 SESSION_INVALID
 
@@ -349,7 +430,7 @@ Request body: { "initialPassword": "Initial-Password1!" }
 
 Validation: password policy; ตั้ง mustChangePassword=true และไม่คืน password/hash
 
-Success 200: { "data": { "user": <safe user with mustChangePassword:true> } }
+Success 200: `{ "data": { "user": SafeUser } }` โดย `mustChangePassword=true`
 
 Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 USER_NOT_FOUND, 500 INTERNAL_ERROR
 
