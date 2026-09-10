@@ -17,14 +17,27 @@ enum TicketStatus {
   NEW
 }
 
+enum UserRole {
+  REQUESTER
+  IT_STAFF
+  ADMINISTRATOR
+}
+
 model RequesterUser {
   id                 Int          @id @default(autoincrement())
   name               String
   email              String       @unique
+  passwordHash       String       @default("!")
+  role               UserRole     @default(REQUESTER)
   isActive           Boolean      @default(true)
+  mustChangePassword Boolean      @default(true)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @default(now()) @updatedAt
   tickets            Ticket[]
+  ownedTickets       Ticket[]     @relation("TicketOwner")
+  sessions           Session[]
+  comments           Comment[]
+  internalNotes      InternalNote[]
   removedAttachments Attachment[] @relation("AttachmentRemovedBy")
 
   @@index([isActive])
@@ -64,19 +77,26 @@ model Ticket {
   requestedPriority RequestedPriority
   description       String            @db.Text
   currentStatus     TicketStatus      @default(NEW)
+  ownerId           Int?
+  itPriority        RequestedPriority @default(MEDIUM)
+  requesterResolvedAt DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @default(now()) @updatedAt
 
   requester     RequesterUser @relation(fields: [requesterId], references: [id], onDelete: Restrict)
+  owner         RequesterUser? @relation("TicketOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   category      Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   relatedSystem RelatedSystem @relation(fields: [relatedSystemId], references: [id], onDelete: Restrict)
   attachments   Attachment[]
+  comments      Comment[]
+  internalNotes InternalNote[]
 
   @@unique([requesterId, submissionKey])
   @@index([requesterId, updatedAt])
   @@index([requesterId, currentStatus])
   @@index([categoryId])
   @@index([relatedSystemId])
+  @@index([ownerId, currentStatus, updatedAt])
 }
 
 model Attachment {
@@ -95,4 +115,39 @@ model Attachment {
   removedByRequester RequesterUser? @relation("AttachmentRemovedBy", fields: [removedByRequesterId], references: [id], onDelete: Restrict)
 
   @@index([ticketId, removedAt])
+}
+
+model Session {
+  id        Int           @id @default(autoincrement())
+  tokenHash String        @unique
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime      @default(now())
+  user      RequesterUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Comment {
+  id        Int           @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  content   String        @db.VarChar(5000)
+  createdAt DateTime      @default(now())
+  ticket    Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author    RequesterUser @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, createdAt])
+}
+
+model InternalNote {
+  id        Int           @id @default(autoincrement())
+  ticketId  Int
+  authorId  Int
+  content   String        @db.VarChar(5000)
+  createdAt DateTime      @default(now())
+  ticket    Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author    RequesterUser @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, createdAt])
 }
