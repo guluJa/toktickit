@@ -13,8 +13,12 @@ describe("Lab 3 authentication password policy", () => {
     },
   );
 
-  it("accepts a password at the minimum boundary with all required classes", () => {
-    expect(validatePassword("Valid-Password1!")).toBeNull();
+  it("accepts a password at the exact minimum boundary", () => {
+    expect(validatePassword("Aa1!aaaaaaaa")).toBeNull();
+  });
+
+  it("accepts a password at the exact maximum boundary", () => {
+    expect(validatePassword(`Aa1!${"a".repeat(124)}`)).toBeNull();
   });
 
   it("rejects a password over the maximum boundary", () => {

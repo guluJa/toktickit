@@ -151,7 +151,13 @@ app.get("/api/auth/me", requireAuthenticated, (req: Request, res: Response) => {
 
 app.post("/api/auth/logout", async (req: Request, res: Response) => {
   try {
-    const token = parseCookieHeader(req.header("Cookie")).get(SESSION_COOKIE);
+    let token: string | undefined;
+    try {
+      token = parseCookieHeader(req.header("Cookie")).get(SESSION_COOKIE);
+    } catch {
+      // Logout is intentionally idempotent, even when a stale cookie is malformed.
+      token = undefined;
+    }
     if (token) {
       await getPrisma().session.deleteMany({
         where: { tokenHash: hashSessionToken(token) },
