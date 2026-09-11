@@ -5,10 +5,34 @@ export interface AuthUser {
   role: "REQUESTER" | "IT_STAFF" | "ADMINISTRATOR";
   isActive: boolean; mustChangePassword: boolean;
 }
+
+export class AuthApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(message: string, status: number, code: string) {
+    super(message);
+    this.name = "AuthApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export async function getCurrentUser(): Promise<AuthUser> {
-  const response = await fetch(`${API_URL}/api/auth/me`, { credentials: "include" });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/auth/me`, { credentials: "include" });
+  } catch {
+    throw new AuthApiError("Unable to verify the session. Please try again.", 0, "AUTH_SERVICE_UNAVAILABLE");
+  }
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error?.message ?? "Authentication required.");
+  if (!response.ok) {
+    throw new AuthApiError(
+      response.status === 401 ? "Authentication required." : "Unable to verify the session. Please try again.",
+      response.status,
+      body.error?.code ?? (response.status === 401 ? "AUTHENTICATION_REQUIRED" : "AUTH_SERVICE_UNAVAILABLE"),
+    );
+  }
   return body.data.user as AuthUser;
 }
 export async function login(email: string, password: string): Promise<AuthUser> {
@@ -17,7 +41,13 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   if (!response.ok) throw new Error(body.error?.message ?? "Unable to sign in.");
   return body.data.user as AuthUser;
 }
-export async function logout(): Promise<void> { await fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" }); }
+export async function logout(): Promise<void> {
+  const response = await fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new AuthApiError(body.error?.message ?? "Unable to sign out. Please try again.", response.status, body.error?.code ?? "LOGOUT_FAILED");
+  }
+}
 export async function changePassword(newPassword: string, confirmPassword: string): Promise<AuthUser> {
   const response = await fetch(`${API_URL}/api/auth/change-password`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ newPassword, confirmPassword }) });
   const body = await response.json().catch(() => ({}));
@@ -82,42 +112,10 @@ export async function checkSystem(): Promise<SystemStatus> {
   };
 }
 
-export interface DevelopmentRequester {
+export interface RequesterSummary {
   id: number;
   name: string;
   email: string;
-}
-
-export async function getDevelopmentRequesters(): Promise<
-  DevelopmentRequester[]
-> {
-  const response = await fetch(
-    `${API_URL}/api/development-requesters`,
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      "Unable to load development requesters.",
-    );
-  }
-
-  return response.json();
-}
-
-export async function getDevelopmentRequester(
-  requesterId: number,
-): Promise<DevelopmentRequester> {
-  const response = await fetch(
-    `${API_URL}/api/development-requesters/${requesterId}`,
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      "The selected development requester is unavailable.",
-    );
-  }
-
-  return response.json();
 }
 
 export interface RelatedSystem {
@@ -155,7 +153,7 @@ export interface AttachmentMetadata {
 export interface TicketDetail {
   id: number;
   ticketNumber: string;
-  requester: DevelopmentRequester;
+  requester: RequesterSummary;
   category: Category;
   relatedSystem: {
     id: number;
@@ -168,6 +166,63 @@ export interface TicketDetail {
   createdAt: string;
   updatedAt: string;
   attachments: AttachmentMetadata[];
+  comments?: PublicComment[];
+  requesterResolvedAt?: string | null;
+}
+
+export interface PublicComment {
+  id: number;
+  author: { id: number; name: string };
+  content: string;
+  createdAt: string;
+}
+
+export async function getTicketComments(
+  requesterId: number,
+  ticketId: number,
+): Promise<PublicComment[]> {
+  const response = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, { credentials: "include" });
+  if (!response.ok) {
+    let body: TicketApiErrorResponse = {};
+    try { body = await response.json(); } catch { /* safe fallback */ }
+    throw new TicketApiError(body.error?.message ?? "Unable to load comments.", response.status, body.error?.code ?? "COMMENT_LIST_FAILED", body.error?.fields);
+  }
+  const body = await response.json();
+  return (body.data?.items ?? []) as PublicComment[];
+}
+
+export async function createTicketComment(
+  requesterId: number,
+  ticketId: number,
+  content: string,
+): Promise<PublicComment> {
+  const response = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!response.ok) {
+    let body: TicketApiErrorResponse = {};
+    try { body = await response.json(); } catch { /* safe fallback */ }
+    throw new TicketApiError(body.error?.message ?? "Unable to add comment.", response.status, body.error?.code ?? "COMMENT_CREATE_FAILED", body.error?.fields);
+  }
+  const body = await response.json();
+  return body.data.comment as PublicComment;
+}
+
+export async function markTicketResolved(
+  requesterId: number,
+  ticketId: number,
+): Promise<{ resolved: boolean; requesterResolvedAt: string; currentStatus: string }> {
+  const response = await fetch(`${API_URL}/api/tickets/${ticketId}/resolved`, { method: "POST", credentials: "include" });
+  if (!response.ok) {
+    let body: TicketApiErrorResponse = {};
+    try { body = await response.json(); } catch { /* safe fallback */ }
+    throw new TicketApiError(body.error?.message ?? "Unable to update the Ticket.", response.status, body.error?.code ?? "TICKET_RESOLVED_FAILED", body.error?.fields);
+  }
+  const body = await response.json();
+  return body.data as { resolved: boolean; requesterResolvedAt: string; currentStatus: string };
 }
 
 export interface CreateTicketResponse {

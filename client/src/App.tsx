@@ -4,14 +4,12 @@ import {
 } from "react";
 import {
   checkSystem,
-  DevelopmentRequester,
   AuthUser,
+  AuthApiError,
   getCurrentUser,
   login,
   logout,
   changePassword,
-  getDevelopmentRequester,
-  getDevelopmentRequesters,
   Category,
 } from "./api.js";
 import CreateTicket from "./CreateTicket.js";
@@ -29,44 +27,10 @@ type UiState =
   | "success"
   | "error";
 
-type RequesterViewState =
-  | "loading"
-  | "ready"
-  | "empty"
-  | "error";
-
-const REQUESTER_STORAGE_KEY =
-  "toktickit.developmentRequesterId";
-
 export default function App() {
-  const [
-    requesterViewState,
-    setRequesterViewState,
-  ] = useState<RequesterViewState>("loading");
-
-  const [
-    requesters,
-    setRequesters,
-  ] = useState<DevelopmentRequester[]>([]);
-
-  const [
-    selectedRequesterId,
-    setSelectedRequesterId,
-  ] = useState("");
-
-  const [
-    currentRequester,
-    setCurrentRequester,
-  ] = useState<DevelopmentRequester | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authAvailable, setAuthAvailable] = useState(true);
   const [authError, setAuthError] = useState("");
-
-  const [
-    isContinuing,
-    setIsContinuing,
-  ] = useState(false);
 
   const [state, setState] =
     useState<UiState>("idle");
@@ -84,112 +48,38 @@ export default function App() {
     useState(true);
 
   useEffect(() => {
-    try {
-      const authRequest = getCurrentUser();
-      if (!authRequest || typeof (authRequest as Promise<AuthUser>).then !== "function") {
-        setAuthAvailable(false);
-        setAuthLoading(false);
-        return;
-      }
-      void authRequest
-        .then((user) => {
-          setAuthUser(user);
-          setCurrentRequester(user);
-        })
-        .catch(() => undefined)
-        .finally(() => setAuthLoading(false));
-    } catch {
-      // Older Lab 2 component mocks do not expose auth yet.
-      setAuthAvailable(false);
-      setAuthLoading(false);
-    }
+    void getCurrentUser()
+      .then((user) => {
+        setAuthUser(user);
+        setAuthError("");
+      })
+      .catch((error) => {
+        if (error instanceof AuthApiError && error.status === 401) {
+          setAuthUser(null);
+          setAuthError("");
+        } else {
+          setAuthError("Unable to verify your session. Please try again.");
+        }
+      })
+      .finally(() => setAuthLoading(false));
   }, []);
 
   if (authLoading) {
     return <main className="container py-5"><div className="alert alert-info" role="status">Loading session...</div></main>;
   }
 
-  if (!authUser && authAvailable) {
-    return <main className="container py-5" style={{ maxWidth: 560 }}><section className="card border-success shadow-sm"><div className="card-body p-4"><h1 className="h3 text-success">TokTickIT IT Service Desk</h1><h2 className="h5">Sign in</h2>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<form onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { const user = await login(String(form.get("email")), String(form.get("password"))); setAuthUser(user); setCurrentRequester(user); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign in."); } }}><label className="form-label" htmlFor="auth-email">Email</label><input id="auth-email" name="email" type="email" className="form-control mb-3" required /><label className="form-label" htmlFor="auth-password">Password</label><input id="auth-password" name="password" type="password" className="form-control mb-3" required /><button className="btn btn-success">Sign in</button></form></div></section></main>;
+  if (!authUser) {
+    return <main className="container py-5" style={{ maxWidth: 560 }}><section className="card border-success shadow-sm"><div className="card-body p-4"><h1 className="h3 text-success">TokTickIT IT Service Desk</h1><h2 className="h5">Sign in</h2>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<form onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { const user = await login(String(form.get("email")), String(form.get("password"))); setAuthUser(user); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign in."); } }}><label className="form-label" htmlFor="auth-email">Email</label><input id="auth-email" name="email" type="email" className="form-control mb-3" required /><label className="form-label" htmlFor="auth-password">Password</label><input id="auth-password" name="password" type="password" className="form-control mb-3" required /><button className="btn btn-success">Sign in</button></form></div></section></main>;
   }
 
   if (authUser?.mustChangePassword) {
-    return <main className="container py-5" style={{ maxWidth: 560 }}><section className="card border-success shadow-sm"><div className="card-body p-4"><h1 className="h3 text-success">Change password required</h1><p>Please change your initial password before continuing.</p>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<form onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { const user = await changePassword(String(form.get("newPassword")), String(form.get("confirmPassword"))); setAuthUser(user); setCurrentRequester(user); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to change password."); } }}><label className="form-label" htmlFor="new-password">New password</label><input id="new-password" name="newPassword" type="password" className="form-control mb-3" required /><label className="form-label" htmlFor="confirm-password">Confirm password</label><input id="confirm-password" name="confirmPassword" type="password" className="form-control mb-3" required /><button className="btn btn-success">Change password</button></form></div></section></main>;
+    return <main className="container py-5" style={{ maxWidth: 560 }}><section className="card border-success shadow-sm"><div className="card-body p-4"><h1 className="h3 text-success">Change password required</h1><p>Please change your initial password before continuing.</p>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<form onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { const user = await changePassword(String(form.get("newPassword")), String(form.get("confirmPassword"))); setAuthUser(user); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to change password."); } }}><label className="form-label" htmlFor="new-password">New password</label><input id="new-password" name="newPassword" type="password" className="form-control mb-3" required /><label className="form-label" htmlFor="confirm-password">Confirm password</label><input id="confirm-password" name="confirmPassword" type="password" className="form-control mb-3" required /><button className="btn btn-success">Change password</button></form></div></section></main>;
   }
-
-  const requester = currentRequester ?? authUser;
 
   if (authUser && authUser.role !== "REQUESTER") {
-    return <main className="container py-5"><div className="alert alert-warning" role="alert">Your role does not have access to the Requester workspace.</div><button className="btn btn-outline-success" onClick={async () => { await logout(); setAuthUser(null); setCurrentRequester(null); }}>Logout</button></main>;
+    return <main className="container py-5"><div className="alert alert-warning" role="alert">Your role does not have access to the Requester workspace.</div><button className="btn btn-outline-success" onClick={async () => { try { await logout(); setAuthUser(null); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign out."); } }}>Logout</button>{authError && <div className="alert alert-danger mt-3" role="alert">{authError}</div>}</main>;
   }
-
-  async function loadRequesterOptions() {
-    setRequesterViewState("loading");
-    setRequesters([]);
-    setSelectedRequesterId("");
-
-    try {
-      const result =
-        await getDevelopmentRequesters();
-
-      setRequesters(result);
-      setRequesterViewState(
-        result.length > 0 ? "ready" : "empty",
-      );
-    } catch {
-      setRequesterViewState("error");
-    }
-  }
-
-  async function handleContinue() {
-    const requesterId =
-      Number(selectedRequesterId);
-
-    if (
-      !Number.isSafeInteger(requesterId) ||
-      requesterId <= 0
-    ) {
-      return;
-    }
-
-    setIsContinuing(true);
-
-    try {
-      const requester =
-        await getDevelopmentRequester(
-          requesterId,
-        );
-
-      localStorage.setItem(
-        REQUESTER_STORAGE_KEY,
-        String(requester.id),
-      );
-
-      setCurrentRequester(requester);
-    } catch {
-      localStorage.removeItem(
-        REQUESTER_STORAGE_KEY,
-      );
-      setRequesterViewState("error");
-    } finally {
-      setIsContinuing(false);
-    }
-  }
-
-  function handleChangeRequester() {
-    localStorage.removeItem(
-      REQUESTER_STORAGE_KEY,
-    );
-
-    setCurrentRequester(null);
-    setState("idle");
-    setCategories([]);
-    setActiveView("create");
-    setSelectedTicketId(null);
-    setIsMobileNavigationOpen(true);
-
-    void loadRequesterOptions();
-  }
+  const requester = authUser;
 
   async function handleCheck() {
     setState("loading");
@@ -202,158 +92,6 @@ export default function App() {
     } catch {
       setState("error");
     }
-  }
-
-  if (!currentRequester && !authUser) {
-    return (
-      <main
-        className="container py-5"
-        style={{ maxWidth: 680 }}
-      >
-        <section
-          className="card border-success shadow-sm"
-          aria-labelledby="requester-selection-title"
-        >
-          <div className="card-body p-4">
-            <h1
-              id="requester-selection-title"
-              className="h3 text-success mb-3"
-            >
-              TokTickIT
-            </h1>
-
-            <h2 className="h5">
-              Select a Development Requester
-            </h2>
-
-            <p className="text-body-secondary">
-              Select a Development Requester
-              to test requester-specific ticket
-              behavior. This is not a login
-              screen. Authentication and
-              role-based access will be
-              introduced in Lab 3.
-            </p>
-
-            {requesterViewState ===
-              "loading" && (
-              <div
-                className="alert alert-info"
-                role="status"
-                aria-live="polite"
-              >
-                Loading development
-                requesters...
-              </div>
-            )}
-
-            {requesterViewState ===
-              "empty" && (
-              <div
-                className="alert alert-warning"
-                role="status"
-              >
-                <p className="mb-3">
-                  No active Development
-                  Requesters are available.
-                </p>
-
-                <button
-                  type="button"
-                  className="btn btn-outline-success"
-                  onClick={() =>
-                    void loadRequesterOptions()
-                  }
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {requesterViewState ===
-              "error" && (
-              <div
-                className="alert alert-danger"
-                role="alert"
-              >
-                <p className="mb-3">
-                  Unable to load Development
-                  Requesters. Please try again.
-                </p>
-
-                <button
-                  type="button"
-                  className="btn btn-outline-danger"
-                  onClick={() =>
-                    void loadRequesterOptions()
-                  }
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {requesterViewState ===
-              "ready" && (
-              <>
-                <div className="mb-3">
-                  <label
-                    className="form-label"
-                    htmlFor="development-requester"
-                  >
-                    Development Requester
-                  </label>
-
-                  <select
-                    id="development-requester"
-                    className="form-select"
-                    value={selectedRequesterId}
-                    disabled={isContinuing}
-                    onChange={(event) =>
-                      setSelectedRequesterId(
-                        event.target.value,
-                      )
-                    }
-                  >
-                    <option value="">
-                      Select a requester
-                    </option>
-
-                    {requesters.map(
-                      (requester) => (
-                        <option
-                          key={requester.id}
-                          value={requester.id}
-                        >
-                          {requester.name} (
-                          {requester.email})
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn btn-success"
-                  disabled={
-                    !selectedRequesterId ||
-                    isContinuing
-                  }
-                  onClick={() =>
-                    void handleContinue()
-                  }
-                >
-                  {isContinuing
-                    ? "Continuing..."
-                    : "Continue"}
-                </button>
-              </>
-            )}
-          </div>
-        </section>
-      </main>
-    );
   }
 
   return (
@@ -384,11 +122,12 @@ export default function App() {
         <button
           type="button"
           className="btn btn-outline-success"
-          onClick={async () => { await logout(); setAuthUser(null); setCurrentRequester(null); }}
+          onClick={async () => { try { await logout(); setAuthUser(null); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign out."); } }}
         >
           Logout
         </button>
       </header>
+      {authError && <div className="alert alert-danger" role="alert">{authError}</div>}
 
       <button
         type="button"

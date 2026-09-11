@@ -1,0 +1,1 @@
+process.env.ALLOW_LEGACY_REQUESTER_CONTEXT_TESTS = "true";

@@ -11,7 +11,11 @@ export async function requireRequesterAccess(
   // Lab 2 regression tests retain their header fixture in the isolated test
   // process only. No non-session fallback is available in development or
   // production application traffic.
-  if (process.env.NODE_ENV === "test" && !req.header("Cookie")) {
+  if (
+    process.env.NODE_ENV === "test" &&
+    process.env.ALLOW_LEGACY_REQUESTER_CONTEXT_TESTS === "true" &&
+    !req.header("Cookie")
+  ) {
     await requireDevelopmentRequester(req, res, next);
     return;
   }

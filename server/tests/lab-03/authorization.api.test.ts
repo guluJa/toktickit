@@ -44,9 +44,12 @@ describe("Lab 3 requester authorization", () => {
   }
 
   it("requires a session and derives list ownership from the authenticated user", async () => {
+    const previousOptIn = process.env.ALLOW_LEGACY_REQUESTER_CONTEXT_TESTS;
+    process.env.ALLOW_LEGACY_REQUESTER_CONTEXT_TESTS = "false";
     const missing = await request(app).get("/api/tickets");
-    expect(missing.status).toBe(400);
-    expect(missing.body.error.code).toBe("INVALID_REQUESTER_CONTEXT");
+    process.env.ALLOW_LEGACY_REQUESTER_CONTEXT_TESTS = previousOptIn;
+    expect(missing.status).toBe(401);
+    expect(missing.body.error.code).toBe("AUTHENTICATION_REQUIRED");
     const agent = await signedIn();
     const response = await agent.get("/api/tickets").set("X-Development-Requester-Id", String(otherId));
     expect(response.status).toBe(200);
