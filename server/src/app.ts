@@ -11,8 +11,8 @@ import { Prisma } from "@prisma/client";
 import { getPrisma } from "./prisma.js";
 import {
   parsePositiveInteger,
-  requireDevelopmentRequester,
 } from "./requester-context.js";
+import { requireRequesterAccess } from "./requester-access.js";
 import {
   generateTicketNumber,
 } from "./ticket-number.js";
@@ -825,7 +825,7 @@ async function createOrReplayTicket(
 
 app.get(
   "/api/tickets",
-  requireDevelopmentRequester,
+  requireRequesterAccess,
   async (req: Request, res: Response) => {
     try {
       const requester =
@@ -970,7 +970,7 @@ app.get(
 
 app.get(
   "/api/tickets/:ticketId",
-  requireDevelopmentRequester,
+  requireRequesterAccess,
   async (req: Request, res: Response) => {
     try {
       const ticketId = parsePositiveInteger(
@@ -1033,8 +1033,10 @@ app.get(
             },
             summary: true,
             requestedPriority: true,
+            itPriority: true,
             description: true,
             currentStatus: true,
+            requesterResolvedAt: true,
             createdAt: true,
             updatedAt: true,
             attachments: {
@@ -1052,6 +1054,15 @@ app.get(
                 { uploadedAt: "asc" },
                 { id: "asc" },
               ],
+            },
+            comments: {
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+                author: { select: { id: true, name: true } },
+              },
+              orderBy: [{ createdAt: "asc" }, { id: "asc" }],
             },
           },
         });
@@ -1096,7 +1107,7 @@ app.get(
 
 app.post(
   "/api/tickets/:ticketId/attachments",
-  requireDevelopmentRequester,
+  requireRequesterAccess,
   attachmentUpload.single("file"),
   async (req: Request, res: Response) => {
     let writtenStoragePath: string | null = null;
@@ -1229,7 +1240,7 @@ app.post(
 
 app.get(
   "/api/tickets/:ticketId/attachments",
-  requireDevelopmentRequester,
+  requireRequesterAccess,
   async (req: Request, res: Response) => {
     try {
       const ticketId = parsePositiveInteger(
@@ -1313,7 +1324,7 @@ app.get(
 
 app.get(
   "/api/attachments/:attachmentId",
-  requireDevelopmentRequester,
+  requireRequesterAccess,
   async (req: Request, res: Response) => {
     try {
       const attachmentId = parsePositiveInteger(
@@ -1385,7 +1396,7 @@ app.get(
 
 app.get(
   "/api/attachments/:attachmentId/download",
-  requireDevelopmentRequester,
+  requireRequesterAccess,
   async (req: Request, res: Response) => {
     try {
       const attachmentId = parsePositiveInteger(
@@ -1477,7 +1488,7 @@ app.get(
 
 app.delete(
   "/api/attachments/:attachmentId",
-  requireDevelopmentRequester,
+  requireRequesterAccess,
   async (req: Request, res: Response) => {
     try {
       const attachmentId = parsePositiveInteger(
@@ -1589,7 +1600,7 @@ app.delete(
 
 app.post(
   "/api/tickets",
-  requireDevelopmentRequester,
+  requireRequesterAccess,
   async (req: Request, res: Response) => {
     try {
       const input =
@@ -1688,6 +1699,102 @@ app.post(
             "Unable to create the Ticket.",
         },
       });
+    }
+  },
+);
+
+app.get(
+  "/api/tickets/:ticketId/comments",
+  requireRequesterAccess,
+  async (req: Request, res: Response) => {
+    const ticketId = parsePositiveInteger(req.params.ticketId);
+    if (ticketId === null) {
+      res.status(400).json({ error: { code: "INVALID_TICKET_ID", message: "ticketId must be a positive integer." } });
+      return;
+    }
+    const requesterId = req.authUser?.id;
+    if (!requesterId) return;
+    try {
+      const ticket = await getPrisma().ticket.findFirst({
+        where: { id: ticketId, requesterId },
+        select: { id: true },
+      });
+      if (!ticket) {
+        res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } });
+        return;
+      }
+      const comments = await getPrisma().comment.findMany({
+        where: { ticketId },
+        select: { id: true, content: true, createdAt: true, author: { select: { id: true, name: true } } },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      });
+      res.status(200).json({ data: { items: comments.map((comment) => ({ id: comment.id, author: comment.author, content: comment.content, createdAt: comment.createdAt })) } });
+    } catch (error) {
+      console.error("Unable to load Public Comments:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to load Public Comments." } });
+    }
+  },
+);
+
+app.post(
+  "/api/tickets/:ticketId/comments",
+  requireRequesterAccess,
+  async (req: Request, res: Response) => {
+    const ticketId = parsePositiveInteger(req.params.ticketId);
+    const content = typeof req.body?.content === "string" ? req.body.content.trim() : "";
+    if (ticketId === null) {
+      res.status(400).json({ error: { code: "INVALID_TICKET_ID", message: "ticketId must be a positive integer." } });
+      return;
+    }
+    if (!content || content.length > 5000) {
+      res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Request data is invalid.", fields: { content: "Content must be 1-5000 characters." } } });
+      return;
+    }
+    const requesterId = req.authUser?.id;
+    if (!requesterId) return;
+    try {
+      const ticket = await getPrisma().ticket.findFirst({ where: { id: ticketId, requesterId }, select: { id: true } });
+      if (!ticket) {
+        res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } });
+        return;
+      }
+      const comment = await getPrisma().comment.create({
+        data: { ticketId, authorId: requesterId, content },
+        select: { id: true, content: true, createdAt: true, author: { select: { id: true, name: true } } },
+      });
+      res.status(201).json({ data: { comment: { id: comment.id, author: comment.author, content: comment.content, createdAt: comment.createdAt } } });
+    } catch (error) {
+      console.error("Unable to create Public Comment:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to create Public Comment." } });
+    }
+  },
+);
+
+app.post(
+  "/api/tickets/:ticketId/resolved",
+  requireRequesterAccess,
+  async (req: Request, res: Response) => {
+    const ticketId = parsePositiveInteger(req.params.ticketId);
+    if (ticketId === null) {
+      res.status(400).json({ error: { code: "INVALID_TICKET_ID", message: "ticketId must be a positive integer." } });
+      return;
+    }
+    const requesterId = req.authUser?.id;
+    if (!requesterId) return;
+    try {
+      const updated = await getPrisma().ticket.updateMany({
+        where: { id: ticketId, requesterId },
+        data: { requesterResolvedAt: new Date() },
+      });
+      if (updated.count !== 1) {
+        res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } });
+        return;
+      }
+      const ticket = await getPrisma().ticket.findUniqueOrThrow({ where: { id: ticketId }, select: { id: true, requesterResolvedAt: true, currentStatus: true } });
+      res.status(200).json({ data: { resolved: true, requesterResolvedAt: ticket.requesterResolvedAt, currentStatus: ticket.currentStatus } });
+    } catch (error) {
+      console.error("Unable to mark Ticket resolved:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to update the Ticket." } });
     }
   },
 );

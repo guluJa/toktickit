@@ -1,5 +1,30 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
+export interface AuthUser {
+  id: number; name: string; email: string;
+  role: "REQUESTER" | "IT_STAFF" | "ADMINISTRATOR";
+  isActive: boolean; mustChangePassword: boolean;
+}
+export async function getCurrentUser(): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/api/auth/me`, { credentials: "include" });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error?.message ?? "Authentication required.");
+  return body.data.user as AuthUser;
+}
+export async function login(email: string, password: string): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/api/auth/login`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error?.message ?? "Unable to sign in.");
+  return body.data.user as AuthUser;
+}
+export async function logout(): Promise<void> { await fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" }); }
+export async function changePassword(newPassword: string, confirmPassword: string): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/api/auth/change-password`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ newPassword, confirmPassword }) });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error?.message ?? "Unable to change password.");
+  return body.data.user as AuthUser;
+}
+
 export interface HealthResponse {
   status: string;
   service: string;
@@ -273,12 +298,7 @@ export async function getMyTickets(
 
   const response = await fetch(
     `${API_URL}/api/tickets?${parameters.toString()}`,
-    {
-      headers: {
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
-    },
+    { credentials: "include" },
   );
 
   if (!response.ok) {
@@ -309,12 +329,7 @@ export async function getTicketDetail(
 ): Promise<TicketDetail> {
   const response = await fetch(
     `${API_URL}/api/tickets/${ticketId}`,
-    {
-      headers: {
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
-    },
+    { credentials: "include" },
   );
 
   if (!response.ok) {
@@ -373,10 +388,7 @@ export async function uploadAttachment(
     `${API_URL}/api/tickets/${ticketId}/attachments`,
     {
       method: "POST",
-      headers: {
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
+      credentials: "include",
       body: formData,
     },
   );
@@ -400,11 +412,8 @@ export async function removeAttachment(
     `${API_URL}/api/attachments/${attachmentId}`,
     {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ removalReason }),
     },
   );
@@ -431,10 +440,7 @@ export async function downloadAttachment(
   const response = await fetch(
     `${API_URL}/api/attachments/${attachmentId}/download`,
     {
-      headers: {
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
+      credentials: "include",
     },
   );
 
@@ -499,11 +505,8 @@ export async function createTicket(
     `${API_URL}/api/tickets`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     },
   );

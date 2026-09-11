@@ -5,6 +5,11 @@ import {
 import {
   checkSystem,
   DevelopmentRequester,
+  AuthUser,
+  getCurrentUser,
+  login,
+  logout,
+  changePassword,
   getDevelopmentRequester,
   getDevelopmentRequesters,
   Category,
@@ -53,6 +58,10 @@ export default function App() {
     currentRequester,
     setCurrentRequester,
   ] = useState<DevelopmentRequester | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authAvailable, setAuthAvailable] = useState(true);
+  const [authError, setAuthError] = useState("");
 
   const [
     isContinuing,
@@ -74,6 +83,46 @@ export default function App() {
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] =
     useState(true);
 
+  useEffect(() => {
+    try {
+      const authRequest = getCurrentUser();
+      if (!authRequest || typeof (authRequest as Promise<AuthUser>).then !== "function") {
+        setAuthAvailable(false);
+        setAuthLoading(false);
+        return;
+      }
+      void authRequest
+        .then((user) => {
+          setAuthUser(user);
+          setCurrentRequester(user);
+        })
+        .catch(() => undefined)
+        .finally(() => setAuthLoading(false));
+    } catch {
+      // Older Lab 2 component mocks do not expose auth yet.
+      setAuthAvailable(false);
+      setAuthLoading(false);
+    }
+  }, []);
+
+  if (authLoading) {
+    return <main className="container py-5"><div className="alert alert-info" role="status">Loading session...</div></main>;
+  }
+
+  if (!authUser && authAvailable) {
+    return <main className="container py-5" style={{ maxWidth: 560 }}><section className="card border-success shadow-sm"><div className="card-body p-4"><h1 className="h3 text-success">TokTickIT IT Service Desk</h1><h2 className="h5">Sign in</h2>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<form onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { const user = await login(String(form.get("email")), String(form.get("password"))); setAuthUser(user); setCurrentRequester(user); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign in."); } }}><label className="form-label" htmlFor="auth-email">Email</label><input id="auth-email" name="email" type="email" className="form-control mb-3" required /><label className="form-label" htmlFor="auth-password">Password</label><input id="auth-password" name="password" type="password" className="form-control mb-3" required /><button className="btn btn-success">Sign in</button></form></div></section></main>;
+  }
+
+  if (authUser?.mustChangePassword) {
+    return <main className="container py-5" style={{ maxWidth: 560 }}><section className="card border-success shadow-sm"><div className="card-body p-4"><h1 className="h3 text-success">Change password required</h1><p>Please change your initial password before continuing.</p>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<form onSubmit={async (event) => { event.preventDefault(); const form = new FormData(event.currentTarget); try { const user = await changePassword(String(form.get("newPassword")), String(form.get("confirmPassword"))); setAuthUser(user); setCurrentRequester(user); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to change password."); } }}><label className="form-label" htmlFor="new-password">New password</label><input id="new-password" name="newPassword" type="password" className="form-control mb-3" required /><label className="form-label" htmlFor="confirm-password">Confirm password</label><input id="confirm-password" name="confirmPassword" type="password" className="form-control mb-3" required /><button className="btn btn-success">Change password</button></form></div></section></main>;
+  }
+
+  const requester = currentRequester ?? authUser;
+
+  if (authUser && authUser.role !== "REQUESTER") {
+    return <main className="container py-5"><div className="alert alert-warning" role="alert">Your role does not have access to the Requester workspace.</div><button className="btn btn-outline-success" onClick={async () => { await logout(); setAuthUser(null); setCurrentRequester(null); }}>Logout</button></main>;
+  }
+
   async function loadRequesterOptions() {
     setRequesterViewState("loading");
     setRequesters([]);
@@ -91,58 +140,6 @@ export default function App() {
       setRequesterViewState("error");
     }
   }
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function initialiseRequesterContext() {
-      const storedRequesterId =
-        localStorage.getItem(
-          REQUESTER_STORAGE_KEY,
-        );
-
-      if (storedRequesterId) {
-        const requesterId =
-          Number(storedRequesterId);
-
-        if (
-          Number.isSafeInteger(requesterId) &&
-          requesterId > 0
-        ) {
-          try {
-            const requester =
-              await getDevelopmentRequester(
-                requesterId,
-              );
-
-            if (!cancelled) {
-              setCurrentRequester(requester);
-            }
-
-            return;
-          } catch {
-            localStorage.removeItem(
-              REQUESTER_STORAGE_KEY,
-            );
-          }
-        } else {
-          localStorage.removeItem(
-            REQUESTER_STORAGE_KEY,
-          );
-        }
-      }
-
-      if (!cancelled) {
-        await loadRequesterOptions();
-      }
-    }
-
-    void initialiseRequesterContext();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleContinue() {
     const requesterId =
@@ -207,7 +204,7 @@ export default function App() {
     }
   }
 
-  if (!currentRequester) {
+  if (!currentRequester && !authUser) {
     return (
       <main
         className="container py-5"
@@ -376,20 +373,20 @@ export default function App() {
           <p className="mb-0 text-body-secondary">
             Current Requester:{" "}
             <strong>
-              {currentRequester.name}
+              {requester.name}
             </strong>
           </p>
           <p className="small text-body-secondary mb-0">
-            Development Testing Context - not authentication
+            Authenticated session
           </p>
         </div>
 
         <button
           type="button"
           className="btn btn-outline-success"
-          onClick={handleChangeRequester}
+          onClick={async () => { await logout(); setAuthUser(null); setCurrentRequester(null); }}
         >
-          Change Requester
+          Logout
         </button>
       </header>
 
@@ -462,8 +459,8 @@ export default function App() {
         <>
           <div className="mb-4">
             <CreateTicket
-              requesterId={currentRequester.id}
-              requesterName={currentRequester.name}
+              requesterId={requester.id}
+              requesterName={requester.name}
               onMyTickets={() =>
                 setActiveView("tickets")
               }
@@ -540,8 +537,8 @@ export default function App() {
         </>
       ) : activeView === "tickets" ? (
         <MyTickets
-          requesterId={currentRequester.id}
-          requesterName={currentRequester.name}
+          requesterId={requester.id}
+          requesterName={requester.name}
           onCreateTicket={() =>
             setActiveView("create")
           }
@@ -552,7 +549,7 @@ export default function App() {
         />
       ) : selectedTicketId ? (
         <RequesterTicketDetail
-          requesterId={currentRequester.id}
+          requesterId={requester.id}
           ticketId={selectedTicketId}
           onBack={() => {
             setSelectedTicketId(null);
@@ -561,8 +558,8 @@ export default function App() {
         />
       ) : (
         <MyTickets
-          requesterId={currentRequester.id}
-          requesterName={currentRequester.name}
+          requesterId={requester.id}
+          requesterName={requester.name}
           onCreateTicket={() =>
             setActiveView("create")
           }
