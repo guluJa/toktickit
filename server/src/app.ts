@@ -31,6 +31,19 @@ import {
   validateAttachment,
   validateRemovalReason,
 } from "./attachment-validation.js";
+import {
+  clearSessionCookie,
+  createSessionToken,
+  hashPassword,
+  hashSessionToken,
+  parseCookieHeader,
+  requireAuthenticated,
+  SESSION_COOKIE,
+  SESSION_TTL_MS,
+  toSafeUser,
+  validatePassword,
+  verifyPassword,
+} from "./auth.js";
 // getPrisma() is your lazy database handle. Call it INSIDE a route when you
 // need the DB (Issue 4). It is intentionally unused until then.
 void getPrisma;
@@ -41,10 +54,164 @@ export const app = express();
 
 app.use(
   cors({
+    origin: (origin, callback) => {
+      const allowedOrigins = new Set(
+        (process.env.CLIENT_ORIGINS ?? "http://localhost:5173")
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean),
+      );
+
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Origin is not allowed."));
+    },
+    credentials: true,
     exposedHeaders: ["Content-Disposition"],
   }),
 ); // lets the Vite client read the original Attachment filename safely
 app.use(express.json());
+
+function validationResponse(
+  res: Response,
+  fields: Record<string, string>,
+): void {
+  res.status(400).json({
+    error: {
+      code: "VALIDATION_ERROR",
+      message: "Request data is invalid.",
+      fields,
+    },
+  });
+}
+
+function getStringField(value: unknown): string | null {
+  return typeof value === "string" ? value.trim() : null;
+}
+
+app.post("/api/auth/login", async (req: Request, res: Response) => {
+  const email = getStringField(req.body?.email)?.toLowerCase();
+  const password = req.body?.password;
+  const fields: Record<string, string> = {};
+
+  if (!email) fields.email = "Email is required.";
+  if (typeof password !== "string" || password.length === 0) {
+    fields.password = "Password is required.";
+  }
+  if (email && email.length > 254) fields.email = "Email is too long.";
+
+  if (Object.keys(fields).length > 0) {
+    validationResponse(res, fields);
+    return;
+  }
+
+  try {
+    const user = await getPrisma().requesterUser.findUnique({
+      where: { email },
+    });
+
+    if (!user || !user.isActive || !(await verifyPassword(password, user.passwordHash))) {
+      res.status(401).json({
+        error: {
+          code: "AUTHENTICATION_FAILED",
+          message: "Email or password is incorrect.",
+        },
+      });
+      return;
+    }
+
+    const token = createSessionToken();
+    await getPrisma().session.create({
+      data: {
+        tokenHash: hashSessionToken(token),
+        userId: user.id,
+        expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+      },
+    });
+
+    res.setHeader(
+      "Set-Cookie",
+      `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`,
+    );
+    res.status(200).json({ data: { user: toSafeUser(user) } });
+  } catch (error) {
+    console.error("Unable to authenticate user:", error);
+    res.status(500).json({
+      error: { code: "INTERNAL_ERROR", message: "Unable to complete login." },
+    });
+  }
+});
+
+app.get("/api/auth/me", requireAuthenticated, (req: Request, res: Response) => {
+  res.status(200).json({ data: { user: req.authUser } });
+});
+
+app.post("/api/auth/logout", async (req: Request, res: Response) => {
+  try {
+    let token: string | undefined;
+    try {
+      token = parseCookieHeader(req.header("Cookie")).get(SESSION_COOKIE);
+    } catch {
+      // Logout is intentionally idempotent, even when a stale cookie is malformed.
+      token = undefined;
+    }
+    if (token) {
+      await getPrisma().session.deleteMany({
+        where: { tokenHash: hashSessionToken(token) },
+      });
+    }
+    clearSessionCookie(res);
+    res.status(200).json({ data: { loggedOut: true } });
+  } catch (error) {
+    console.error("Unable to logout user:", error);
+    res.status(500).json({
+      error: { code: "INTERNAL_ERROR", message: "Unable to complete logout." },
+    });
+  }
+});
+
+app.post(
+  "/api/auth/change-password",
+  requireAuthenticated,
+  async (req: Request, res: Response) => {
+    const newPassword = req.body?.newPassword;
+    const confirmPassword = req.body?.confirmPassword;
+    const fields: Record<string, string> = {};
+    const passwordError = validatePassword(newPassword);
+
+    if (passwordError) fields.newPassword = passwordError;
+    if (typeof confirmPassword !== "string") {
+      fields.confirmPassword = "Confirmation password is required.";
+    } else if (newPassword !== confirmPassword) {
+      fields.confirmPassword = "Passwords must match.";
+    }
+
+    if (Object.keys(fields).length > 0) {
+      validationResponse(res, fields);
+      return;
+    }
+
+    try {
+      const user = await getPrisma().requesterUser.update({
+        where: { id: req.authUser!.id },
+        data: {
+          passwordHash: await hashPassword(newPassword),
+          mustChangePassword: false,
+        },
+      });
+
+      res.status(200).json({ data: { user: toSafeUser(user) } });
+    } catch (error) {
+      console.error("Unable to change password:", error);
+      res.status(500).json({
+        error: { code: "INTERNAL_ERROR", message: "Unable to change password." },
+      });
+    }
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Issue 2 — API health check
