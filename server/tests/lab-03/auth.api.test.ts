@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { getPrisma } from "../../src/prisma.js";
-import { hashPassword } from "../../src/auth.js";
+import { hashPassword, hashSessionToken, SESSION_COOKIE } from "../../src/auth.js";
 
 const prisma = getPrisma();
 const testEmail = "lab3-auth-foundation@toktickit.test";
@@ -90,6 +90,44 @@ describe("Lab 3 authentication API", () => {
     expect(me.body.data.user.email).toBe(testEmail);
   });
 
+  it("distinguishes a missing session cookie from an invalid session", async () => {
+    const missing = await request(app).get("/api/auth/me");
+    expect(missing.status).toBe(401);
+    expect(missing.body.error.code).toBe("AUTHENTICATION_REQUIRED");
+
+    const invalid = await request(app)
+      .get("/api/auth/me")
+      .set("Cookie", `${SESSION_COOKIE}=not-a-real-session`);
+    expect(invalid.status).toBe(401);
+    expect(invalid.body.error.code).toBe("SESSION_INVALID");
+  });
+
+  it("rejects an expired session with a safe SESSION_INVALID error", async () => {
+    const user = await prisma.requesterUser.findUniqueOrThrow({ where: { email: testEmail } });
+    const token = "expired-session-fixture";
+    await prisma.session.create({
+      data: {
+        tokenHash: hashSessionToken(token),
+        userId: user.id,
+        expiresAt: new Date(Date.now() - 1_000),
+      },
+    });
+
+    const response = await request(app)
+      .get("/api/auth/me")
+      .set("Cookie", `${SESSION_COOKIE}=${token}`);
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe("SESSION_INVALID");
+  });
+
+  it("rejects a malformed session cookie with a safe SESSION_INVALID error", async () => {
+    const response = await request(app)
+      .get("/api/auth/me")
+      .set("Cookie", `${SESSION_COOKIE}=%ZZ`);
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe("SESSION_INVALID");
+  });
+
   it("rejects invalid credentials and inactive accounts uniformly", async () => {
     const wrongPassword = await request(app).post("/api/auth/login").send({
       email: testEmail,
@@ -133,6 +171,9 @@ describe("Lab 3 authentication API", () => {
 
     const me = await agent.get("/api/auth/me");
     expect(me.status).toBe(401);
-    expect(me.body.error.code).toBe("AUTHENTICATION_REQUIRED");
+    expect(me.body.error.code).toBe("SESSION_INVALID");
+
+    const unauthenticated = await request(app).get("/api/auth/me");
+    expect(unauthenticated.body.error.code).toBe("AUTHENTICATION_REQUIRED");
   });
 });

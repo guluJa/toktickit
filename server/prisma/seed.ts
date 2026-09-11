@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { hashPassword } from "../src/auth.js";
 import { getPrisma } from "../src/prisma.js";
 
@@ -78,19 +80,14 @@ const users = [
   { name: "Lab Administrator", email: "admin@toktickit.test", role: "ADMINISTRATOR" as const, isActive: true },
 ];
 
-const localInitialPassword = process.env.LAB3_INITIAL_PASSWORD;
-
-async function main() {
+export async function runSeed(): Promise<void> {
   const prisma = getPrisma();
+  const localInitialPassword = process.env.LAB3_INITIAL_PASSWORD;
 
   if (!localInitialPassword) {
     throw new Error("LAB3_INITIAL_PASSWORD must be set for local seed execution.");
   }
 
-  const seedPasswordHash = await hashPassword(
-    localInitialPassword,
-    "toktickit-lab3-seed-v1",
-  );
   const userIds = new Map<string, number>();
 
   for (const name of categories) {
@@ -133,7 +130,7 @@ async function main() {
             isActive: definition.isActive,
             ...(existing.passwordHash === "!"
               ? {
-                  passwordHash: seedPasswordHash,
+                  passwordHash: await hashPassword(localInitialPassword),
                   mustChangePassword: true,
                 }
               : {}),
@@ -142,12 +139,28 @@ async function main() {
       : await prisma.requesterUser.create({
           data: {
             ...definition,
-            passwordHash: seedPasswordHash,
+            passwordHash: await hashPassword(localInitialPassword),
             mustChangePassword: true,
           },
         });
 
     userIds.set(definition.email, user.id);
+  }
+
+  // Lab 2 may contain RequesterUser rows beyond the named development fixtures.
+  // Provision every remaining placeholder without changing identity or ownership.
+  const legacyPlaceholders = await prisma.requesterUser.findMany({
+    where: { role: "REQUESTER", passwordHash: "!" },
+    select: { id: true },
+  });
+  for (const legacyUser of legacyPlaceholders) {
+    await prisma.requesterUser.updateMany({
+      where: { id: legacyUser.id, role: "REQUESTER", passwordHash: "!" },
+      data: {
+        passwordHash: await hashPassword(localInitialPassword),
+        mustChangePassword: true,
+      },
+    });
   }
 
   const categoryIds = new Map(
@@ -275,11 +288,15 @@ async function main() {
   console.log("Seeded Lab 3 local users, reference data and tickets successfully.");
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await getPrisma().$disconnect();
-  });
+const executedFile = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const seedFile = path.resolve(fileURLToPath(import.meta.url));
+if (executedFile === seedFile) {
+  runSeed()
+    .catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await getPrisma().$disconnect();
+    });
+}

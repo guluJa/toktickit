@@ -129,24 +129,36 @@ export function clearSessionCookie(res: Response): void {
 }
 
 async function loadAuthenticatedUser(req: Request): Promise<{
+  kind: "authenticated";
   user: SafeUser;
   sessionId: number;
-} | null> {
-  const token = parseCookieHeader(req.header("Cookie")).get(SESSION_COOKIE);
-  if (!token) return null;
+} | { kind: "missing" | "invalid" }> {
+  const cookieHeader = req.header("Cookie");
+  if (!cookieHeader) return { kind: "missing" };
+
+  let cookies: Map<string, string>;
+  try {
+    cookies = parseCookieHeader(cookieHeader);
+  } catch {
+    return { kind: "invalid" };
+  }
+
+  if (!cookies.has(SESSION_COOKIE)) return { kind: "missing" };
+  const token = cookies.get(SESSION_COOKIE);
+  if (!token) return { kind: "invalid" };
 
   const session = await getPrisma().session.findUnique({
     where: { tokenHash: hashSessionToken(token) },
     include: { user: true },
   });
-  if (!session) return null;
+  if (!session) return { kind: "invalid" };
 
   if (session.expiresAt <= new Date() || !session.user.isActive) {
     await getPrisma().session.delete({ where: { id: session.id } }).catch(() => undefined);
-    return null;
+    return { kind: "invalid" };
   }
 
-  return { user: toSafeUser(session.user), sessionId: session.id };
+  return { kind: "authenticated", user: toSafeUser(session.user), sessionId: session.id };
 }
 
 export async function requireAuthenticated(
@@ -156,9 +168,12 @@ export async function requireAuthenticated(
 ): Promise<void> {
   try {
     const auth = await loadAuthenticatedUser(req);
-    if (!auth) {
+    if (auth.kind !== "authenticated") {
       res.status(401).json({
-        error: { code: "AUTHENTICATION_REQUIRED", message: "Authentication is required." },
+        error:
+          auth.kind === "missing"
+            ? { code: "AUTHENTICATION_REQUIRED", message: "Authentication is required." }
+            : { code: "SESSION_INVALID", message: "The session is invalid or has expired." },
       });
       return;
     }
@@ -174,6 +189,9 @@ export async function requireAuthenticated(
   }
 }
 
+// This gate is intentionally exported for the next authorization slice.
+// Issue #50 keeps the existing Lab 2 requester-header routes unchanged;
+// Issue #51 will compose this middleware with normal protected application routes.
 export function requireNormalApplicationAccess(
   req: Request,
   res: Response,
