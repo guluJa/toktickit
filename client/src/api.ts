@@ -165,16 +165,26 @@ export interface TicketDetail {
   };
   summary: string;
   requestedPriority: RequestedPriority;
+  itPriority?: RequestedPriority;
   description: string;
-  currentStatus: "NEW";
+  currentStatus: TicketStatus;
+  owner?: { id: number; name: string; role: AuthUser["role"] } | null;
   createdAt: string;
   updatedAt: string;
   attachments: AttachmentMetadata[];
   comments?: PublicComment[];
+  internalNotes?: InternalNote[];
   requesterResolvedAt?: string | null;
 }
 
 export interface PublicComment {
+  id: number;
+  author: { id: number; name: string };
+  content: string;
+  createdAt: string;
+}
+
+export interface InternalNote {
   id: number;
   author: { id: number; name: string };
   content: string;
@@ -349,6 +359,64 @@ export async function getStaffTickets(query: StaffQueueQuery): Promise<StaffQueu
     throw new TicketApiError(errorBody.error?.message ?? "Unable to load the Staff Ticket Queue.", response.status, errorBody.error?.code ?? "STAFF_QUEUE_REQUEST_FAILED", errorBody.error?.fields);
   }
   return (body as { data: StaffQueueResponse }).data;
+}
+
+export interface StaffTicketDetailResponse {
+  ticket: TicketDetail;
+  comments: PublicComment[];
+  internalNotes: InternalNote[];
+}
+
+async function staffMutation<T>(url: string, init: RequestInit, fallback: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url, { ...init, credentials: "include", headers: { "Content-Type": "application/json", ...(init.headers ?? {}) } });
+  } catch {
+    throw new TicketApiError(fallback, 0, "STAFF_DETAIL_REQUEST_FAILED");
+  }
+  let body: TicketApiErrorResponse | { data?: T } = {};
+  try { body = await response.json(); } catch { /* safe fallback */ }
+  if (!response.ok) {
+    const errorBody = body as TicketApiErrorResponse;
+    throw new TicketApiError(errorBody.error?.message ?? fallback, response.status, errorBody.error?.code ?? "STAFF_DETAIL_REQUEST_FAILED", errorBody.error?.fields);
+  }
+  return (body as { data: T }).data;
+}
+
+export async function getStaffTicketDetail(ticketId: number): Promise<StaffTicketDetailResponse> {
+  return staffMutation<StaffTicketDetailResponse>(`${API_URL}/api/staff/tickets/${ticketId}`, { method: "GET" }, "Unable to load Staff Ticket Detail.");
+}
+
+export async function updateStaffAssignment(ticketId: number, ownerId: number | null): Promise<{ ticket: TicketDetail }> {
+  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/assignment`, { method: "POST", body: JSON.stringify({ ownerId }) }, "Unable to update Ticket ownership.");
+}
+
+export async function updateStaffPriority(ticketId: number, itPriority: RequestedPriority): Promise<{ ticket: TicketDetail }> {
+  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/priority`, { method: "PATCH", body: JSON.stringify({ itPriority }) }, "Unable to update IT Priority.");
+}
+
+export async function updateStaffStatus(ticketId: number, status: TicketStatus): Promise<{ ticket: TicketDetail }> {
+  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/status`, { method: "PATCH", body: JSON.stringify({ status }) }, "Unable to update Ticket status.");
+}
+
+export async function getStaffComments(ticketId: number): Promise<PublicComment[]> {
+  const data = await staffMutation<{ items: PublicComment[] }>(`${API_URL}/api/staff/tickets/${ticketId}/comments`, { method: "GET" }, "Unable to load Public Comments.");
+  return data.items;
+}
+
+export async function createStaffComment(ticketId: number, content: string): Promise<PublicComment> {
+  const data = await staffMutation<{ comment: PublicComment }>(`${API_URL}/api/staff/tickets/${ticketId}/comments`, { method: "POST", body: JSON.stringify({ content }) }, "Unable to create Public Comment.");
+  return data.comment;
+}
+
+export async function getInternalNotes(ticketId: number): Promise<InternalNote[]> {
+  const data = await staffMutation<{ items: InternalNote[] }>(`${API_URL}/api/staff/tickets/${ticketId}/notes`, { method: "GET" }, "Unable to load Internal Notes.");
+  return data.items;
+}
+
+export async function createInternalNote(ticketId: number, content: string): Promise<InternalNote> {
+  const data = await staffMutation<{ note: InternalNote }>(`${API_URL}/api/staff/tickets/${ticketId}/notes`, { method: "POST", body: JSON.stringify({ content }) }, "Unable to create Internal Note.");
+  return data.note;
 }
 
 export async function getMyTickets(

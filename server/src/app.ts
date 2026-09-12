@@ -38,6 +38,7 @@ import {
   hashSessionToken,
   parseCookieHeader,
   requireAuthenticated,
+  requireNormalApplicationAccess,
   SESSION_COOKIE,
   SESSION_TTL_MS,
   toSafeUser,
@@ -50,6 +51,11 @@ import {
   StaffQueueQueryValidationError,
 } from "./staff-queue-query.js";
 import { requireStaffQueueAccess } from "./staff-access.js";
+import {
+  isAllowedStatusTransition,
+  staffTicketDetailSelect,
+  toStaffTicketDetail,
+} from "./staff-ticket-detail.js";
 // getPrisma() is your lazy database handle. Call it INSIDE a route when you
 // need the DB (Issue 4). It is intentionally unused until then.
 void getPrisma;
@@ -653,6 +659,35 @@ function sendAttachmentError(
   return false;
 }
 
+/** Allow attachment downloads for authenticated staff viewers while keeping
+ * the Lab 2 header fixture available only to isolated regression tests. */
+async function requireAttachmentViewerAccess(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  if (
+    process.env.NODE_ENV === "test" &&
+    process.env.ALLOW_LEGACY_REQUESTER_CONTEXT_TESTS === "true" &&
+    !req.header("Cookie")
+  ) {
+    await requireRequesterAccess(req, res, next);
+    return;
+  }
+
+  await requireAuthenticated(req, res, () => {
+    requireNormalApplicationAccess(req, res, next);
+  });
+}
+
+async function staffCanViewTicket(ticketId: number): Promise<boolean> {
+  const ticket = await getPrisma().ticket.findUnique({
+    where: { id: ticketId },
+    select: { id: true },
+  });
+  return Boolean(ticket);
+}
+
 const MAX_TICKET_NUMBER_ATTEMPTS = 3;
 
 class TicketNumberAllocationError extends Error {
@@ -907,6 +942,153 @@ app.get(
     }
   },
 );
+
+async function loadStaffTicketDetail(ticketId: number) {
+  return getPrisma().ticket.findUnique({
+    where: { id: ticketId },
+    select: staffTicketDetailSelect,
+  });
+}
+
+function requireItStaffRole(req: Request, res: Response): boolean {
+  if (req.authUser?.role === "IT_STAFF") return true;
+  res.status(403).json({ error: { code: "ROLE_FORBIDDEN", message: "This operation is not available for the current role." } });
+  return false;
+}
+
+function parseStaffTicketId(req: Request, res: Response): number | null {
+  const ticketId = parsePositiveInteger(req.params.ticketId);
+  if (ticketId !== null) return ticketId;
+  res.status(400).json({ error: { code: "INVALID_ID", message: "ticketId must be a positive integer." } });
+  return null;
+}
+
+function staffTicketResponse(ticket: Awaited<ReturnType<typeof loadStaffTicketDetail>>) {
+  if (!ticket) return null;
+  const detail = toStaffTicketDetail(ticket);
+  return { ticket: detail, comments: detail.comments, internalNotes: detail.internalNotes };
+}
+
+app.get("/api/staff/tickets/:ticketId", requireStaffQueueAccess, async (req: Request, res: Response) => {
+  const ticketId = parseStaffTicketId(req, res);
+  if (ticketId === null) return;
+  try {
+    const response = staffTicketResponse(await loadStaffTicketDetail(ticketId));
+    if (!response) { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
+    res.status(200).json({ data: response });
+  } catch (error) {
+    console.error("Unable to load Staff Ticket Detail:", error);
+    res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to load the Staff Ticket Detail." } });
+  }
+});
+
+app.post("/api/staff/tickets/:ticketId/assignment", requireStaffQueueAccess, async (req: Request, res: Response) => {
+  if (!requireItStaffRole(req, res)) return;
+  const ticketId = parseStaffTicketId(req, res);
+  if (ticketId === null) return;
+  const ownerId = req.body?.ownerId;
+  if (!(ownerId === null || (typeof ownerId === "number" && Number.isSafeInteger(ownerId) && ownerId > 0))) {
+    validationResponse(res, { ownerId: "ownerId must be a positive integer or null." });
+    return;
+  }
+  try {
+    const ticket = await loadStaffTicketDetail(ticketId);
+    if (!ticket) { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
+    if (ownerId !== null) {
+      const owner = await getPrisma().requesterUser.findFirst({ where: { id: ownerId, isActive: true, role: { in: ["IT_STAFF", "ADMINISTRATOR"] } }, select: { id: true } });
+      if (!owner) { res.status(404).json({ error: { code: "USER_NOT_FOUND", message: "User not found." } }); return; }
+    }
+    const updated = await getPrisma().ticket.update({ where: { id: ticketId }, data: { ownerId }, select: staffTicketDetailSelect });
+    res.status(200).json({ data: { ticket: toStaffTicketDetail(updated) } });
+  } catch (error) {
+    console.error("Unable to update Ticket ownership:", error);
+    res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to update Ticket ownership." } });
+  }
+});
+
+app.patch("/api/staff/tickets/:ticketId/priority", requireStaffQueueAccess, async (req: Request, res: Response) => {
+  const ticketId = parseStaffTicketId(req, res);
+  if (ticketId === null) return;
+  const itPriority = req.body?.itPriority;
+  if (!["LOW", "MEDIUM", "HIGH"].includes(itPriority)) { validationResponse(res, { itPriority: "itPriority must be LOW, MEDIUM, or HIGH." }); return; }
+  try {
+    const updated = await getPrisma().ticket.update({ where: { id: ticketId }, data: { itPriority }, select: staffTicketDetailSelect });
+    res.status(200).json({ data: { ticket: toStaffTicketDetail(updated) } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
+    console.error("Unable to update IT Priority:", error);
+    res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to update IT Priority." } });
+  }
+});
+
+app.patch("/api/staff/tickets/:ticketId/status", requireStaffQueueAccess, async (req: Request, res: Response) => {
+  if (!requireItStaffRole(req, res)) return;
+  const ticketId = parseStaffTicketId(req, res);
+  if (ticketId === null) return;
+  const nextStatus = req.body?.status;
+  const validStatuses = ["NEW", "OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED", "REOPENED", "CANCELLED"];
+  if (!validStatuses.includes(nextStatus)) { validationResponse(res, { status: "status is invalid." }); return; }
+  try {
+    const current = await getPrisma().ticket.findUnique({ where: { id: ticketId }, select: { currentStatus: true } });
+    if (!current) { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
+    if (!isAllowedStatusTransition(current.currentStatus, nextStatus)) { res.status(409).json({ error: { code: "STATUS_TRANSITION_NOT_ALLOWED", message: "The requested status transition is not allowed." } }); return; }
+    const updated = await getPrisma().ticket.update({ where: { id: ticketId }, data: { currentStatus: nextStatus }, select: staffTicketDetailSelect });
+    res.status(200).json({ data: { ticket: toStaffTicketDetail(updated) } });
+  } catch (error) {
+    console.error("Unable to update Ticket status:", error);
+    res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to update Ticket status." } });
+  }
+});
+
+async function staffTicketExists(ticketId: number): Promise<boolean> {
+  return Boolean(await getPrisma().ticket.findUnique({ where: { id: ticketId }, select: { id: true } }));
+}
+
+app.get("/api/staff/tickets/:ticketId/comments", requireStaffQueueAccess, async (req: Request, res: Response) => {
+  const ticketId = parseStaffTicketId(req, res);
+  if (ticketId === null) return;
+  try {
+    if (!(await staffTicketExists(ticketId))) { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
+    const items = await getPrisma().comment.findMany({ where: { ticketId }, select: { id: true, content: true, createdAt: true, author: { select: { id: true, name: true } } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+    res.status(200).json({ data: { items } });
+  } catch (error) { console.error("Unable to load Staff Public Comments:", error); res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to load Public Comments." } }); }
+});
+
+app.post("/api/staff/tickets/:ticketId/comments", requireStaffQueueAccess, async (req: Request, res: Response) => {
+  if (!requireItStaffRole(req, res)) return;
+  const ticketId = parseStaffTicketId(req, res);
+  if (ticketId === null) return;
+  const content = getStringField(req.body?.content) ?? "";
+  if (!content || content.length > 5000) { validationResponse(res, { content: "Content must be 1-5000 characters." }); return; }
+  try {
+    if (!(await staffTicketExists(ticketId))) { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
+    const comment = await getPrisma().comment.create({ data: { ticketId, authorId: req.authUser!.id, content }, select: { id: true, content: true, createdAt: true, author: { select: { id: true, name: true } } } });
+    res.status(201).json({ data: { comment } });
+  } catch (error) { console.error("Unable to create Staff Public Comment:", error); res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to create Public Comment." } }); }
+});
+
+app.get("/api/staff/tickets/:ticketId/notes", requireStaffQueueAccess, async (req: Request, res: Response) => {
+  const ticketId = parseStaffTicketId(req, res);
+  if (ticketId === null) return;
+  try {
+    if (!(await staffTicketExists(ticketId))) { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
+    const items = await getPrisma().internalNote.findMany({ where: { ticketId }, select: { id: true, content: true, createdAt: true, author: { select: { id: true, name: true } } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+    res.status(200).json({ data: { items } });
+  } catch (error) { console.error("Unable to load Internal Notes:", error); res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to load Internal Notes." } }); }
+});
+
+app.post("/api/staff/tickets/:ticketId/notes", requireStaffQueueAccess, async (req: Request, res: Response) => {
+  if (!requireItStaffRole(req, res)) return;
+  const ticketId = parseStaffTicketId(req, res);
+  if (ticketId === null) return;
+  const content = getStringField(req.body?.content) ?? "";
+  if (!content || content.length > 5000) { validationResponse(res, { content: "Content must be 1-5000 characters." }); return; }
+  try {
+    if (!(await staffTicketExists(ticketId))) { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
+    const note = await getPrisma().internalNote.create({ data: { ticketId, authorId: req.authUser!.id, content }, select: { id: true, content: true, createdAt: true, author: { select: { id: true, name: true } } } });
+    res.status(201).json({ data: { note } });
+  } catch (error) { console.error("Unable to create Internal Note:", error); res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to create Internal Note." } }); }
+});
 
 app.get(
   "/api/tickets",
@@ -1481,7 +1663,7 @@ app.get(
 
 app.get(
   "/api/attachments/:attachmentId/download",
-  requireRequesterAccess,
+  requireAttachmentViewerAccess,
   async (req: Request, res: Response) => {
     try {
       const attachmentId = parsePositiveInteger(
@@ -1499,32 +1681,25 @@ app.get(
         return;
       }
 
-      const requester = req.developmentRequester;
-
-      if (!requester) {
-        res.status(403).json({
-          error: {
-            code:
-              "REQUESTER_CONTEXT_FORBIDDEN",
-            message:
-              "The development requester is unavailable.",
-          },
-        });
-        return;
-      }
-
-      const attachment =
-        await getPrisma().attachment.findFirst({
-          where: {
-            id: attachmentId,
-            ticket: {
-              requesterId: requester.id,
+      const isStaffViewer = req.authUser?.role === "IT_STAFF" || req.authUser?.role === "ADMINISTRATOR";
+      const attachment = isStaffViewer
+        ? await getPrisma().attachment.findUnique({
+            where: { id: attachmentId },
+            select: {
+              ...attachmentStorageSelect,
             },
-          },
-          select: attachmentStorageSelect,
-        });
+          })
+        : await getPrisma().attachment.findFirst({
+            where: {
+              id: attachmentId,
+              ticket: { requesterId: req.developmentRequester?.id ?? -1 },
+            },
+            select: attachmentStorageSelect,
+          });
 
-      if (!attachment) {
+      if (!attachment) throw new AttachmentResourceNotFoundError();
+
+      if (isStaffViewer && !(await staffCanViewTicket(attachment.ticketId))) {
         throw new AttachmentResourceNotFoundError();
       }
 
