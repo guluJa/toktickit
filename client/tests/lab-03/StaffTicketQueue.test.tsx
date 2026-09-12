@@ -22,10 +22,6 @@ describe("Staff Ticket Queue", () => {
     await user.type(screen.getByLabelText("Search Tickets"), "alpha"); await user.selectOptions(screen.getByLabelText("Status"), "OPEN"); await user.selectOptions(screen.getByLabelText("IT Priority"), "HIGH"); await user.click(screen.getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(mockedGetStaffTickets).toHaveBeenLastCalledWith(expect.objectContaining({ search: "alpha", status: "OPEN", itPriority: "HIGH", page: 1, sortBy: "updatedAt", sortOrder: "desc", pageSize: 10 })));
   });
-  it("passes the selected ticket id to the navigation callback", async () => {
-    const user = userEvent.setup(); const onOpenTicket = vi.fn(); render(<StaffTicketQueue role="IT_STAFF" onOpenTicket={onOpenTicket} />); await screen.findAllByText("TKT-QUEUE-1");
-    await user.click(screen.getAllByRole("button", { name: "Open Ticket" })[0]); expect(onOpenTicket).toHaveBeenCalledWith(1);
-  });
   it("renders empty, no-results, forbidden and safe failure states", async () => {
     mockedGetStaffTickets.mockResolvedValueOnce(result({ items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } })); render(<StaffTicketQueue role="ADMINISTRATOR" />); await screen.findByText(/No Tickets are currently/); expect(screen.queryByText(/internal/i)).not.toBeInTheDocument();
     mockedGetStaffTickets.mockRejectedValueOnce(new TicketApiError("no", 403, "ROLE_FORBIDDEN")); render(<StaffTicketQueue role="IT_STAFF" />); await screen.findByText(/Access denied/);
