@@ -246,7 +246,7 @@ export interface TicketSummary {
   requestedPriority: RequestedPriority;
   itPriority?: RequestedPriority;
   currentStatus: TicketStatus;
-  owner?: AuthUser | null;
+  owner?: { id: number; name: string; role: AuthUser["role"] } | null;
   createdAt: string;
   updatedAt: string;
 }

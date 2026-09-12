@@ -33,7 +33,8 @@ describe("Lab 3 Staff Ticket Queue", () => {
   it("returns the contract envelope and Staff Queue fields to IT Staff", async () => {
     const response = await (await signedIn(staffEmail)).get("/api/staff/tickets").query({ search: "Queue alpha", sortBy: "ticketNumber", sortOrder: "asc" });
     expect(response.status).toBe(200); expect(response.body.data.pagination).toMatchObject({ page: 1, pageSize: 10, totalItems: 1, totalPages: 1 });
-    expect(response.body.data.items[0]).toEqual(expect.objectContaining({ ticketNumber: expect.any(String), summary: expect.any(String), requestedPriority: expect.any(String), itPriority: expect.any(String), currentStatus: "NEW", owner: expect.any(Object), category: expect.any(Object), relatedSystem: expect.any(Object) }));
+    expect(response.body.data.items[0]).toEqual(expect.objectContaining({ ticketNumber: expect.any(String), summary: expect.any(String), requestedPriority: expect.any(String), itPriority: expect.any(String), currentStatus: "NEW", owner: { id: staffId, name: "Queue Staff", role: "IT_STAFF" }, category: expect.any(Object), relatedSystem: expect.any(Object) }));
+    expect(response.body.data.items[0].owner).not.toHaveProperty("email"); expect(response.body.data.items[0].owner).not.toHaveProperty("isActive"); expect(response.body.data.items[0].owner).not.toHaveProperty("mustChangePassword");
   });
   it("supports search, filters, owner and page-one empty results", async () => {
     const agent = await signedIn(staffEmail);

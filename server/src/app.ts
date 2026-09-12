@@ -521,10 +521,7 @@ const staffTicketSummarySelect = {
     select: {
       id: true,
       name: true,
-      email: true,
       role: true,
-      isActive: true,
-      mustChangePassword: true,
     },
   },
 } satisfies Prisma.TicketSelect;
