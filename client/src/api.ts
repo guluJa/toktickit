@@ -129,6 +129,10 @@ export type RequestedPriority =
   | "MEDIUM"
   | "HIGH";
 
+export type TicketStatus =
+  | "NEW" | "OPEN" | "IN_PROGRESS" | "WAITING_FOR_REQUESTER"
+  | "RESOLVED" | "CLOSED" | "REOPENED" | "CANCELLED";
+
 export interface CreateTicketInput {
   submissionKey: string;
   categoryId: number;
@@ -240,9 +244,28 @@ export interface TicketSummary {
     name: string;
   };
   requestedPriority: RequestedPriority;
-  currentStatus: "NEW";
+  itPriority?: RequestedPriority;
+  currentStatus: TicketStatus;
+  owner?: { id: number; name: string; role: AuthUser["role"] } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type StaffQueueSortField = "ticketNumber" | "summary" | "createdAt" | "updatedAt" | "itPriority" | "currentStatus";
+export interface StaffQueueQuery {
+  search?: string;
+  status?: TicketStatus;
+  requestedPriority?: RequestedPriority;
+  itPriority?: RequestedPriority;
+  ownerId?: number | "unassigned";
+  sortBy: StaffQueueSortField;
+  sortOrder: "asc" | "desc";
+  page: number;
+  pageSize: 10 | 20 | 50;
+}
+export interface StaffQueueResponse {
+  items: TicketSummary[];
+  pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
 }
 
 export type MyTicketsSortField =
@@ -300,6 +323,32 @@ export class TicketApiError extends Error {
     this.code = code;
     this.fields = fields;
   }
+}
+
+export async function getStaffTickets(query: StaffQueueQuery): Promise<StaffQueueResponse> {
+  const parameters = new URLSearchParams();
+  if (query.search?.trim()) parameters.set("search", query.search.trim());
+  if (query.status) parameters.set("status", query.status);
+  if (query.requestedPriority) parameters.set("requestedPriority", query.requestedPriority);
+  if (query.itPriority) parameters.set("itPriority", query.itPriority);
+  if (query.ownerId !== undefined) parameters.set("ownerId", String(query.ownerId));
+  parameters.set("sortBy", query.sortBy);
+  parameters.set("sortOrder", query.sortOrder);
+  parameters.set("page", String(query.page));
+  parameters.set("pageSize", String(query.pageSize));
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/staff/tickets?${parameters.toString()}`, { credentials: "include" });
+  } catch {
+    throw new TicketApiError("Unable to load the Staff Ticket Queue. Please try again.", 0, "STAFF_QUEUE_REQUEST_FAILED");
+  }
+  let body: TicketApiErrorResponse | { data?: StaffQueueResponse } = {};
+  try { body = await response.json(); } catch { /* safe fallback */ }
+  if (!response.ok) {
+    const errorBody = body as TicketApiErrorResponse;
+    throw new TicketApiError(errorBody.error?.message ?? "Unable to load the Staff Ticket Queue.", response.status, errorBody.error?.code ?? "STAFF_QUEUE_REQUEST_FAILED", errorBody.error?.fields);
+  }
+  return (body as { data: StaffQueueResponse }).data;
 }
 
 export async function getMyTickets(

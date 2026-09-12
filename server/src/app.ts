@@ -44,6 +44,12 @@ import {
   validatePassword,
   verifyPassword,
 } from "./auth.js";
+import {
+  isDatabaseSupportedStatus,
+  parseStaffQueueQuery,
+  StaffQueueQueryValidationError,
+} from "./staff-queue-query.js";
+import { requireStaffQueueAccess } from "./staff-access.js";
 // getPrisma() is your lazy database handle. Call it INSIDE a route when you
 // need the DB (Issue 4). It is intentionally unused until then.
 void getPrisma;
@@ -500,6 +506,26 @@ const ticketSummarySelect = {
   },
 } satisfies Prisma.TicketSelect;
 
+const staffTicketSummarySelect = {
+  id: true,
+  ticketNumber: true,
+  summary: true,
+  requestedPriority: true,
+  itPriority: true,
+  currentStatus: true,
+  createdAt: true,
+  updatedAt: true,
+  category: { select: { id: true, name: true } },
+  relatedSystem: { select: { id: true, name: true } },
+  owner: {
+    select: {
+      id: true,
+      name: true,
+      role: true,
+    },
+  },
+} satisfies Prisma.TicketSelect;
+
 const attachmentMetadataSelect = {
   id: true,
   ticketId: true,
@@ -822,6 +848,65 @@ async function createOrReplayTicket(
 
   throw new TicketNumberAllocationError();
 }
+
+app.get(
+  "/api/staff/tickets",
+  requireStaffQueueAccess,
+  async (req: Request, res: Response) => {
+    try {
+      const query = parseStaffQueueQuery(req.query as Record<string, unknown>);
+      const prisma = getPrisma();
+
+      // The Lab 3 contract accepts the complete lifecycle vocabulary. Until a
+      // later status migration expands Prisma's enum, unsupported values are
+      // valid filters that simply produce no rows rather than a database error.
+      if (!isDatabaseSupportedStatus(query.status)) {
+        const totalPages = 0;
+        if (query.page > 1) {
+          res.status(400).json({ error: { code: "PAGE_OUT_OF_RANGE", message: "The requested page is outside the available result pages." } });
+          return;
+        }
+        res.status(200).json({ data: { items: [], pagination: { page: query.page, pageSize: query.pageSize, totalItems: 0, totalPages } } });
+        return;
+      }
+
+      const where: Prisma.TicketWhereInput = {
+        ...(query.search ? { OR: [
+          { ticketNumber: { contains: query.search, mode: "insensitive" } },
+          { summary: { contains: query.search, mode: "insensitive" } },
+        ] } : {}),
+        ...(query.status ? { currentStatus: query.status } : {}),
+        ...(query.requestedPriority ? { requestedPriority: query.requestedPriority } : {}),
+        ...(query.itPriority ? { itPriority: query.itPriority } : {}),
+        ...(query.ownerId !== undefined ? { ownerId: query.ownerId === "unassigned" ? null : query.ownerId } : {}),
+      };
+      const primaryOrder = { [query.sortBy]: query.sortOrder } as Prisma.TicketOrderByWithRelationInput;
+      const [items, totalItems] = await prisma.$transaction([
+        prisma.ticket.findMany({
+          where,
+          select: staffTicketSummarySelect,
+          orderBy: [primaryOrder, { id: "asc" }],
+          skip: (query.page - 1) * query.pageSize,
+          take: query.pageSize,
+        }),
+        prisma.ticket.count({ where }),
+      ]);
+      const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize);
+      if (totalItems > 0 && query.page > totalPages) {
+        res.status(400).json({ error: { code: "PAGE_OUT_OF_RANGE", message: "The requested page is outside the available result pages." } });
+        return;
+      }
+      res.status(200).json({ data: { items, pagination: { page: query.page, pageSize: query.pageSize, totalItems, totalPages } } });
+    } catch (error) {
+      if (error instanceof StaffQueueQueryValidationError) {
+        res.status(400).json({ error: { code: "INVALID_QUERY", message: error.message, fields: error.fields } });
+        return;
+      }
+      console.error("Unable to load Staff Ticket Queue:", error);
+      res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to load the Staff Ticket Queue." } });
+    }
+  },
+);
 
 app.get(
   "/api/tickets",

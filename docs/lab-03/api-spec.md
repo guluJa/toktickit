@@ -81,6 +81,8 @@ The following schemas are normative. Every endpoint that returns the correspondi
 }
 ```
 
+สำหรับ Staff Queue หาก `owner` ไม่เป็น `null` ต้องส่งเฉพาะ `{ "id": number, "name": string, "role": UserRole }` เท่านั้น ห้ามส่ง `email`, `isActive` หรือ `mustChangePassword`
+
 `TicketDetail` is the following complete shape (it includes all `TicketSummary` fields):
 
 ```json
