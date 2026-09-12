@@ -148,13 +148,50 @@ describe("Lab 3 Administrator user management API", () => {
     expect(stored.mustChangePassword).toBe(true);
   });
 
-  it("forbids Requester and IT Staff from all Administrator endpoints", async () => {
+  it("forbids Requester and IT Staff from every Administrator endpoint without changing data", async () => {
+    const target = await createFixture();
+    const before = await prisma.requesterUser.findUniqueOrThrow({ where: { id: target.id } });
     for (const email of [requesterEmail, staffEmail]) {
       const agent = await signedIn(email);
-      const response = await agent.get("/api/admin/users");
-      expect(response.status).toBe(403);
-      expect(response.body.error.code).toBe("ROLE_FORBIDDEN");
+      const responses = await Promise.all([
+        agent.get("/api/admin/users"),
+        agent.post("/api/admin/users").send({ name: "Forbidden User", email: `forbidden-${email}`, role: "REQUESTER", isActive: true, initialPassword: password }),
+        agent.patch(`/api/admin/users/${target.id}`).send({ name: "Should Not Change" }),
+        agent.post(`/api/admin/users/${target.id}/initial-password`).send({ initialPassword: "New-Initial-Password2@" }),
+      ]);
+      for (const response of responses) {
+        expect(response.status).toBe(403);
+        expect(response.body.error.code).toBe("ROLE_FORBIDDEN");
+        expect(JSON.stringify(response.body)).not.toMatch(/passwordHash|initialPassword|password/i);
+      }
     }
+    expect(await prisma.requesterUser.findUniqueOrThrow({ where: { id: target.id } })).toEqual(before);
+  });
+
+  it("rejects missing or invalid sessions on Administrator endpoints", async () => {
+    const missing = await request(app).get("/api/admin/users");
+    expect(missing.status).toBe(401);
+    expect(missing.body.error.code).toBe("AUTHENTICATION_REQUIRED");
+    const invalid = await request(app).get("/api/admin/users").set("Cookie", "toktickit_session=not-a-real-session");
+    expect(invalid.status).toBe(401);
+    expect(invalid.body.error.code).toBe("SESSION_INVALID");
+  });
+
+  it("validates role, activation and duplicate email on update", async () => {
+    const target = await createFixture();
+    const agent = await signedIn();
+    const invalidRole = await agent.patch(`/api/admin/users/${target.id}`).send({ role: "ROOT" });
+    expect(invalidRole.status).toBe(400);
+    expect(invalidRole.body.error.code).toBe("VALIDATION_ERROR");
+    expect(invalidRole.body.error.fields.role).toBeDefined();
+    const invalidActive = await agent.patch(`/api/admin/users/${target.id}`).send({ isActive: "true" });
+    expect(invalidActive.status).toBe(400);
+    expect(invalidActive.body.error.code).toBe("VALIDATION_ERROR");
+    expect(invalidActive.body.error.fields.isActive).toBeDefined();
+    const duplicate = await agent.patch(`/api/admin/users/${target.id}`).send({ email: requesterEmail.toUpperCase() });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.error.code).toBe("DUPLICATE_EMAIL");
+    expect(await prisma.requesterUser.findUniqueOrThrow({ where: { id: target.id } })).toMatchObject({ email: target.email, role: "REQUESTER", isActive: true });
   });
 
   it("prevents self-deactivation and removal of the last active Administrator", async () => {

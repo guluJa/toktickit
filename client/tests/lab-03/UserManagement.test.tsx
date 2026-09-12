@@ -74,6 +74,7 @@ describe("Administrator User Management", () => {
     await user.type(name, "Updated Requester");
     await user.click(screen.getByRole("button", { name: "Save Changes" }));
     await waitFor(() => expect(mockedUpdate).toHaveBeenCalledWith(2, { name: "Updated Requester", email: "requester@test.example", role: "REQUESTER", isActive: true }));
+    expect(await screen.findByText("User updated successfully.")).toBeInTheDocument();
     await user.type(screen.getByLabelText("New Initial Password"), "Changed-Password2@");
     await user.click(screen.getByRole("button", { name: "Reset Initial Password" }));
     await waitFor(() => expect(mockedReset).toHaveBeenCalledWith(2, "Changed-Password2@"));
@@ -95,6 +96,7 @@ describe("Administrator User Management", () => {
   });
 
   it("shows safe forbidden, conflict and retry states", async () => {
+    const user = userEvent.setup();
     mockedGet.mockRejectedValueOnce(new TicketApiError("forbidden", 403, "ROLE_FORBIDDEN"));
     const { unmount } = render(<UserManagement />);
     expect(await screen.findByText(/Only Administrators/)).toBeInTheDocument();
@@ -103,6 +105,9 @@ describe("Administrator User Management", () => {
     render(<UserManagement />);
     expect(await screen.findByText(/Unable to load users/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByText("Requester One")).toBeInTheDocument();
+    expect(screen.queryByText("Unable to load users. Please try again.")).not.toBeInTheDocument();
   });
 
   it("shows an empty/no-results state without exposing secrets", async () => {
@@ -110,5 +115,82 @@ describe("Administrator User Management", () => {
     render(<UserManagement />);
     expect(await screen.findByText(/No users match/)).toBeInTheDocument();
     expect(screen.queryByText(/passwordHash|Valid-Password/)).not.toBeInTheDocument();
+  });
+
+  it("renders API validation fields with accessible error associations", async () => {
+    const user = userEvent.setup();
+    mockedCreate.mockRejectedValueOnce(new TicketApiError("Please correct the highlighted fields.", 400, "VALIDATION_ERROR", {
+      email: "Email is already invalid.",
+      role: "Role is invalid.",
+      isActive: "isActive must be a Boolean.",
+      initialPassword: "Password does not meet policy.",
+    }));
+    render(<UserManagement />);
+    await screen.findByText("Requester One");
+    await user.type(screen.getByLabelText("Name"), "Validation User");
+    await user.type(screen.getByLabelText("Email"), "validation@test.example");
+    await user.type(screen.getByLabelText("Initial Password"), "Valid-Password1!");
+    await user.click(screen.getAllByRole("button", { name: "Create User" }).at(-1)!);
+    expect(await screen.findByText("Email is already invalid.")).toBeInTheDocument();
+    const email = screen.getByLabelText("Email");
+    expect(email).toHaveAttribute("aria-invalid", "true");
+    expect(email).toHaveAttribute("aria-describedby", "admin-user-email-error");
+    expect(screen.getByText("Role is invalid.")).toBeInTheDocument();
+    expect(screen.getByText("isActive must be a Boolean.")).toBeInTheDocument();
+    expect(screen.getByText("Password does not meet policy.")).toBeInTheDocument();
+  });
+
+  it("preserves form data after duplicate-email and update-conflict responses", async () => {
+    const user = userEvent.setup();
+    mockedCreate.mockRejectedValueOnce(new TicketApiError("A user with that email already exists.", 409, "DUPLICATE_EMAIL"));
+    render(<UserManagement />);
+    await screen.findByText("Requester One");
+    await user.type(screen.getByLabelText("Name"), "Duplicate User");
+    await user.type(screen.getByLabelText("Email"), "duplicate@test.example");
+    await user.type(screen.getByLabelText("Initial Password"), "Valid-Password1!");
+    await user.click(screen.getAllByRole("button", { name: "Create User" }).at(-1)!);
+    expect(await screen.findByText("A user with that email already exists.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveValue("Duplicate User");
+    expect(screen.getByLabelText("Email")).toHaveValue("duplicate@test.example");
+
+    await user.click(screen.getAllByRole("button", { name: "Edit" })[0]);
+    mockedUpdate.mockRejectedValueOnce(new TicketApiError("The user was changed by another Administrator.", 409, "USER_UPDATE_CONFLICT"));
+    const name = screen.getByLabelText("Name");
+    await user.clear(name);
+    await user.type(name, "Conflict Edit");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(await screen.findByText("The user was changed by another Administrator.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toHaveValue("Conflict Edit");
+  });
+
+  it("prevents duplicate submit while saving", async () => {
+    const user = userEvent.setup();
+    let resolveCreate!: (value: { user: AuthUser }) => void;
+    mockedCreate.mockImplementationOnce(() => new Promise((resolve) => { resolveCreate = resolve; }));
+    render(<UserManagement />);
+    await screen.findByText("Requester One");
+    await user.type(screen.getByLabelText("Name"), "Slow User");
+    await user.type(screen.getByLabelText("Email"), "slow@test.example");
+    await user.type(screen.getByLabelText("Initial Password"), "Valid-Password1!");
+    await user.click(screen.getAllByRole("button", { name: "Create User" }).at(-1)!);
+    const savingButton = await screen.findByRole("button", { name: "Saving..." });
+    expect(savingButton).toBeDisabled();
+    await user.click(savingButton);
+    expect(mockedCreate).toHaveBeenCalledTimes(1);
+    resolveCreate({ user: { ...requester, id: 4, name: "Slow User", email: "slow@test.example" } });
+    expect(await screen.findByText("User created successfully.")).toBeInTheDocument();
+  });
+
+  it("uses a safe fallback and never renders password, hash or internal details", async () => {
+    const user = userEvent.setup();
+    mockedCreate.mockRejectedValueOnce(new TicketApiError("passwordHash=secret; Prisma stack trace", 500, "INTERNAL_ERROR"));
+    render(<UserManagement />);
+    await screen.findByText("Requester One");
+    await user.type(screen.getByLabelText("Name"), "Safe Error User");
+    await user.type(screen.getByLabelText("Email"), "safe-error@test.example");
+    await user.type(screen.getByLabelText("Initial Password"), "Valid-Password1!");
+    await user.click(screen.getAllByRole("button", { name: "Create User" }).at(-1)!);
+    expect(await screen.findByText("Unable to create the user.")).toBeInTheDocument();
+    expect(screen.queryByText(/passwordHash|secret|Prisma|stack trace|internal details/i)).not.toBeInTheDocument();
   });
 });
