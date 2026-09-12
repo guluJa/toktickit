@@ -308,6 +308,8 @@ Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
 ไม่มี body/query; ตรวจ ownership ผ่าน Ticket
 
+Requester ดาวน์โหลดได้เฉพาะ Attachment ของ Ticket ตนเอง ส่วน IT Staff และ Administrator ดาวน์โหลดได้เมื่อมีสิทธิ์เปิด Staff Ticket Detail ของ Ticket นั้นในฐานะ read-only viewer. Staff และ Administrator ไม่มีสิทธิ์ใช้ endpoint upload หรือ remove ใน Issue นี้
+
 Success 200: file stream พร้อม stored MIME และ safe Content-Disposition
 
 Errors: 400 INVALID_ID, 401, 403, safe 404 ATTACHMENT_NOT_FOUND, 410 ATTACHMENT_REMOVED, 500 INTERNAL_ERROR; Removed file ห้ามถูกเปิดหรือ stream

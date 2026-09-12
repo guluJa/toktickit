@@ -119,4 +119,35 @@ describe("Lab 3 migration compatibility", () => {
       else process.env.LAB3_INITIAL_PASSWORD = previousPassword;
     }
   });
+
+  it("preserves explicit IT Priority initialization and exposes the complete Ticket lifecycle", async () => {
+    const enumRows = await prisma.$queryRaw<Array<{ enumlabel: string }>>`
+      SELECT e.enumlabel
+      FROM pg_enum e
+      JOIN pg_type t ON t.oid = e.enumtypid
+      WHERE t.typname = 'TicketStatus'
+      ORDER BY e.enumsortorder
+    `;
+    expect(enumRows.map((row) => row.enumlabel)).toEqual(expect.arrayContaining([
+      "NEW", "OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED", "REOPENED", "CANCELLED",
+    ]));
+    const category = await prisma.category.findFirstOrThrow();
+    const system = await prisma.relatedSystem.findFirstOrThrow();
+    const requesterId = fixtureTicketId
+      ? (await prisma.ticket.findUniqueOrThrow({ where: { id: fixtureTicketId }, select: { requesterId: true } })).requesterId
+      : 1;
+    for (const requestedPriority of ["LOW", "MEDIUM", "HIGH"] as const) {
+      const ticket = await prisma.ticket.create({
+        data: {
+          ticketNumber: `TKT-LAB3-PRIORITY-${requestedPriority}-${Date.now()}`,
+          requesterId,
+          submissionKey: randomUUID(), categoryId: category.id, relatedSystemId: system.id,
+          summary: "Explicit priority fixture", requestedPriority, itPriority: requestedPriority,
+          description: "New Ticket priority is copied explicitly from requested priority.",
+        },
+      });
+      expect(ticket.itPriority).toBe(requestedPriority);
+      await prisma.ticket.delete({ where: { id: ticket.id } });
+    }
+  });
 });

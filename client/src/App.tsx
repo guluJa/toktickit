@@ -16,6 +16,7 @@ import CreateTicket from "./CreateTicket.js";
 import MyTickets from "./MyTickets.js";
 import RequesterTicketDetail from "./RequesterTicketDetail.js";
 import StaffTicketQueue from "./StaffTicketQueue.js";
+import StaffTicketDetail from "./StaffTicketDetail.js";
 
 type ActiveView =
   | "create"
@@ -43,6 +44,9 @@ export default function App() {
     useState<ActiveView>("create");
 
   const [selectedTicketId, setSelectedTicketId] =
+    useState<number | null>(null);
+
+  const [staffTicketId, setStaffTicketId] =
     useState<number | null>(null);
 
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] =
@@ -78,7 +82,7 @@ export default function App() {
   }
 
   if (authUser && authUser.role !== "REQUESTER") {
-    return <main className="container py-4" style={{ maxWidth: 1200 }}><header className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4"><div><h1 className="h3 mb-1">TokTickIT <span className="text-success">IT Service Desk</span></h1><p className="mb-0 text-body-secondary">Authenticated User: <strong>{authUser.name}</strong></p><p className="small text-body-secondary mb-0">Role: {authUser.role}</p></div><button type="button" className="btn btn-outline-success" onClick={async () => { try { await logout(); setAuthUser(null); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign out."); } }}>Logout</button></header>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<StaffTicketQueue role={authUser.role} /></main>;
+    return <main className="container py-4" style={{ maxWidth: 1200 }}><header className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4"><div><h1 className="h3 mb-1">TokTickIT <span className="text-success">IT Service Desk</span></h1><p className="mb-0 text-body-secondary">Authenticated User: <strong>{authUser.name}</strong></p><p className="small text-body-secondary mb-0">Role: {authUser.role}</p></div><button type="button" className="btn btn-outline-success" onClick={async () => { try { await logout(); setAuthUser(null); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign out."); } }}>Logout</button></header>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}{staffTicketId ? <StaffTicketDetail ticketId={staffTicketId} currentUserId={authUser.id} role={authUser.role} onBack={() => setStaffTicketId(null)} /> : <StaffTicketQueue role={authUser.role} onOpenTicket={(ticketId) => setStaffTicketId(ticketId)} />}</main>;
   }
   const requester = authUser;
 
