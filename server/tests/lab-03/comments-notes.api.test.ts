@@ -32,6 +32,13 @@ describe("Lab 3 Public Comments and Internal Notes", () => {
     expect(created.status).toBe(201);
     expect(created.body.data.comment).toEqual(expect.objectContaining({ content: "Staff update", author: { id: staffId, name: "Comments Staff" }, createdAt: expect.any(String) }));
     expect((await (await signedIn(adminEmail)).get(`/api/staff/tickets/${ticketId}/comments`)).body.data.items.some((item: { content: string }) => item.content === "Staff update")).toBe(true);
+    const requester = await signedIn(requesterEmail);
+    const requesterCreated = await requester.post(`/api/tickets/${ticketId}/comments`).send({ content: "  Requester update  " });
+    expect(requesterCreated.status).toBe(201);
+    expect(requesterCreated.body.data.comment).toEqual(expect.objectContaining({ content: "Requester update", author: { id: requesterId, name: "Comments Requester" }, createdAt: expect.any(String) }));
+    const requesterList = await requester.get(`/api/tickets/${ticketId}/comments`);
+    expect(requesterList.status).toBe(200);
+    expect(requesterList.body.data.items.some((item: { content: string }) => item.content === "Requester update")).toBe(true);
   });
 
   it("keeps Internal Notes private and prevents Administrator mutation", async () => {
@@ -43,6 +50,9 @@ describe("Lab 3 Public Comments and Internal Notes", () => {
     const adminCreate = await (await signedIn(adminEmail)).post(`/api/staff/tickets/${ticketId}/notes`).send({ content: "Not allowed" });
     expect(adminCreate.status).toBe(403);
     expect(adminCreate.body.error.code).toBe("ROLE_FORBIDDEN");
+    const adminComment = await (await signedIn(adminEmail)).post(`/api/staff/tickets/${ticketId}/comments`).send({ content: "Not allowed" });
+    expect(adminComment.status).toBe(403);
+    expect(adminComment.body.error.code).toBe("ROLE_FORBIDDEN");
     const requesterRead = await (await signedIn(requesterEmail)).get(`/api/staff/tickets/${ticketId}/notes`);
     expect(requesterRead.status).toBe(403);
     expect(requesterRead.body.error.code).toBe("ROLE_FORBIDDEN");
@@ -57,5 +67,9 @@ describe("Lab 3 Public Comments and Internal Notes", () => {
     expect(oversized.status).toBe(400);
     const edit = await staff.patch(`/api/staff/tickets/${ticketId}/comments/1`).send({ content: "changed" });
     expect(edit.status).toBe(404);
+    const removeComment = await staff.delete(`/api/staff/tickets/${ticketId}/comments/1`);
+    expect(removeComment.status).toBe(404);
+    const remove = await staff.delete(`/api/staff/tickets/${ticketId}/notes/1`);
+    expect(remove.status).toBe(404);
   });
 });

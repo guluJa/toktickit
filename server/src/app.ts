@@ -824,6 +824,7 @@ async function createOrReplayTicket(
                 summary: input.summary,
                 requestedPriority:
                   input.requestedPriority,
+                itPriority: input.requestedPriority,
                 description: input.description,
                 currentStatus: "NEW",
               },
@@ -1692,7 +1693,11 @@ app.get(
         : await getPrisma().attachment.findFirst({
             where: {
               id: attachmentId,
-              ticket: { requesterId: req.developmentRequester?.id ?? -1 },
+              ticket: {
+                requesterId: req.authUser?.role === "REQUESTER"
+                  ? req.authUser.id
+                  : req.developmentRequester?.id ?? -1,
+              },
             },
             select: attachmentStorageSelect,
           });
@@ -1904,6 +1909,7 @@ app.post(
             summary: ticket.summary,
             requestedPriority:
               ticket.requestedPriority,
+            itPriority: ticket.itPriority,
             description:
               ticket.description,
             currentStatus:
