@@ -256,6 +256,8 @@ Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
 ไม่มี body/query และต้องเป็น owned ticket
 
+เส้นทางนี้เป็น Requester workspace โดยเฉพาะ ผู้ใช้ IT Staff หรือ Administrator ต้องใช้ `GET /api/staff/tickets/:ticketId/comments` ตามหัวข้อ 6.6 เพื่ออ่าน Public Comments ของ Ticket ที่ตนมีสิทธิ์เห็น
+
 Success 200: `{ "data": { "items": [PublicComment] } }`
 
 Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
@@ -265,6 +267,8 @@ Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 Request body: { "content": "The issue is still occurring." }
 
 Validation: content เป็น trimmed non-empty string ยาวไม่เกิน 5,000 ตัวอักษร; author และ ticket มาจาก session/path
+
+เส้นทางนี้รับเฉพาะ Requester เจ้าของ Ticket ส่วน IT Staff ใช้ `POST /api/staff/tickets/:ticketId/comments` เพื่อเพิ่ม Public Comment และ Administrator ใช้ staff endpoint สำหรับอ่านตามสิทธิ์ (ไม่มีสิทธิ์เพิ่ม comment ตาม authorization matrix)
 
 Success 201: `{ "data": { "comment": PublicComment } }`
 
