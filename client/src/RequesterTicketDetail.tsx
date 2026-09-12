@@ -3,10 +3,15 @@ import {
   useRef,
   useState,
 } from "react";
+import type { FormEvent } from "react";
 import {
+  createTicketComment,
+  getTicketComments,
   getTicketDetail,
+  markTicketResolved,
   TicketApiError,
   TicketDetail,
+  PublicComment,
 } from "./api.js";
 import AttachmentSection from "./AttachmentSection.js";
 
@@ -44,6 +49,13 @@ export default function RequesterTicketDetail({
     useState<DetailViewState>("loading");
   const [ticket, setTicket] =
     useState<TicketDetail | null>(null);
+  const [comments, setComments] = useState<PublicComment[]>([]);
+  const [commentsState, setCommentsState] = useState<"loading" | "ready" | "error">("loading");
+  const [commentText, setCommentText] = useState("");
+  const [commentBusy, setCommentBusy] = useState(false);
+  const [commentFeedback, setCommentFeedback] = useState("");
+  const [resolvedBusy, setResolvedBusy] = useState(false);
+  const [resolvedFeedback, setResolvedFeedback] = useState("");
   const requestSequence = useRef(0);
 
   async function loadTicketDetail(
@@ -68,6 +80,17 @@ export default function RequesterTicketDetail({
       }
 
       setTicket(response);
+      setComments(response.comments ?? []);
+      setCommentsState("loading");
+      try {
+        const loadedComments = await getTicketComments(activeRequesterId, activeTicketId);
+        if (sequence === requestSequence.current) {
+          setComments(loadedComments);
+          setCommentsState("ready");
+        }
+      } catch {
+        if (sequence === requestSequence.current) setCommentsState("error");
+      }
       setViewState("loaded");
     } catch (error) {
       if (sequence !== requestSequence.current) {
@@ -83,6 +106,42 @@ export default function RequesterTicketDetail({
       }
 
       setViewState("error");
+    }
+  }
+
+  async function handleAddComment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const content = commentText.trim();
+    if (content.length < 1 || content.length > 5000) {
+      setCommentFeedback("Comment must be between 1 and 5,000 characters.");
+      return;
+    }
+    setCommentBusy(true);
+    setCommentFeedback("");
+    try {
+      const created = await createTicketComment(requesterId, ticketId, content);
+      setComments((current) => [...current, created]);
+      setCommentText("");
+      setCommentsState("ready");
+      setCommentFeedback("Comment added successfully.");
+    } catch {
+      setCommentFeedback("Unable to add comment. Please try again.");
+    } finally {
+      setCommentBusy(false);
+    }
+  }
+
+  async function handleResolved() {
+    setResolvedBusy(true);
+    setResolvedFeedback("");
+    try {
+      const result = await markTicketResolved(requesterId, ticketId);
+      setTicket((current) => current ? { ...current, requesterResolvedAt: result.requesterResolvedAt } : current);
+      setResolvedFeedback("Problem marked as resolved.");
+    } catch {
+      setResolvedFeedback("Unable to update the Ticket. Please try again.");
+    } finally {
+      setResolvedBusy(false);
     }
   }
 
@@ -334,6 +393,34 @@ export default function RequesterTicketDetail({
               <p className="mb-0 text-break">
                 {ticket.description}
               </p>
+            </div>
+          </section>
+        </div>
+
+        <div className="col-12">
+          <section className="card shadow-sm" aria-labelledby="public-comments-title">
+            <div className="card-body">
+              <h3 id="public-comments-title" className="h5">Public Comments</h3>
+              {commentsState === "loading" && <div className="alert alert-info" role="status">Loading comments...</div>}
+              {commentsState === "error" && <div className="alert alert-warning" role="alert">Unable to load comments. You can still try again later.</div>}
+              {commentsState === "ready" && (comments.length > 0 ? <ul className="list-group mb-3">{comments.map((comment) => <li className="list-group-item" key={comment.id}><strong>{comment.author.name}</strong><span className="text-body-secondary ms-2">{formatDate(comment.createdAt)}</span><p className="mb-0 mt-1 text-break">{comment.content}</p></li>)}</ul> : <p className="text-body-secondary">No public comments yet.</p>)}
+              {commentFeedback && <div className={`alert ${commentFeedback.startsWith("Comment added") ? "alert-success" : "alert-danger"}`} role="alert">{commentFeedback}</div>}
+              <form onSubmit={handleAddComment}>
+                <label className="form-label" htmlFor="public-comment">Add a public comment</label>
+                <textarea id="public-comment" className="form-control mb-2" rows={3} value={commentText} maxLength={5000} onChange={(event) => setCommentText(event.target.value)} disabled={commentBusy} />
+                <button type="submit" className="btn btn-outline-success" disabled={commentBusy}>{commentBusy ? "Adding..." : "Add Comment"}</button>
+              </form>
+            </div>
+          </section>
+        </div>
+
+        <div className="col-12">
+          <section className="card shadow-sm" aria-labelledby="resolved-title">
+            <div className="card-body">
+              <h3 id="resolved-title" className="h5">Problem status</h3>
+              <p className="text-body-secondary">Use this action when the reported problem has been resolved.</p>
+              {resolvedFeedback && <div className={`alert ${resolvedFeedback.startsWith("Problem marked") ? "alert-success" : "alert-danger"}`} role="alert">{resolvedFeedback}</div>}
+              <button type="button" className="btn btn-success" onClick={() => void handleResolved()} disabled={resolvedBusy || Boolean(ticket.requesterResolvedAt)}>{ticket.requesterResolvedAt ? "Problem marked as resolved" : resolvedBusy ? "Updating..." : "Problem Appears Resolved"}</button>
             </div>
           </section>
         </div>

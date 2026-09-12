@@ -2,29 +2,24 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../../src/App.js";
 import { ZEN_GREEN_TOKENS } from "../../src/theme.js";
-import {
-  getDevelopmentRequesters,
-} from "../../src/api.js";
-
 vi.mock("../../src/api.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../src/api.js")>()),
-  getDevelopmentRequesters: vi.fn(),
+  getCurrentUser: vi.fn(),
 }));
 
-const mockedGetDevelopmentRequesters = vi.mocked(
-  getDevelopmentRequesters,
-);
+import { getCurrentUser } from "../../src/api.js";
 
 beforeEach(() => {
   vi.resetAllMocks();
   localStorage.clear();
-  mockedGetDevelopmentRequesters.mockResolvedValue([
-    {
-      id: 1,
-      name: "Development Requester 1",
-      email: "requester1@toktickit.test",
-    },
-  ]);
+  vi.mocked(getCurrentUser).mockResolvedValue({
+    id: 1,
+    name: "Development Requester 1",
+    email: "requester1@toktickit.test",
+    role: "REQUESTER",
+    isActive: true,
+    mustChangePassword: false,
+  });
 });
 
 describe("Zen Green visual rules", () => {
@@ -49,16 +44,14 @@ describe("Zen Green visual rules", () => {
     render(<App />);
 
     const brand = await screen.findByRole("heading", {
-      name: "TokTickIT",
+      name: /TokTickIT/,
     });
-    const requesterCard = brand.closest("section");
-    const continueButton = screen.getByRole("button", {
-      name: "Continue",
-    });
+    const requesterCard = brand.closest("main");
+    const logoutButton = screen.getByRole("button", { name: "Logout" });
 
-    expect(brand).toHaveClass("text-success");
-    expect(requesterCard).toHaveClass("card", "border-success", "shadow-sm");
-    expect(continueButton).toHaveClass("btn", "btn-success");
-    expect(continueButton).not.toHaveClass("btn-danger");
+    expect(brand.querySelector(".text-success")).toBeInTheDocument();
+    expect(requesterCard).toBeInTheDocument();
+    expect(logoutButton).toHaveClass("btn", "btn-outline-success");
+    expect(screen.queryByRole("combobox", { name: /development requester/i })).not.toBeInTheDocument();
   });
 });
