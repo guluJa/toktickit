@@ -55,6 +55,69 @@ export async function changePassword(newPassword: string, confirmPassword: strin
   return body.data.user as AuthUser;
 }
 
+export type AdminRole = AuthUser["role"];
+
+export interface AdminUsersQuery {
+  search?: string;
+  role?: AdminRole;
+  isActive?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AdminUsersResponse {
+  items: AuthUser[];
+  pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
+async function adminRequest<T>(url: string, init: RequestInit, fallback: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+    });
+  } catch {
+    throw new TicketApiError(fallback, 0, "ADMIN_REQUEST_FAILED");
+  }
+  const body = await response.json().catch(() => ({})) as { data?: T; error?: { code?: string; message?: string; fields?: Record<string, string> } };
+  if (!response.ok) {
+    throw new TicketApiError(body.error?.message ?? fallback, response.status, body.error?.code ?? "ADMIN_REQUEST_FAILED", body.error?.fields);
+  }
+  return body.data as T;
+}
+
+export async function getAdminUsers(query: AdminUsersQuery = {}): Promise<AdminUsersResponse> {
+  const parameters = new URLSearchParams();
+  if (query.search?.trim()) parameters.set("search", query.search.trim());
+  if (query.role) parameters.set("role", query.role);
+  if (query.isActive !== undefined) parameters.set("isActive", String(query.isActive));
+  parameters.set("page", String(query.page ?? 1));
+  parameters.set("pageSize", String(query.pageSize ?? 20));
+  return adminRequest<AdminUsersResponse>(`${API_URL}/api/admin/users?${parameters.toString()}`, { method: "GET" }, "Unable to load users.");
+}
+
+export interface AdminUserInput {
+  name: string;
+  email: string;
+  role: AdminRole;
+  isActive: boolean;
+  initialPassword: string;
+}
+
+export async function createAdminUser(input: AdminUserInput): Promise<{ user: AuthUser }> {
+  return adminRequest<{ user: AuthUser }>(`${API_URL}/api/admin/users`, { method: "POST", body: JSON.stringify(input) }, "Unable to create user.");
+}
+
+export async function updateAdminUser(userId: number, input: Partial<Pick<AdminUserInput, "name" | "email" | "role" | "isActive">>): Promise<{ user: AuthUser }> {
+  return adminRequest<{ user: AuthUser }>(`${API_URL}/api/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify(input) }, "Unable to update user.");
+}
+
+export async function resetAdminInitialPassword(userId: number, initialPassword: string): Promise<{ user: AuthUser }> {
+  return adminRequest<{ user: AuthUser }>(`${API_URL}/api/admin/users/${userId}/initial-password`, { method: "POST", body: JSON.stringify({ initialPassword }) }, "Unable to reset the initial password.");
+}
+
 export interface HealthResponse {
   status: string;
   service: string;
