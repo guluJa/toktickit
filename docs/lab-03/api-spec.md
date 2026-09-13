@@ -404,11 +404,11 @@ GET อนุญาต IT Staff/Administrator; POST อนุญาต IT Staff 
 
 ### 7.1 GET /api/admin/users
 
-Query: search (name/email, case-insensitive), role (REQUESTER/IT_STAFF/ADMINISTRATOR), isActive (true/false), page และ pageSize. ไม่ถูกต้องตอบ 400 INVALID_QUERY
+Query: `search` (name/email, case-insensitive, 1-254 characters), `role` (`REQUESTER|IT_STAFF|ADMINISTRATOR`), `isActive` (`true|false`), `page` (positive integer, default `1`) และ `pageSize` (integer 1-100, default `20`). รูปแบบ query ไม่ถูกต้องตอบ 400 `INVALID_QUERY`; page ที่มากกว่าจำนวนหน้าจริงตอบ 400 `PAGE_OUT_OF_RANGE`
 
-Success 200: list envelope ที่มี `items: [SafeUser]` และไม่คืน passwordHash
+Success 200: `{ "data": { "items": [SafeUser], "pagination": { "page": 1, "pageSize": 20, "totalItems": 0, "totalPages": 0 } } }`; รายการเรียง `name asc, id asc` และไม่คืน `passwordHash`, password หรือ session fields
 
-Errors: 401, 403 ROLE_FORBIDDEN, 400 INVALID_QUERY, 500 INTERNAL_ERROR
+Errors: 401, 403 `ROLE_FORBIDDEN`, 400 `INVALID_QUERY`/`PAGE_OUT_OF_RANGE`, 500 `INTERNAL_ERROR`
 
 ### 7.2 POST /api/admin/users
 
@@ -430,7 +430,7 @@ Request body รับเฉพาะ field ต่อไปนี้ และ�
 
 Success 200: `{ "data": { "user": SafeUser } }`
 
-Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 USER_NOT_FOUND, 409 DUPLICATE_EMAIL/USER_UPDATE_CONFLICT, 500 INTERNAL_ERROR. การ deactivate ต้อง revoke sessions ของ target และ request ถัดไปตอบ 401 SESSION_INVALID
+Errors: 400 `INVALID_ID` เมื่อ `userId` ไม่ใช่ positive integer, 400 `VALIDATION_ERROR` สำหรับ body ไม่ถูกต้อง, 401, 403 `ROLE_FORBIDDEN`, safe 404 `USER_NOT_FOUND`, 409 `DUPLICATE_EMAIL`/`USER_UPDATE_CONFLICT`, 500 `INTERNAL_ERROR`. การ deactivate ต้อง revoke sessions ของ target และ request ถัดไปตอบ 401 `SESSION_INVALID`
 
 ### 7.4 POST /api/admin/users/:userId/initial-password
 
@@ -440,7 +440,7 @@ Validation: password policy; ตั้ง mustChangePassword=true และไ�
 
 Success 200: `{ "data": { "user": SafeUser } }` โดย `mustChangePassword=true`
 
-Errors: 400 VALIDATION_ERROR, 401, 403 ROLE_FORBIDDEN, safe 404 USER_NOT_FOUND, 500 INTERNAL_ERROR
+Errors: 400 `INVALID_ID` เมื่อ `userId` ไม่ใช่ positive integer, 400 `VALIDATION_ERROR` สำหรับ body ไม่ถูกต้อง, 401, 403 `ROLE_FORBIDDEN`, safe 404 `USER_NOT_FOUND`, 500 `INTERNAL_ERROR`
 
 ## 8. Global Status and Security Rules
 

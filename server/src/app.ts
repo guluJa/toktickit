@@ -51,6 +51,7 @@ import {
   StaffQueueQueryValidationError,
 } from "./staff-queue-query.js";
 import { requireStaffQueueAccess } from "./staff-access.js";
+import { requireAdministratorAccess } from "./admin-access.js";
 import {
   isAllowedStatusTransition,
   staffTicketDetailSelect,
@@ -1089,6 +1090,265 @@ app.post("/api/staff/tickets/:ticketId/notes", requireStaffQueueAccess, async (r
     const note = await getPrisma().internalNote.create({ data: { ticketId, authorId: req.authUser!.id, content }, select: { id: true, content: true, createdAt: true, author: { select: { id: true, name: true } } } });
     res.status(201).json({ data: { note } });
   } catch (error) { console.error("Unable to create Internal Note:", error); res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to create Internal Note." } }); }
+});
+
+// ---------------------------------------------------------------------------
+// Administrator User Management
+// ---------------------------------------------------------------------------
+const adminUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  isActive: true,
+  mustChangePassword: true,
+} satisfies Prisma.RequesterUserSelect;
+
+const adminRoles = ["REQUESTER", "IT_STAFF", "ADMINISTRATOR"] as const;
+type AdminRole = (typeof adminRoles)[number];
+
+function isAdminRole(value: unknown): value is AdminRole {
+  return typeof value === "string" && (adminRoles as readonly string[]).includes(value);
+}
+
+function isEmail(value: string): boolean {
+  return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getSingleQueryValue(value: unknown): string | undefined | null {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") return null;
+  return value;
+}
+
+class AdminUsersQueryValidationError extends Error {}
+
+function parseAdminUsersQuery(raw: Record<string, unknown>): {
+  search?: string;
+  role?: AdminRole;
+  isActive?: boolean;
+  page: number;
+  pageSize: number;
+} {
+  const allowed = new Set(["search", "role", "isActive", "page", "pageSize"]);
+  const unknown = Object.keys(raw).find((key) => !allowed.has(key));
+  if (unknown) throw new AdminUsersQueryValidationError(`Unknown query parameter: ${unknown}`);
+
+  const search = getSingleQueryValue(raw.search);
+  const role = getSingleQueryValue(raw.role);
+  const isActive = getSingleQueryValue(raw.isActive);
+  const pageValue = getSingleQueryValue(raw.page);
+  const pageSizeValue = getSingleQueryValue(raw.pageSize);
+  if (search === null || role === null || isActive === null || pageValue === null || pageSizeValue === null) {
+    throw new AdminUsersQueryValidationError("Query parameters must be provided once as strings.");
+  }
+  if (search !== undefined && (search.trim().length === 0 || search.trim().length > 254)) {
+    throw new AdminUsersQueryValidationError("search must contain 1-254 characters when provided.");
+  }
+  if (role !== undefined && !isAdminRole(role)) throw new AdminUsersQueryValidationError("role is invalid.");
+  if (isActive !== undefined && isActive !== "true" && isActive !== "false") throw new AdminUsersQueryValidationError("isActive must be true or false.");
+
+  const page = pageValue === undefined ? 1 : Number(pageValue);
+  const pageSize = pageSizeValue === undefined ? 20 : Number(pageSizeValue);
+  if (!Number.isInteger(page) || page < 1) throw new AdminUsersQueryValidationError("page must be a positive integer.");
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) throw new AdminUsersQueryValidationError("pageSize must be an integer from 1 to 100.");
+
+  return {
+    ...(search !== undefined ? { search: search.trim() } : {}),
+    ...(role !== undefined ? { role } : {}),
+    ...(isActive !== undefined ? { isActive: isActive === "true" } : {}),
+    page,
+    pageSize,
+  };
+}
+
+function requestBodyKeysAreAllowed(body: unknown, allowed: readonly string[]): boolean {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return false;
+  return Object.keys(body).every((key) => allowed.includes(key));
+}
+
+function duplicateEmailError(res: Response): void {
+  res.status(409).json({
+    error: { code: "DUPLICATE_EMAIL", message: "A user with that email already exists." },
+  });
+}
+
+function userNotFoundError(res: Response): void {
+  res.status(404).json({
+    error: { code: "USER_NOT_FOUND", message: "User not found." },
+  });
+}
+
+function userUpdateConflict(res: Response, message: string): void {
+  res.status(409).json({ error: { code: "USER_UPDATE_CONFLICT", message } });
+}
+
+class AdminUserNotFoundError extends Error {}
+class AdminUserConflictError extends Error {}
+class AdminDuplicateEmailError extends Error {}
+
+// Serialize Administrator role/activation changes so the last-active-admin
+// invariant is checked and committed atomically across concurrent requests.
+const ADMINISTRATOR_GUARD_LOCK = 735391;
+
+app.get("/api/admin/users", requireAdministratorAccess, async (req: Request, res: Response) => {
+  try {
+    const query = parseAdminUsersQuery(req.query as Record<string, unknown>);
+    const where: Prisma.RequesterUserWhereInput = {
+      ...(query.search ? {
+        OR: [
+          { name: { contains: query.search, mode: "insensitive" } },
+          { email: { contains: query.search, mode: "insensitive" } },
+        ],
+      } : {}),
+      ...(query.role ? { role: query.role } : {}),
+      ...(query.isActive !== undefined ? { isActive: query.isActive } : {}),
+    };
+    const prisma = getPrisma();
+    const [items, totalItems] = await prisma.$transaction([
+      prisma.requesterUser.findMany({
+        where,
+        select: adminUserSelect,
+        orderBy: [{ name: "asc" }, { id: "asc" }],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      prisma.requesterUser.count({ where }),
+    ]);
+    const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / query.pageSize);
+    if (totalItems > 0 && query.page > totalPages) {
+      res.status(400).json({ error: { code: "PAGE_OUT_OF_RANGE", message: "The requested page is outside the available result pages." } });
+      return;
+    }
+    res.status(200).json({ data: { items, pagination: { page: query.page, pageSize: query.pageSize, totalItems, totalPages } } });
+  } catch (error) {
+    if (error instanceof AdminUsersQueryValidationError) {
+      res.status(400).json({ error: { code: "INVALID_QUERY", message: error.message } });
+      return;
+    }
+    console.error("Unable to load Administrator users:", error);
+    res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to load users." } });
+  }
+});
+
+app.post("/api/admin/users", requireAdministratorAccess, async (req: Request, res: Response) => {
+  const body = req.body as Record<string, unknown>;
+  const fields: Record<string, string> = {};
+  if (!requestBodyKeysAreAllowed(body, ["name", "email", "role", "isActive", "initialPassword"])) fields.form = "Only supported user fields may be provided.";
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const role = body?.role;
+  const isActive = body?.isActive;
+  const initialPassword = body?.initialPassword;
+  if (name.length < 1 || name.length > 150) fields.name = "Name must contain 1-150 characters.";
+  if (!isEmail(email)) fields.email = "Email must be a valid address of at most 254 characters.";
+  if (!isAdminRole(role)) fields.role = "Role is invalid.";
+  if (typeof isActive !== "boolean") fields.isActive = "isActive must be a Boolean.";
+  const passwordError = validatePassword(initialPassword);
+  if (passwordError) fields.initialPassword = passwordError;
+  if (Object.keys(fields).length > 0) { validationResponse(res, fields); return; }
+
+  try {
+    const prisma = getPrisma();
+    const existing = await prisma.requesterUser.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
+    if (existing) { duplicateEmailError(res); return; }
+    const user = await prisma.requesterUser.create({
+      data: { name, email, role: role as AdminRole, isActive: isActive as boolean, passwordHash: await hashPassword(initialPassword as string), mustChangePassword: true },
+      select: adminUserSelect,
+    });
+    res.status(201).json({ data: { user } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") { duplicateEmailError(res); return; }
+    console.error("Unable to create Administrator user:", error);
+    res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to create user." } });
+  }
+});
+
+app.patch("/api/admin/users/:userId", requireAdministratorAccess, async (req: Request, res: Response) => {
+  const userId = parsePositiveInteger(req.params.userId);
+  if (userId === null) { res.status(400).json({ error: { code: "INVALID_ID", message: "userId must be a positive integer." } }); return; }
+  const body = req.body as Record<string, unknown>;
+  const allowed = ["name", "email", "role", "isActive"] as const;
+  const fields: Record<string, string> = {};
+  if (!requestBodyKeysAreAllowed(body, allowed)) fields.form = "Only name, email, role, and isActive may be updated.";
+  if (Object.keys(body ?? {}).length === 0) fields.form = "At least one field is required.";
+  const data: { name?: string; email?: string; role?: AdminRole; isActive?: boolean } = {};
+  if (body?.name !== undefined) {
+    if (typeof body.name !== "string" || body.name.trim().length < 1 || body.name.trim().length > 150) fields.name = "Name must contain 1-150 characters.";
+    else data.name = body.name.trim();
+  }
+  if (body?.email !== undefined) {
+    if (typeof body.email !== "string" || !isEmail(body.email.trim().toLowerCase())) fields.email = "Email must be a valid address of at most 254 characters.";
+    else data.email = body.email.trim().toLowerCase();
+  }
+  if (body?.role !== undefined) {
+    if (!isAdminRole(body.role)) fields.role = "Role is invalid.";
+    else data.role = body.role;
+  }
+  if (body?.isActive !== undefined) {
+    if (typeof body.isActive !== "boolean") fields.isActive = "isActive must be a Boolean.";
+    else data.isActive = body.isActive;
+  }
+  if (Object.keys(fields).length > 0) { validationResponse(res, fields); return; }
+
+  try {
+    const prisma = getPrisma();
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ADMINISTRATOR_GUARD_LOCK})`;
+      const current = await tx.requesterUser.findUnique({ where: { id: userId }, select: { id: true, role: true, isActive: true } });
+      if (!current) throw new AdminUserNotFoundError();
+      if (data.email) {
+        const duplicate = await tx.requesterUser.findFirst({ where: { email: { equals: data.email, mode: "insensitive" }, NOT: { id: userId } }, select: { id: true } });
+        if (duplicate) throw new AdminDuplicateEmailError();
+      }
+      const nextRole = data.role ?? current.role;
+      const nextActive = data.isActive ?? current.isActive;
+      const removesActiveAdministrator = current.role === "ADMINISTRATOR" && current.isActive && !(nextRole === "ADMINISTRATOR" && nextActive);
+      if (req.authUser?.id === userId && !nextActive) throw new AdminUserConflictError("An Administrator cannot deactivate their own account.");
+      if (removesActiveAdministrator) {
+        const activeAdministrators = await tx.requesterUser.count({ where: { role: "ADMINISTRATOR", isActive: true } });
+        if (activeAdministrators <= 1) throw new AdminUserConflictError("At least one active Administrator must remain.");
+      }
+      const user = await tx.requesterUser.update({ where: { id: userId }, data, select: adminUserSelect });
+      if (current.isActive && !nextActive) await tx.session.deleteMany({ where: { userId } });
+      return user;
+    });
+    res.status(200).json({ data: { user: updated } });
+  } catch (error) {
+    if (error instanceof AdminUserNotFoundError) { userNotFoundError(res); return; }
+    if (error instanceof AdminDuplicateEmailError) { duplicateEmailError(res); return; }
+    if (error instanceof AdminUserConflictError) { userUpdateConflict(res, error.message); return; }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") { duplicateEmailError(res); return; }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") { userNotFoundError(res); return; }
+    console.error("Unable to update Administrator user:", error);
+    res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to update user." } });
+  }
+});
+
+app.post("/api/admin/users/:userId/initial-password", requireAdministratorAccess, async (req: Request, res: Response) => {
+  const userId = parsePositiveInteger(req.params.userId);
+  if (userId === null) { res.status(400).json({ error: { code: "INVALID_ID", message: "userId must be a positive integer." } }); return; }
+  const body = req.body as Record<string, unknown>;
+  const fields: Record<string, string> = {};
+  if (!requestBodyKeysAreAllowed(body, ["initialPassword"])) fields.form = "Only initialPassword may be provided.";
+  const passwordError = validatePassword(body?.initialPassword);
+  if (passwordError) fields.initialPassword = passwordError;
+  if (Object.keys(fields).length > 0) { validationResponse(res, fields); return; }
+  try {
+    const prisma = getPrisma();
+    const existing = await prisma.requesterUser.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!existing) { userNotFoundError(res); return; }
+    const user = await prisma.$transaction(async (tx) => {
+      const updated = await tx.requesterUser.update({ where: { id: userId }, data: { passwordHash: await hashPassword(body.initialPassword as string), mustChangePassword: true }, select: adminUserSelect });
+      await tx.session.deleteMany({ where: { userId } });
+      return updated;
+    });
+    res.status(200).json({ data: { user } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") { userNotFoundError(res); return; }
+    console.error("Unable to reset initial password:", error);
+    res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to reset the initial password." } });
+  }
 });
 
 app.get(
