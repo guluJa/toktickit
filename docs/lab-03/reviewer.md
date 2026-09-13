@@ -24,9 +24,10 @@
 
 ## Current Verification (author-run evidence)
 - Branch: `feature/07-lab3-e2e-regression-visual`
-- Automated evidence: Playwright Lab 3 suite 6 passed; full server suite 19 files/146 tests passed; full client suite 13 files/64 tests passed; server and client builds passed; `git diff --check` passed.
+- Dedicated E2E evidence (2026-09-14): all 5 migrations deployed to `toktickit_e2e`, seed completed twice, and Playwright Lab 3 suite 6 passed. Full server suite 19 files/146 tests, full client suite 13 files/64 tests, and both builds passed before the latest E2E-helper revision; they require a final rerun for this revision.
 - Evidence paths: `artifacts/lab-03/console-output.txt`, `artifacts/lab-03/screenshots/`, and generated `playwright-report/`.
 - Isolated PostgreSQL migration/repeated-seed E2E evidence: Pending (`E2E_DATABASE_URL` was not configured; no development/production reset was run).
+- Final complete console output after all current changes: Pending.
 - Peer Review: Pending
 - Approval: Pending
 - Merge: Pending

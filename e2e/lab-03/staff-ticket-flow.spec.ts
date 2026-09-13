@@ -14,6 +14,25 @@ import {
   resetInitialPassword,
 } from "./support.js";
 
+let staffTicketCleanup:
+  | { requesterId: number; summary: string; ticketId?: number; attachmentName?: string }
+  | undefined;
+
+test.afterEach(async () => {
+  if (!staffTicketCleanup) return;
+  if (staffTicketCleanup.ticketId && staffTicketCleanup.attachmentName) {
+    await removeE2EAttachments(
+      staffTicketCleanup.ticketId,
+      staffTicketCleanup.attachmentName,
+    );
+  }
+  await removeE2ETicketsBySummary(
+    staffTicketCleanup.requesterId,
+    staffTicketCleanup.summary,
+  );
+  staffTicketCleanup = undefined;
+});
+
 test.afterAll(async ({ request }) => {
   for (const email of ["requester3@toktickit.test", "staff1@toktickit.test", "staff2@toktickit.test"]) {
     await resetInitialPassword(request, email);
@@ -23,12 +42,15 @@ test.afterAll(async ({ request }) => {
 test("IT Staff can search the Queue, open Detail, operate safely, and use responsive layouts", async ({ page, request }) => {
   const summary = `E2E staff workflow ${Date.now()}`;
   const requester = await prepareApiUser(request, "requester3@toktickit.test");
+  staffTicketCleanup = { requesterId: requester.id, summary };
   const categories = (await (await request.get(`${API_URL}/api/categories`)).json()) as Array<{ id: number }>;
   const systems = (await (await request.get(`${API_URL}/api/related-systems`)).json()) as Array<{ id: number }>;
   const created = await request.post(`${API_URL}/api/tickets`, { data: { submissionKey: crypto.randomUUID(), categoryId: categories[0].id, relatedSystemId: systems[0].id, summary, requestedPriority: "MEDIUM", description: "Staff workflow E2E ticket." } });
   expect(created.status()).toBe(201);
   const ticket = (await created.json()).ticket as { id: number; ticketNumber: string };
   const filename = `e2e-staff-${Date.now()}.pdf`;
+  staffTicketCleanup.ticketId = ticket.id;
+  staffTicketCleanup.attachmentName = filename;
   const uploaded = await request.post(`${API_URL}/api/tickets/${ticket.id}/attachments`, { multipart: { file: { name: filename, mimeType: "application/pdf", buffer: Buffer.from("safe E2E attachment") } } });
   expect(uploaded.status()).toBe(201);
 
@@ -95,6 +117,7 @@ test("IT Staff can search the Queue, open Detail, operate safely, and use respon
 
   await removeE2EAttachments(ticket.id, filename);
   await removeE2ETicketsBySummary(requester.id, summary);
+  staffTicketCleanup = undefined;
 });
 
 test("rejects malformed Queue queries with a safe error", async ({ request }) => {

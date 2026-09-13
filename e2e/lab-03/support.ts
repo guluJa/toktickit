@@ -11,3 +11,4 @@ export {
   resetInitialPassword,
 } from "../lab-02/support.js";
 export { removeE2EAttachments, removeE2ETicketsBySummary } from "../lab-02/support.js";
+export { removeE2EUserByEmail } from "../lab-02/support.js";

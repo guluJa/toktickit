@@ -2,14 +2,26 @@ import { expect, test } from "@playwright/test";
 import {
   ADMIN_EMAIL,
   API_URL,
+  E2E_PASSWORD,
   assertNoHorizontalOverflow,
-  getInitialPassword,
   lab3ScreenshotPath,
+  loginApi,
   loginPage,
+  removeE2EUserByEmail,
 } from "./support.js";
 
+let createdE2EUserEmail: string | undefined;
+
+test.afterEach(async () => {
+  if (createdE2EUserEmail) {
+    await removeE2EUserByEmail(createdE2EUserEmail);
+    createdE2EUserEmail = undefined;
+  }
+});
+
 test("Administrator manages users with search, role filtering, safe editing and responsive evidence", async ({ page, request }) => {
-  await loginPage(page, ADMIN_EMAIL, await getInitialPassword());
+  await loginApi(request, ADMIN_EMAIL);
+  await loginPage(page, ADMIN_EMAIL, E2E_PASSWORD);
   await expect(page.getByRole("heading", { name: "User Management" })).toBeVisible();
   await expect(page.getByRole("table", { name: "Administrator User List" })).toBeVisible();
   await assertNoHorizontalOverflow(page);
@@ -28,6 +40,7 @@ test("Administrator manages users with search, role filtering, safe editing and 
 
   await page.getByRole("button", { name: "Create User" }).first().click();
   const uniqueEmail = `e2e-admin-${Date.now()}@toktickit.test`;
+  createdE2EUserEmail = uniqueEmail;
   await page.getByLabel("Name", { exact: true }).fill("E2E Managed User");
   await page.getByLabel("Email", { exact: true }).fill(uniqueEmail);
   await page.getByRole("form", { name: "Create user form" }).getByLabel("Role", { exact: true }).selectOption("REQUESTER");
