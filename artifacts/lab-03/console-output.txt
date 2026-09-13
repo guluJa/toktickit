@@ -1,50 +1,305 @@
-﻿**********************
-Windows PowerShell transcript start
-Start time: 20260914003617
-Username: UVADER\natth
-RunAs User: UVADER\natth
-Configuration Name:
-Machine: UVADER (Microsoft Windows NT 10.0.26200.0)
-Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noexit -command try { . "c:\Users\natth\AppData\Local\Programs\Microsoft VS Code\a5b5009513\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
-Process ID: 14512
-PSVersion: 5.1.26100.9444
-PSEdition: Desktop
-PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9444
-BuildVersion: 10.0.26100.9444
-CLRVersion: 4.0.30319.42000
-WSManStackVersion: 3.0
-PSRemotingProtocolVersion: 2.3
-SerializationVersion: 1.1.0.1
-**********************
-Transcript started, output file is .\artifacts\lab-03\console-output.txt
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit> Set-Location ".\server"
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\server> npx.cmd prisma migrate deploy
+## Prisma validate
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+The schema at prisma\schema.prisma is valid 🚀
+Exit code: 0
+## Prisma generate
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\server> npm.cmd run prisma:seed
+✔ Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 95ms
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\server> npm.cmd run prisma:seed
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\server> npm.cmd test
+Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\server> npm.cmd run build
+Exit code: 0
+## Prisma migrate deploy (dedicated E2E database)
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "toktickit_e2e", schema "public" at "localhost:5432"
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\server> Set-Location "..\client"
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\client> npm.cmd test
+5 migrations found in prisma/migrations
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\client> npm.cmd run build
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\client> Set-Location "..\e2e"
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\e2e> npm.cmd test
+No pending migrations to apply.
+Exit code: 0
+## Prisma migrate status (dedicated E2E database)
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "toktickit_e2e", schema "public" at "localhost:5432"
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit\e2e> Set-Location ".."
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit> git diff --check
+5 migrations found in prisma/migrations
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit> git status --short --branch
+Database schema is up to date!
+Exit code: 0
+## Seed run 1 (dedicated E2E database)
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit> git diff --stat
+> toktickit-server@1.0.0 prisma:seed
+> tsx prisma/seed.ts
 
-PS C:\CPE334 Software Eng\Lab1_Starter_Scaffold\toktickit> Stop-Transcript
-**********************
-Windows PowerShell transcript end
-End time: 20260914004023
-**********************
+Seeded Lab 3 local users, reference data and tickets successfully.
+Exit code: 0
+## Seed run 2 (dedicated E2E database)
+
+> toktickit-server@1.0.0 prisma:seed
+> tsx prisma/seed.ts
+
+Seeded Lab 3 local users, reference data and tickets successfully.
+Exit code: 0
+## Full Server tests
+
+> toktickit-server@1.0.0 test
+> vitest run
+
+
+ RUN  v2.1.9 C:/CPE334 Software Eng/Lab1_Starter_Scaffold/toktickit/server
+
+ ✓ tests/lab-02/validation.unit.test.ts (8 tests) 12ms
+ ✓ tests/lab-02/attachment-validation.unit.test.ts (16 tests) 12ms
+ ✓ tests/lab-03/auth.unit.test.ts (10 tests) 10ms
+ ✓ tests/lab-02/ticket-number.unit.test.ts (4 tests) 11ms
+stderr | tests/lab-02/ticket-detail.api.test.ts > GET /api/tickets/:ticketId > returns a safe 500 response when the Ticket Detail query fails unexpectedly
+Unable to load Ticket Detail: Error: Private SQL, local path, and database password details
+    at <repo>\server\tests\lab-02\ticket-detail.api.test.ts:458:11
+    at file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1271:3)
+
+ ✓ tests/lab-02/development-requesters.api.test.ts (13 tests) 353ms
+ ✓ tests/lab-02/reference-data.api.test.ts (2 tests) 479ms
+ ✓ tests/lab-02/ticket-detail.api.test.ts (12 tests) 686ms
+stderr | tests/lab-02/attachments.api.test.ts > Requester-owned Attachment lifecycle > returns a safe 500 when the Attachment download database query fails
+Unable to download Attachment: Error: Private SQL, local path, and database password details
+    at <repo>\server\tests\lab-02\attachments.api.test.ts:647:9
+    at file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1056:17)
+stdout | tests/lab-03/migration-regression.api.test.ts > Lab 3 migration compatibility > provisions every placeholder Requester and allows initial-password login
+Seeded Lab 3 local users, reference data and tickets successfully.
+
+    at runSuite (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+
+stderr | tests/lab-02/create-ticket.api.test.ts > POST /api/tickets > returns a safe 500 response without saving a partial Ticket
+Unable to create Ticket: Error: Prisma database failure with private SQL and password details
+    at <repo>\server\tests\lab-02\create-ticket.api.test.ts:611:17
+    at file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+    at withEnv (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:90:5)
+    at run (file:///C:/CPE334%20Software%20Eng/Lab1_Starter_Scaffold/toktickit/server/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:112:3)
+
+stderr | tests/lab-02/my-tickets.api.test.ts > GET /api/tickets > returns a safe 500 response when the Ticket query fails unexpectedly
+Unable to load Tickets: Error: All elements of the array need to be Prisma Client promises. Hint: Please make sure you are not awaiting the Prisma client calls you intended to pass in the $transaction function.
+    at <repo>\server\node_modules\@prisma\client\runtime\library.js:130:7211
+    at Array.map (<anonymous>)
+    at Proxy._transactionWithArray (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:7148)
+    at o (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:8749)
+    at Object.runInChildSpan (<repo>\server\node_modules\@prisma\client\runtime\library.js:121:1509)
+    at Proxy.$transaction (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:8884)
+    at <repo>\server\src\app.ts:1434:24
+    at Layer.handle [as handle_request] (<repo>\server\node_modules\express\lib\router\layer.js:95:5)
+    at next (<repo>\server\node_modules\express\lib\router\route.js:149:13)
+    at Module.requireDevelopmentRequester (<repo>\server\src\requester-context.ts:88:5)
+
+stderr | tests/lab-02/attachments.api.test.ts > Requester-owned Attachment lifecycle > removes a written file when metadata creation fails
+Unable to upload Attachment: PrismaClientKnownRequestError:
+Invalid `tx.attachment.create()` invocation in
+<repo>\server\src\app.ts:1726:34
+
+  1723 );
+  1724 writtenStoragePath = storagePath;
+  1725
+→ 1726 return tx.attachment.create(
+Unique constraint failed on the fields: (`storageKey`)
+    at $n.handleRequestError (<repo>\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (<repo>\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (<repo>\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at l (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at Proxy._transactionWithCallback (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:8000)
+    at <repo>\server\src\app.ts:1675:9 {
+  code: 'P2002',
+  clientVersion: '5.22.0',
+  meta: { modelName: 'Attachment', target: [ 'storageKey' ] }
+}
+
+stdout | tests/lab-03/migration-regression.api.test.ts > Lab 3 migration compatibility > keeps repeated seed execution idempotent
+Seeded Lab 3 local users, reference data and tickets successfully.
+
+ ✓ tests/lab-03/staff-ticket-detail.api.test.ts (8 tests) 2324ms
+   ✓ Lab 3 Staff Ticket Detail and operations > accepts every contract transition and rejects every other transition with 409 1086ms
+ ✓ tests/lab-03/comments-notes.api.test.ts (3 tests) 1907ms
+   ✓ Lab 3 Public Comments and Internal Notes > lets Staff create Public Comments and lets Staff/Admin read them 363ms
+   ✓ Lab 3 Public Comments and Internal Notes > keeps Internal Notes private and prevents Administrator mutation 428ms
+ ✓ tests/lab-03/staff-queue.api.test.ts (5 tests) 1920ms
+ ✓ tests/lab-03/auth.api.test.ts (8 tests) 2256ms
+ ✓ tests/lab-03/authorization.api.test.ts (4 tests) 2074ms
+stdout | tests/lab-03/migration-regression.api.test.ts > Lab 3 migration compatibility > preserves attachments and reference-data row counts across repeated seed
+Seeded Lab 3 local users, reference data and tickets successfully.
+
+ ✓ tests/lab-02/create-ticket.api.test.ts (8 tests) 1772ms
+   ✓ POST /api/tickets > replays one concurrent request when the same requester submits the same submissionKey 1295ms
+ ✓ tests/lab-02/my-tickets.api.test.ts (16 tests) 2030ms
+ ✓ tests/lab-02/attachments.api.test.ts (11 tests) 1457ms
+stdout | tests/lab-03/migration-regression.api.test.ts > Lab 3 migration compatibility > preserves attachments and reference-data row counts across repeated seed
+Seeded Lab 3 local users, reference data and tickets successfully.
+
+ ✓ tests/lab-03/migration-regression.api.test.ts (6 tests) 1620ms
+   ✓ Lab 3 migration compatibility > provisions every placeholder Requester and allows initial-password login 397ms
+ ✓ tests/lab-03/users-admin.api.test.ts (13 tests) 3334ms
+   ✓ Lab 3 Administrator user management API > forbids Requester and IT Staff from every Administrator endpoint without changing data 587ms
+ ✓ tests/lab-01/health.test.ts (1 test) 23ms
+ ✓ tests/lab-01/categories.test.ts (1 test) 161ms
+
+ Test Files  19 passed (19)
+      Tests  149 passed (149)
+   Start at  03:13:31
+   Duration  25.47s (transform 8.62s, setup 866ms, collect 44.73s, tests 22.44s, environment 6ms, prepare 12.49s)
+
+Exit code: 0
+## Server build
+
+> toktickit-server@1.0.0 build
+> tsc
+
+Exit code: 0
+## Full Client tests
+
+> toktickit-client@1.0.0 test
+> vitest run
+
+
+ RUN  v2.1.9 C:/CPE334 Software Eng/Lab1_Starter_Scaffold/toktickit/client
+
+ ✓ tests/lab-02/accessibility.test.tsx (1 test) 380ms
+   ✓ Lab 2 accessibility contract > exposes semantic headings, labels, and required state 377ms
+ ✓ tests/lab-03/AccessibilityStyle.test.tsx (1 test) 562ms
+   ✓ Lab 3 accessibility and style verification > exposes semantic landmarks, visible labels, keyboard focus and text state cues 559ms
+ ✓ tests/lab-02/ZenGreenStyle.test.tsx (2 tests) 487ms
+   ✓ Zen Green visual rules > uses the approved green hierarchy and restrained card treatment 481ms
+ ✓ tests/lab-01/App.test.tsx (3 tests) 866ms
+   ✓ App > shows Online and the seeded categories on success 384ms
+ ✓ tests/lab-03/RequesterRegression.test.tsx (2 tests) 694ms
+   ✓ Lab 3 Requester regression > uses the authenticated requester and removes the development selector 458ms
+ ✓ tests/lab-03/ChangePassword.test.tsx (2 tests) 1069ms
+   ✓ Lab 3 Change Password component > shows the mandatory gate, labels, and continues after success 874ms
+ ✓ tests/lab-02/AttachmentSection.test.tsx (6 tests) 1454ms
+   ✓ Attachment Section > keeps a valid file selected until the Ticket is saved and then uploads it 320ms
+   ✓ Attachment Section > downloads an active Attachment and soft-removes it only with a valid reason 640ms
+ ✓ tests/lab-02/RequesterTicketDetail.test.tsx (7 tests) 1583ms
+   ✓ Requester Ticket Detail > shows Loading and then renders the complete owned Ticket as read-only information 486ms
+   ✓ Requester Ticket Detail > allows the owner to add a public comment and mark the problem resolved 601ms
+ ✓ tests/lab-03/StaffTicketDetail.test.tsx (8 tests) 1931ms
+   ✓ Staff Ticket Detail > renders read-only and operational fields and supports assignment, priority and confirmed status 968ms
+   ✓ Staff Ticket Detail > separates Public Comments and Internal Notes with role-specific creation 467ms
+ ✓ tests/lab-03/Login.test.tsx (3 tests) 1589ms
+   ✓ Lab 3 Login component > associates labels with fields and reports a safe failed login 840ms
+   ✓ Lab 3 Login component > shows a busy submit state while login is pending 376ms
+   ✓ Lab 3 Login component > shows the safe authentication failure for an inactive account 372ms
+ ✓ tests/lab-03/StaffTicketQueue.test.tsx (5 tests) 1399ms
+   ✓ Staff Ticket Queue > shows loading then desktop table and responsive mobile cards 331ms
+   ✓ Staff Ticket Queue > sends exact search, filter and sort query 651ms
+ ✓ tests/lab-03/AuthorizationStates.test.tsx (5 tests) 1456ms
+   ✓ Lab 3 role navigation and authorization states > shows and opens User Management for an Administrator 551ms
+   ✓ Lab 3 role navigation and authorization states > refreshes the authenticated navigation after an Administrator changes their own role 422ms
+   ✓ Lab 3 role navigation and authorization states > keeps the Administrator shell when editing another user's role 339ms
+ ✓ tests/lab-02/MyTickets.test.tsx (7 tests) 1825ms
+   ✓ My Tickets > shows loading and then renders requester-owned Tickets in desktop and mobile presentations 434ms
+   ✓ My Tickets > sends Search, Filter, Sort, and Page Size controls as the API query 844ms
+ ✓ tests/lab-03/UserManagement.test.tsx (11 tests) 4517ms
+   ✓ Administrator User Management > shows safe user list fields, status text and Edit actions 389ms
+   ✓ Administrator User Management > searches by name/email and applies the optional role filter 521ms
+   ✓ Administrator User Management > creates an inactive user with one role and initial password 819ms
+   ✓ Administrator User Management > edits a user and resets the initial password 500ms
+   ✓ Administrator User Management > renders API validation fields with accessible error associations 445ms
+   ✓ Administrator User Management > preserves form data after duplicate-email and update-conflict responses 674ms
+   ✓ Administrator User Management > prevents duplicate submit while saving 456ms
+   ✓ Administrator User Management > uses a safe fallback and never renders password, hash or internal details 435ms
+ ✓ tests/lab-02/CreateTicket.test.tsx (6 tests) 3854ms
+   ✓ Create Ticket > disables the form while loading reference data and enables it when ready 410ms
+   ✓ Create Ticket > submits once, disables the form while busy, and displays the created Ticket 1223ms
+   ✓ Create Ticket > preserves the form and reuses the submission key after a safe failure 804ms
+   ✓ Create Ticket > maps backend validation fields to the matching form controls 463ms
+   ✓ Create Ticket > keeps the created Ticket when Attachment upload fails and retries only the file 727ms
+ ✓ tests/lab-02/DevelopmentRequesterSelection.test.tsx (2 tests) 160ms
+
+ Test Files  16 passed (16)
+      Tests  71 passed (71)
+   Start at  04:05:14
+   Duration  27.60s (transform 2.95s, setup 4.79s, collect 12.55s, tests 23.83s, environment 28.40s, prepare 10.75s)
+
+
+Exit code: 0
+
+## Client build
+
+> toktickit-client@1.0.0 build
+> tsc && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 36 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.39 kB │ gzip:  0.27 kB
+dist/assets/index-F-wCIacU.css  233.50 kB │ gzip: 31.49 kB
+dist/assets/index-BPyZ7e79.js   228.25 kB │ gzip: 63.01 kB
+✓ built in 890ms
+Exit code: 0
+## Playwright Lab 3 E2E (6 tests)
+
+> test
+> playwright test
+
+[WebServer] (node:19740) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:41940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:33928) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:30812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 lab-03\authentication.spec.ts:35:3 › Lab 3 authentication and requester regression › rejects invalid credentials, authenticates an Administrator, and logs out (5.2s)
+  ok 2 lab-03\authentication.spec.ts:61:3 › Lab 3 authentication and requester regression › enforces first-login password change, logout invalidation, and inactive-account rejection (2.8s)
+  ok 3 lab-03\authentication.spec.ts:99:3 › Lab 3 authentication and requester regression › keeps requester ownership authenticated and blocks role-forbidden direct access (2.5s)
+  ok 4 lab-03\staff-ticket-flow.spec.ts:47:1 › IT Staff can search the Queue, open Detail, operate safely, and use responsive layouts (6.4s)
+  ok 5 lab-03\staff-ticket-flow.spec.ts:215:1 › rejects malformed Queue queries with a safe error (237ms)
+  ok 6 lab-03\user-administration.spec.ts:32:1 › Administrator manages users with search, role filtering, safe editing and responsive evidence (4.1s)
+
+  6 passed (35.3s)
+
+Exit code: 0
+
+## git diff --check (final)
+warning: in the working copy of 'artifacts/lab-03/console-output.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/src/App.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'client/tests/lab-03/StaffTicketQueue.test.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/lab-03/reviewer.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/lab-03/tests.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/lab-03/ui-spec.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'e2e/lab-02/support.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'e2e/lab-03/staff-ticket-flow.spec.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'e2e/lab-03/user-administration.spec.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'e2e/playwright.config.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tests/lab-03/auth.unit.test.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tests/lab-03/migration-regression.api.test.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'server/tests/lab-03/staff-queue.api.test.ts', LF will be replaced by CRLF the next time Git touches it
+Exit code: 0

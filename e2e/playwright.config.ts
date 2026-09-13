@@ -1,34 +1,14 @@
 import { defineConfig } from "@playwright/test";
-import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertDedicatedE2EDatabase } from "./database-guard.js";
 
 const e2eDirectory = path.dirname(fileURLToPath(import.meta.url));
-const e2eDatabaseUrl = process.env.E2E_DATABASE_URL?.trim();
-
-if (!e2eDatabaseUrl) {
-  throw new Error(
-    "E2E_DATABASE_URL is required. Playwright will not start against the development database.",
-  );
-}
-
 const developmentEnvPath = path.resolve(e2eDirectory, "../server/.env");
-if (fs.existsSync(developmentEnvPath)) {
-  const developmentEnv = fs.readFileSync(developmentEnvPath, "utf8");
-  const databaseLine = developmentEnv
-    .split(/\r?\n/)
-    .find((line) => /^\s*DATABASE_URL\s*=/.test(line));
-  const developmentDatabaseUrl = databaseLine
-    ?.slice(databaseLine.indexOf("=") + 1)
-    .trim()
-    .replace(/^"|"$/g, "");
-
-  if (developmentDatabaseUrl && developmentDatabaseUrl === e2eDatabaseUrl) {
-    throw new Error(
-      "E2E_DATABASE_URL matches server/.env DATABASE_URL. Refusing to run E2E against the development database.",
-    );
-  }
-}
+const e2eDatabaseUrl = assertDedicatedE2EDatabase(
+  process.env.E2E_DATABASE_URL,
+  developmentEnvPath,
+);
 
 export default defineConfig({
   // Lab 2 browser specs exercised the retired Development Requester selector.
@@ -42,7 +22,9 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
-  outputDir: path.resolve(e2eDirectory, "../test-results"),
+  // Use a dedicated Lab 3 output directory so an open report from an earlier
+  // run cannot block the next verification run on Windows.
+  outputDir: path.resolve(e2eDirectory, "../test-results-lab3"),
   use: {
     baseURL: "http://localhost:5173",
     screenshot: "only-on-failure",
@@ -52,7 +34,7 @@ export default defineConfig({
       height: 1000,
     },
   },
-  reporter: [["list"], ["html", { outputFolder: path.resolve(e2eDirectory, "../playwright-report"), open: "never" }]],
+  reporter: [["list"], ["html", { outputFolder: path.resolve(e2eDirectory, "../playwright-report-lab3"), open: "never" }]],
   webServer: [
     {
       command: "npm.cmd run dev",

@@ -7,6 +7,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getPrisma } from "../../server/src/prisma.js";
+import { assertDedicatedE2EDatabase } from "../database-guard.js";
 
 export const API_URL = "http://127.0.0.1:3000";
 export const REPOSITORY_ROOT = fileURLToPath(
@@ -30,12 +31,10 @@ export function screenshotPath(
 export const ADMIN_EMAIL = "admin@toktickit.test";
 export const E2E_PASSWORD = "Lab3-E2E-Password1!";
 
-const e2eDatabaseUrl = process.env.E2E_DATABASE_URL?.trim();
-if (!e2eDatabaseUrl) {
-  throw new Error(
-    "E2E_DATABASE_URL is required before importing E2E database helpers.",
-  );
-}
+const e2eDatabaseUrl = assertDedicatedE2EDatabase(
+  process.env.E2E_DATABASE_URL,
+  path.join(REPOSITORY_ROOT, "server", ".env"),
+);
 
 // Prisma is lazy in this project. Setting DATABASE_URL before any helper uses
 // getPrisma() ensures direct cleanup uses the same isolated database as the
@@ -284,6 +283,9 @@ export async function removeE2EAttachments(
   ticketId: number,
   originalName: string,
 ): Promise<void> {
+  if (!/^e2e[-_]/i.test(originalName)) {
+    throw new Error("Refusing attachment cleanup without an E2E filename marker.");
+  }
   const prisma = getPrisma();
   const attachments = await prisma.attachment.findMany({
     where: {
@@ -327,6 +329,9 @@ export async function removeE2ETicketsBySummary(
   requesterId: number,
   summary: string,
 ): Promise<void> {
+  if (!/^e2e\b/i.test(summary)) {
+    throw new Error("Refusing Ticket cleanup without an E2E summary marker.");
+  }
   const prisma = getPrisma();
   const tickets = await prisma.ticket.findMany({
     where: {
@@ -387,6 +392,9 @@ export async function removeE2ETicketsBySummary(
 }
 
 export async function removeE2EUserByEmail(email: string): Promise<void> {
+  if (!/^e2e[-_]/i.test(email.split("@")[0] ?? "")) {
+    throw new Error("Refusing User cleanup without an E2E email marker.");
+  }
   const prisma = getPrisma();
   const users = await prisma.requesterUser.findMany({
     where: { email },

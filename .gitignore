@@ -9,6 +9,8 @@ dist/
 build/
 test-results/
 playwright-report/
+test-results-lab3/
+playwright-report-lab3/
 e2e/downloads/
 # prisma
 server/prisma/*.db
