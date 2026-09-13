@@ -194,6 +194,32 @@ describe("Lab 3 Administrator user management API", () => {
     expect(await prisma.requesterUser.findUniqueOrThrow({ where: { id: target.id } })).toMatchObject({ email: target.email, role: "REQUESTER", isActive: true });
   });
 
+  it("serializes concurrent Administrator demotions and preserves one active Administrator", async () => {
+    const first = await createFixture({ name: "Concurrent Administrator One", role: "ADMINISTRATOR" });
+    const second = await createFixture({ name: "Concurrent Administrator Two", role: "ADMINISTRATOR" });
+    const otherAdministrators = await prisma.requesterUser.findMany({
+      where: { role: "ADMINISTRATOR", isActive: true, id: { notIn: [first.id, second.id] } },
+      select: { id: true },
+    });
+    try {
+      await prisma.requesterUser.updateMany({ where: { id: { in: otherAdministrators.map(({ id }) => id) } }, data: { isActive: false } });
+      const firstAgent = await signedIn(first.email);
+      const secondAgent = await signedIn(second.email);
+      const [firstResponse, secondResponse] = await Promise.all([
+        firstAgent.patch(`/api/admin/users/${second.id}`).send({ role: "REQUESTER" }),
+        secondAgent.patch(`/api/admin/users/${first.id}`).send({ role: "REQUESTER" }),
+      ]);
+      expect([firstResponse.status, secondResponse.status].sort()).toEqual([200, 409]);
+      const activeAdministrators = await prisma.requesterUser.count({ where: { role: "ADMINISTRATOR", isActive: true } });
+      expect(activeAdministrators).toBe(1);
+    } finally {
+      await prisma.requesterUser.updateMany({ where: { id: { in: [first.id, second.id] } }, data: { role: "ADMINISTRATOR", isActive: true } });
+      if (otherAdministrators.length > 0) {
+        await prisma.requesterUser.updateMany({ where: { id: { in: otherAdministrators.map(({ id }) => id) } }, data: { isActive: true } });
+      }
+    }
+  });
+
   it("prevents self-deactivation and removal of the last active Administrator", async () => {
     const agent = await signedIn();
     const self = await agent.patch(`/api/admin/users/${adminId}`).send({ isActive: false });

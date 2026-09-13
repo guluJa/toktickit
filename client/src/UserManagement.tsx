@@ -65,7 +65,7 @@ function FieldError({ field, errors }: { field: UserFormField; errors: FieldErro
   return message ? <div id={errorId(field)} className="invalid-feedback d-block">{message}</div> : null;
 }
 
-export default function UserManagement() {
+export default function UserManagement({ onUserUpdated }: { onUserUpdated?: (user: AuthUser) => void } = {}) {
   const [screen, setScreen] = useState<ScreenState>("loading");
   const [users, setUsers] = useState<AuthUser[]>([]);
   const [search, setSearch] = useState("");
@@ -137,7 +137,8 @@ export default function UserManagement() {
         setFeedback({ kind: "success", text: "User created successfully." });
         setForm(emptyForm);
       } else if (editing) {
-        await updateAdminUser(editing.id, { name: form.name.trim(), email: form.email.trim(), role: form.role, isActive: form.isActive });
+        const result = await updateAdminUser(editing.id, { name: form.name.trim(), email: form.email.trim(), role: form.role, isActive: form.isActive });
+        onUserUpdated?.(result.user);
         setFeedback({ kind: "success", text: "User updated successfully." });
       }
       await load();

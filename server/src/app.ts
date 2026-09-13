@@ -1183,6 +1183,14 @@ function userUpdateConflict(res: Response, message: string): void {
   res.status(409).json({ error: { code: "USER_UPDATE_CONFLICT", message } });
 }
 
+class AdminUserNotFoundError extends Error {}
+class AdminUserConflictError extends Error {}
+class AdminDuplicateEmailError extends Error {}
+
+// Serialize Administrator role/activation changes so the last-active-admin
+// invariant is checked and committed atomically across concurrent requests.
+const ADMINISTRATOR_GUARD_LOCK = 735391;
+
 app.get("/api/admin/users", requireAdministratorAccess, async (req: Request, res: Response) => {
   try {
     const query = parseAdminUsersQuery(req.query as Record<string, unknown>);
@@ -1285,27 +1293,31 @@ app.patch("/api/admin/users/:userId", requireAdministratorAccess, async (req: Re
 
   try {
     const prisma = getPrisma();
-    const current = await prisma.requesterUser.findUnique({ where: { id: userId }, select: { id: true, role: true, isActive: true } });
-    if (!current) { userNotFoundError(res); return; }
-    if (data.email) {
-      const duplicate = await prisma.requesterUser.findFirst({ where: { email: { equals: data.email, mode: "insensitive" }, NOT: { id: userId } }, select: { id: true } });
-      if (duplicate) { duplicateEmailError(res); return; }
-    }
-    const nextRole = data.role ?? current.role;
-    const nextActive = data.isActive ?? current.isActive;
-    const removesActiveAdministrator = current.role === "ADMINISTRATOR" && current.isActive && !(nextRole === "ADMINISTRATOR" && nextActive);
-    if (req.authUser?.id === userId && !nextActive) { userUpdateConflict(res, "An Administrator cannot deactivate their own account."); return; }
-    if (removesActiveAdministrator) {
-      const activeAdministrators = await prisma.requesterUser.count({ where: { role: "ADMINISTRATOR", isActive: true } });
-      if (activeAdministrators <= 1) { userUpdateConflict(res, "At least one active Administrator must remain."); return; }
-    }
     const updated = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${ADMINISTRATOR_GUARD_LOCK})`;
+      const current = await tx.requesterUser.findUnique({ where: { id: userId }, select: { id: true, role: true, isActive: true } });
+      if (!current) throw new AdminUserNotFoundError();
+      if (data.email) {
+        const duplicate = await tx.requesterUser.findFirst({ where: { email: { equals: data.email, mode: "insensitive" }, NOT: { id: userId } }, select: { id: true } });
+        if (duplicate) throw new AdminDuplicateEmailError();
+      }
+      const nextRole = data.role ?? current.role;
+      const nextActive = data.isActive ?? current.isActive;
+      const removesActiveAdministrator = current.role === "ADMINISTRATOR" && current.isActive && !(nextRole === "ADMINISTRATOR" && nextActive);
+      if (req.authUser?.id === userId && !nextActive) throw new AdminUserConflictError("An Administrator cannot deactivate their own account.");
+      if (removesActiveAdministrator) {
+        const activeAdministrators = await tx.requesterUser.count({ where: { role: "ADMINISTRATOR", isActive: true } });
+        if (activeAdministrators <= 1) throw new AdminUserConflictError("At least one active Administrator must remain.");
+      }
       const user = await tx.requesterUser.update({ where: { id: userId }, data, select: adminUserSelect });
       if (current.isActive && !nextActive) await tx.session.deleteMany({ where: { userId } });
       return user;
     });
     res.status(200).json({ data: { user: updated } });
   } catch (error) {
+    if (error instanceof AdminUserNotFoundError) { userNotFoundError(res); return; }
+    if (error instanceof AdminDuplicateEmailError) { duplicateEmailError(res); return; }
+    if (error instanceof AdminUserConflictError) { userUpdateConflict(res, error.message); return; }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") { duplicateEmailError(res); return; }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") { userNotFoundError(res); return; }
     console.error("Unable to update Administrator user:", error);

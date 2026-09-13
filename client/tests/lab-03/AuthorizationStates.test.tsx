@@ -10,10 +10,15 @@ const users = {
 } as const;
 
 function installApi(role: keyof typeof users) {
-  vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const url = String(input);
     if (url.includes("/api/auth/me")) return new Response(JSON.stringify({ data: { user: users[role] } }), { status: 200 });
-    if (url.includes("/api/admin/users")) return new Response(JSON.stringify({ data: { items: [], pagination: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 } } }), { status: 200 });
+    if (url.includes("/api/admin/users")) {
+      if (url.includes("/api/admin/users/") && init?.method === "PATCH") {
+        return new Response(JSON.stringify({ data: { user: { ...users.ADMINISTRATOR, role: "REQUESTER" } } }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ data: { items: role === "ADMINISTRATOR" ? [users.ADMINISTRATOR] : [], pagination: { page: 1, pageSize: 20, totalItems: role === "ADMINISTRATOR" ? 1 : 0, totalPages: role === "ADMINISTRATOR" ? 1 : 0 } } }), { status: 200 });
+    }
     if (url.includes("/api/staff/tickets")) return new Response(JSON.stringify({ data: { items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } } }), { status: 200 });
     if (url.endsWith("/api/categories") || url.endsWith("/api/related-systems")) return new Response("[]", { status: 200 });
     if (url.includes("/api/tickets?")) return new Response(JSON.stringify({ items: [], page: 1, pageSize: 10, totalOwnedItems: 0, totalItems: 0, totalPages: 0 }), { status: 200 });
@@ -31,6 +36,18 @@ describe("Lab 3 role navigation and authorization states", () => {
     expect(await screen.findByRole("heading", { name: "User Management" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "User Management" }));
     expect(screen.getByRole("heading", { name: "User Management" })).toBeInTheDocument();
+  });
+
+  it("refreshes the authenticated navigation after an Administrator changes their own role", async () => {
+    installApi("ADMINISTRATOR");
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "User Management" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.selectOptions(screen.getAllByLabelText("Role")[1], "REQUESTER");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(await screen.findAllByRole("button", { name: "Create Ticket" })).not.toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "User Management" })).not.toBeInTheDocument();
   });
 
   it("keeps Staff Queue visible for IT Staff but hides User Management", async () => {
