@@ -15,9 +15,11 @@ function installApi(role: keyof typeof users) {
     if (url.includes("/api/auth/me")) return new Response(JSON.stringify({ data: { user: users[role] } }), { status: 200 });
     if (url.includes("/api/admin/users")) {
       if (url.includes("/api/admin/users/") && init?.method === "PATCH") {
-        return new Response(JSON.stringify({ data: { user: { ...users.ADMINISTRATOR, role: "REQUESTER" } } }), { status: 200 });
+        const updatedUser = url.endsWith("/2") ? { ...users.IT_STAFF, role: "REQUESTER" } : { ...users.ADMINISTRATOR, role: "REQUESTER" };
+        return new Response(JSON.stringify({ data: { user: updatedUser } }), { status: 200 });
       }
-      return new Response(JSON.stringify({ data: { items: role === "ADMINISTRATOR" ? [users.ADMINISTRATOR] : [], pagination: { page: 1, pageSize: 20, totalItems: role === "ADMINISTRATOR" ? 1 : 0, totalPages: role === "ADMINISTRATOR" ? 1 : 0 } } }), { status: 200 });
+      const items = role === "ADMINISTRATOR" ? [users.ADMINISTRATOR, users.IT_STAFF] : [];
+      return new Response(JSON.stringify({ data: { items, pagination: { page: 1, pageSize: 20, totalItems: items.length, totalPages: items.length ? 1 : 0 } } }), { status: 200 });
     }
     if (url.includes("/api/staff/tickets")) return new Response(JSON.stringify({ data: { items: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } } }), { status: 200 });
     if (url.endsWith("/api/categories") || url.endsWith("/api/related-systems")) return new Response("[]", { status: 200 });
@@ -43,11 +45,24 @@ describe("Lab 3 role navigation and authorization states", () => {
     const user = userEvent.setup();
     render(<App />);
     expect(await screen.findByRole("heading", { name: "User Management" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.click(screen.getAllByRole("button", { name: "Edit" })[0]);
     await user.selectOptions(screen.getAllByLabelText("Role")[1], "REQUESTER");
     await user.click(screen.getByRole("button", { name: "Save Changes" }));
     expect(await screen.findAllByRole("button", { name: "Create Ticket" })).not.toHaveLength(0);
     expect(screen.queryByRole("button", { name: "User Management" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the Administrator shell when editing another user's role", async () => {
+    installApi("ADMINISTRATOR");
+    const user = userEvent.setup();
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "User Management" })).toBeInTheDocument();
+    await user.click(screen.getAllByRole("button", { name: "Edit" })[1]);
+    await user.selectOptions(screen.getAllByLabelText("Role")[1], "REQUESTER");
+    await user.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(await screen.findByText("User updated successfully.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "User Management" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "User Management" })).toBeInTheDocument();
   });
 
   it("keeps Staff Queue visible for IT Staff but hides User Management", async () => {

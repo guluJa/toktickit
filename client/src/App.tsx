@@ -98,7 +98,7 @@ export default function App() {
         <button type="button" className={`nav-link ${adminView === "users" ? "active" : "text-success"}`} aria-current={adminView === "users" ? "page" : undefined} onClick={() => setAdminView("users")}>User Management</button>
         <button type="button" className={`nav-link ${adminView === "queue" ? "active" : "text-success"}`} aria-current={adminView === "queue" ? "page" : undefined} onClick={() => setAdminView("queue")}>Staff Ticket Queue</button>
       </nav>}
-      {staffTicketId ? <StaffTicketDetail ticketId={staffTicketId} currentUserId={authUser.id} role={authUser.role} onBack={() => setStaffTicketId(null)} /> : isAdministrator && adminView === "users" ? <UserManagement onUserUpdated={setAuthUser} /> : <StaffTicketQueue role={authUser.role} onOpenTicket={(ticketId) => setStaffTicketId(ticketId)} />}
+      {staffTicketId ? <StaffTicketDetail ticketId={staffTicketId} currentUserId={authUser.id} role={authUser.role} onBack={() => setStaffTicketId(null)} /> : isAdministrator && adminView === "users" ? <UserManagement onUserUpdated={(updatedUser) => { if (updatedUser.id === authUser.id) setAuthUser(updatedUser); }} /> : <StaffTicketQueue role={authUser.role} onOpenTicket={(ticketId) => setStaffTicketId(ticketId)} />}
     </main>;
   }
   const requester = authUser;
