@@ -24,11 +24,18 @@
 | UI-06 | component | AC-09/12 | Administrator User Management | list/search/filter/create/edit/reset/deactivate, field-level validation, conflict preservation, retry, saving guard และ safe failure feedback | `client/tests/lab-03/UserManagement.test.tsx` | Pass (11 tests) |
 | UI-07 | security regression | AC-06/09 | role navigation, destination visibility และ auth-context refresh | Administrator เปิด User Management ได้; IT Staff/Requester ไม่เห็น destination นี้; Staff Queue และ Requester flow เดิมยังแสดงตาม role; เมื่อ Administrator เปลี่ยน role ตนเอง เมนูและ workspace เปลี่ยนทันที; เมื่อ Administrator แก้ไขบัญชีผู้อื่น shell และสิทธิ์ของ Administrator ยังคงเดิม; direct API authorization ยังคงเป็น Backend source of truth | `client/tests/lab-03/AuthorizationStates.test.tsx` | Pass (5 tests) |
 | STYLE-01 | UI style/accessibility | AC-13 | Zen Green tokens, badges, labels, focus และ read-only styling | visual conventions, labels, focus และ state cues ผ่าน accessibility/style assertions | `client/tests/lab-03/ZenGreenStyle.test.tsx` | Planned |
-| RESP-01 | responsive | AC-13 | desktop/tablet/mobile layout | ไม่มี clipping, overlap หรือ page-level horizontal overflow | `e2e/lab-03/responsive.spec.ts` | Planned |
-| E2E-01 | E2E | AC-01/02/03/04/05/06 | login, first-login, logout และ requester regression | authentication flow และ Lab 2 requester flow ทำงานด้วย authenticated identity | `e2e/lab-03/authentication.spec.ts` | Planned |
+| RESP-01 | responsive | AC-13 | desktop/tablet/mobile layout | ไม่มี clipping, overlap หรือ page-level horizontal overflow; ตารางแบบ responsive ใช้ internal horizontal scroll อย่างตั้งใจ | `e2e/lab-03/authentication.spec.ts`, `e2e/lab-03/staff-ticket-flow.spec.ts`, `e2e/lab-03/user-administration.spec.ts` | Pass (3 specs) |
+| E2E-01 | E2E | AC-01/02/03/04/05/06 | login, first-login, logout และ requester regression | authentication flow และ Lab 2 requester flow ทำงานด้วย authenticated identity | `e2e/lab-03/authentication.spec.ts` | Pass (3 tests) |
 | E2E-02 | E2E | AC-07/08/09/10 | Staff queue/detail workflow | queue, assignment, priority, status, comments, notes และ resolved behavior ทำงานตาม policy | `e2e/lab-03/staff-ticket-flow.spec.ts` | Planned |
 | E2E-03 | E2E | AC-09/12 | Administrator workflow | user management, forbidden actions และ next-login password change ทำงานครบ | `e2e/lab-03/user-administration.spec.ts` | Planned |
 
 ## Final Evidence Plan
 
 เมื่อ implementation เสร็จ ต้องบันทึก command ที่ใช้จริง, complete console output, explicit test-file paths, migration/seed evidence, responsive screenshots, accessibility/style inspection และ final-main commit provenance ห้ามเปลี่ยน `Planned` เป็น `Pass` หากยังไม่มีไฟล์หรือผลรันจริง
+
+## Lab 3 E2E execution evidence (current branch)
+
+- Playwright command: `npm.cmd test` from `e2e/`; latest run: 6 tests passed (3 authentication/requester, 2 Staff Queue/Detail, 1 Administrator workflow). HTML report is generated at `playwright-report/` and is ignored as generated output.
+- Screenshot evidence is generated under `artifacts/lab-03/screenshots/{authentication,staff-queue,staff-ticket-detail,user-management}/` for desktop, tablet and mobile viewports. Screenshots contain seeded test identities only; no password, cookie, token or session data.
+- Migration and repeated-seed verification remains `Planned`: `E2E_DATABASE_URL` is not configured for an isolated local database, so no migration/reset command was executed against the development database.
+- E2E-02 and E2E-03 remain `Planned` until their full expected transition/safety matrix is executed end-to-end; the passing tests are retained as evidence, not promoted to Pass prematurely.

@@ -1,0 +1,23 @@
+
+> test
+> playwright test --output=test-results-final4
+
+[WebServer] (node:2516) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:23204) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:39572) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:34492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 lab-03\authentication.spec.ts:23:3 › Lab 3 authentication and requester regression › rejects invalid credentials, authenticates an Administrator, and logs out (2.6s)
+  ok 2 lab-03\authentication.spec.ts:51:3 › Lab 3 authentication and requester regression › enforces first-login password change, logout invalidation, and inactive-account rejection (1.4s)
+  ok 3 lab-03\authentication.spec.ts:89:3 › Lab 3 authentication and requester regression › keeps requester ownership authenticated and blocks role-forbidden direct access (1.2s)
+  ok 4 lab-03\staff-ticket-flow.spec.ts:23:1 › IT Staff can search the Queue, open Detail, operate safely, and use responsive layouts (3.8s)
+  ok 5 lab-03\staff-ticket-flow.spec.ts:100:1 › rejects malformed Queue queries with a safe error (194ms)
+  ok 6 lab-03\user-administration.spec.ts:11:1 › Administrator manages users with search, role filtering, safe editing and responsive evidence (2.1s)
+
+  6 passed (25.0s)

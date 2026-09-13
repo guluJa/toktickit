@@ -21,3 +21,12 @@
 
 ## Final Note
 ก่อนส่ง PDF ต้องแทนที่ช่องว่างทั้งหมดด้วยหลักฐานจาก GitHub ที่ตรวจสอบได้ และไม่บันทึก password, secret หรือค่า `.env`
+
+## Current Verification (author-run evidence)
+- Branch: `feature/07-lab3-e2e-regression-visual`
+- Automated evidence: Playwright Lab 3 suite 6 passed; full server suite 19 files/146 tests passed; full client suite 13 files/64 tests passed; server and client builds passed; `git diff --check` passed.
+- Evidence paths: `artifacts/lab-03/console-output.txt`, `artifacts/lab-03/screenshots/`, and generated `playwright-report/`.
+- Isolated PostgreSQL migration/repeated-seed E2E evidence: Pending (`E2E_DATABASE_URL` was not configured; no development/production reset was run).
+- Peer Review: Pending
+- Approval: Pending
+- Merge: Pending

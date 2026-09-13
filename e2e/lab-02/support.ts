@@ -27,6 +27,89 @@ export function screenshotPath(
   );
 }
 
+export const ADMIN_EMAIL = "admin@toktickit.test";
+export const E2E_PASSWORD = "Lab3-E2E-Password1!";
+
+let initialPasswordPromise: Promise<string> | undefined;
+
+export async function getInitialPassword(): Promise<string> {
+  if (!initialPasswordPromise) {
+    initialPasswordPromise = (async () => {
+      if (process.env.LAB3_INITIAL_PASSWORD) return process.env.LAB3_INITIAL_PASSWORD;
+      const envText = await fs.readFile(path.join(REPOSITORY_ROOT, "server", ".env"), "utf8");
+      const line = envText.split(/\r?\n/).find((value) => /^\s*LAB3_INITIAL_PASSWORD\s*=/.test(value));
+      if (!line) throw new Error("LAB3_INITIAL_PASSWORD is not configured for E2E.");
+      return line.slice(line.indexOf("=") + 1).trim().replace(/^\"|\"$/g, "");
+    })();
+  }
+  return initialPasswordPromise;
+}
+
+export function lab3ScreenshotPath(
+  screen: "authentication" | "staff-queue" | "staff-ticket-detail" | "user-management",
+  filename: string,
+): string {
+  return path.join(REPOSITORY_ROOT, "artifacts", "lab-03", "screenshots", screen, filename);
+}
+
+export async function loginApi(
+  request: APIRequestContext,
+  email: string,
+  password?: string,
+): Promise<{ id: number; name: string; email: string; role: string; isActive: boolean; mustChangePassword: boolean }> {
+  const response = await request.post(`${API_URL}/api/auth/login`, { data: { email, password: password ?? await getInitialPassword() } });
+  expect(response.status(), `login failed for ${email}`).toBe(200);
+  return ((await response.json()) as { data: { user: { id: number; name: string; email: string; role: string; isActive: boolean; mustChangePassword: boolean } } }).data.user;
+}
+
+export async function resetInitialPassword(
+  request: APIRequestContext,
+  email: string,
+): Promise<number> {
+  await loginApi(request, ADMIN_EMAIL);
+  const list = await request.get(`${API_URL}/api/admin/users?search=${encodeURIComponent(email)}&page=1&pageSize=20`);
+  expect(list.status()).toBe(200);
+  const body = (await list.json()) as { data: { items: Array<{ id: number; email: string }> } };
+  const user = body.data.items.find((item) => item.email.toLowerCase() === email.toLowerCase());
+  if (!user) throw new Error(`Missing E2E fixture user: ${email}`);
+  const reset = await request.post(`${API_URL}/api/admin/users/${user.id}/initial-password`, { data: { initialPassword: await getInitialPassword() } });
+  expect(reset.status()).toBe(200);
+  return user.id;
+}
+
+export async function prepareApiUser(
+  request: APIRequestContext,
+  email: string,
+): Promise<{ id: number; password: string; role: string }> {
+  await resetInitialPassword(request, email);
+  const user = await loginApi(request, email);
+  let password = await getInitialPassword();
+  if (user.mustChangePassword) {
+    password = E2E_PASSWORD;
+    const changed = await request.post(`${API_URL}/api/auth/change-password`, { data: { newPassword: password, confirmPassword: password } });
+    expect(changed.status()).toBe(200);
+  }
+  return { id: user.id, password, role: user.role };
+}
+
+export async function loginPage(
+  page: Page,
+  email: string,
+  password: string,
+  screenshot?: string,
+): Promise<void> {
+  await page.goto("/");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  if (await page.getByRole("heading", { name: "Change password required" }).isVisible().catch(() => false)) {
+    await page.getByLabel("New password").fill(E2E_PASSWORD);
+    await page.getByLabel("Confirm password").fill(E2E_PASSWORD);
+    await page.getByRole("button", { name: "Change password" }).click();
+  }
+  if (screenshot) await page.screenshot({ path: screenshot, fullPage: true });
+}
+
 interface ReferenceItem {
   id: number;
   name: string;
@@ -131,11 +214,13 @@ export async function assertNoHorizontalOverflow(
           }`,
           left: rectangle.left,
           right: rectangle.right,
+          containedInResponsiveTable: Boolean(element.closest(".table-responsive")),
         };
       })
       .filter(
-        ({ left, right }) =>
-          left < -0.5 || right > viewportWidth + 0.5,
+        ({ left, right, containedInResponsiveTable }) =>
+          !containedInResponsiveTable &&
+          (left < -0.5 || right > viewportWidth + 0.5),
       )
       .slice(0, 10);
 

@@ -5,7 +5,10 @@ import { fileURLToPath } from "node:url";
 const e2eDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  testDir: "./lab-02",
+  // Lab 2 browser specs exercised the retired Development Requester selector.
+  // Lab 3 owns the authenticated end-to-end suite and the regression coverage.
+  testDir: ".",
+  testIgnore: ["**/lab-02/**"],
   globalSetup: "./global-setup.ts",
   fullyParallel: false,
   workers: 1,
@@ -15,7 +18,7 @@ export default defineConfig({
   },
   outputDir: path.resolve(e2eDirectory, "../test-results"),
   use: {
-    baseURL: "http://127.0.0.1:5173",
+    baseURL: "http://localhost:5173",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     viewport: {
@@ -23,7 +26,7 @@ export default defineConfig({
       height: 1000,
     },
   },
-  reporter: [["list"]],
+  reporter: [["list"], ["html", { outputFolder: path.resolve(e2eDirectory, "../playwright-report"), open: "never" }]],
   webServer: [
     {
       command: "npm.cmd run dev",
@@ -35,7 +38,7 @@ export default defineConfig({
     {
       command: "npm.cmd run dev -- --host 127.0.0.1",
       cwd: path.resolve(e2eDirectory, "../client"),
-      url: "http://127.0.0.1:5173",
+      url: "http://localhost:5173",
       reuseExistingServer: true,
       timeout: 120_000,
     },
