@@ -173,16 +173,16 @@ cd ..\e2e
 npm.cmd test
 ```
 
-การรัน seed สองครั้งใช้ยืนยันว่า seed ทำซ้ำได้โดยไม่สร้างข้อมูลซ้ำหรือลบข้อมูลเดิม ห้ามใช้ Development/Production Database กับขั้นตอนนี้ หลังรันเสร็จสามารถลบค่าชั่วคราวด้วย:
+รัน Lab 3 E2E suite ซึ่งมี responsive assertions และสร้าง Visual Evidence:
+```powershell
+npm.cmd run test:responsive
+```
+
+การรัน seed สองครั้งใช้ยืนยันว่า seed ทำซ้ำได้โดยไม่สร้างข้อมูลซ้ำหรือลบข้อมูลเดิม ห้ามใช้ Development/Production Database กับขั้นตอนนี้ เมื่อรัน E2E และ Responsive Tests ครบแล้วจึงลบค่าชั่วคราวด้วย:
 ```powershell
 Remove-Item Env:E2E_DATABASE_URL -ErrorAction SilentlyContinue
 Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
 Remove-Item Env:LAB3_INITIAL_PASSWORD -ErrorAction SilentlyContinue
-```
-
-รัน Lab 3 E2E suite ซึ่งมี responsive assertions และสร้าง Visual Evidence:
-```powershell
-npm.cmd run test:responsive
 ```
 
 Automated Tests ครอบคลุม authentication, first-login gate, authenticated Requester regression, Staff Queue/Detail, Administrator User Management, migration/seed regression, safe failures, accessibility, Zen Green styling และ Desktop/Tablet/Mobile responsive behavior
