@@ -51,10 +51,10 @@
 
 ## 5. Visual Review Checklist
 รายการนี้เป็นเกณฑ์ตรวจเมื่อ implementation เสร็จ ไม่ใช่ผลการทดสอบใน PR เอกสารนี้:
-- [ ] Zen Green tokens และ button/badge conventions ต่อเนื่องจาก Lab 2
-- [ ] ชื่อและ role ของ authenticated user กับ navigation ถูกต้องตาม role
-- [ ] Status, Requested Priority, IT Priority และ role มี text label
-- [ ] Validation, forbidden, empty/no-results, saving และ failure feedback อ่านได้ชัดเจน
-- [ ] Editable และ read-only fields แตกต่างกันชัดเจน
-- [ ] Desktop, tablet และ mobile ไม่มี clipping, overlap หรือ horizontal overflow
-- [ ] Keyboard focus, labels, table/card semantics และ non-color state cues ผ่าน accessibility review
+- [x] Zen Green tokens และ button/badge conventions ต่อเนื่องจาก Lab 2 (ZenGreenStyle component assertions และ final screenshots)
+- [x] ชื่อและ role ของ authenticated user กับ navigation ถูกต้องตาม role (ตรวจจาก final E2E screenshots)
+- [x] Status, Requested Priority, IT Priority และ role มี text label (ตรวจจาก final E2E screenshots)
+- [x] Validation, forbidden, empty/no-results, saving และ failure feedback อ่านได้ชัดเจน (component/API tests และ final E2E evidence)
+- [x] Editable และ read-only fields แตกต่างกันชัดเจน (ตรวจ Staff Ticket Detail final screenshot)
+- [x] Desktop, tablet และ mobile ไม่มี clipping, overlap หรือ horizontal overflow (Playwright overflow assertions และ visual inspection)
+- [x] Keyboard focus, labels, table/card semantics และ non-color state cues ผ่าน accessibility review (AccessibilityStyle component test, semantic table/card markup and text status labels)

@@ -9,11 +9,13 @@ const prisma = getPrisma();
 const fixtureEmail = "lab3-migration-fixture@toktickit.test";
 const fixturePassword = "Migrated-Password1!";
 let fixtureTicketId: number | undefined;
+let fixtureAttachmentId: number | undefined;
 
 async function removeFixture(): Promise<void> {
   const fixture = await prisma.requesterUser.findUnique({ where: { email: fixtureEmail } });
   if (!fixture) return;
   await prisma.session.deleteMany({ where: { userId: fixture.id } });
+  if (fixtureTicketId) await prisma.attachment.deleteMany({ where: { ticketId: fixtureTicketId } });
   await prisma.ticket.deleteMany({ where: { requesterId: fixture.id } });
   await prisma.requesterUser.delete({ where: { id: fixture.id } });
 }
@@ -48,6 +50,16 @@ describe("Lab 3 migration compatibility", () => {
       },
     });
     fixtureTicketId = ticket.id;
+    const attachment = await prisma.attachment.create({
+      data: {
+        ticketId: ticket.id,
+        originalName: "migration-fixture.txt",
+        storageKey: `e2e-migration-${randomUUID()}.txt`,
+        mimeType: "text/plain",
+        sizeBytes: 12,
+      },
+    });
+    fixtureAttachmentId = attachment.id;
   });
 
   afterAll(async () => {
@@ -118,6 +130,38 @@ describe("Lab 3 migration compatibility", () => {
       if (previousPassword === undefined) delete process.env.LAB3_INITIAL_PASSWORD;
       else process.env.LAB3_INITIAL_PASSWORD = previousPassword;
     }
+  });
+
+  it("preserves attachments and reference-data row counts across repeated seed", async () => {
+    expect(fixtureAttachmentId).toEqual(expect.any(Number));
+    const attachmentId = fixtureAttachmentId as number;
+    const before = {
+      categories: await prisma.category.count(),
+      relatedSystems: await prisma.relatedSystem.count(),
+      attachments: await prisma.attachment.count(),
+    };
+    const beforeAttachment = await prisma.attachment.findUniqueOrThrow({
+      where: { id: attachmentId },
+      select: { id: true, ticketId: true, originalName: true, removedAt: true },
+    });
+    const previousPassword = process.env.LAB3_INITIAL_PASSWORD;
+    process.env.LAB3_INITIAL_PASSWORD = fixturePassword;
+    try {
+      await runSeed();
+      await runSeed();
+    } finally {
+      if (previousPassword === undefined) delete process.env.LAB3_INITIAL_PASSWORD;
+      else process.env.LAB3_INITIAL_PASSWORD = previousPassword;
+    }
+    expect({
+      categories: await prisma.category.count(),
+      relatedSystems: await prisma.relatedSystem.count(),
+      attachments: await prisma.attachment.count(),
+    }).toEqual(before);
+    expect(await prisma.attachment.findUniqueOrThrow({
+      where: { id: attachmentId },
+      select: { id: true, ticketId: true, originalName: true, removedAt: true },
+    })).toEqual(beforeAttachment);
   });
 
   it("preserves explicit IT Priority initialization and exposes the complete Ticket lifecycle", async () => {

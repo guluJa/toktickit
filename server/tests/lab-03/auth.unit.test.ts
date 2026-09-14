@@ -4,6 +4,8 @@ import {
   requireNormalApplicationAccess,
   validatePassword,
 } from "../../src/auth.js";
+import { isAllowedStatusTransition } from "../../src/staff-ticket-detail.js";
+import type { TicketStatus } from "@prisma/client";
 
 describe("Lab 3 authentication password policy", () => {
   it.each(["short", "NoDigitOrSymbol", "nouppercase1!", "NOLOWERCASE1!"])(
@@ -66,5 +68,27 @@ describe("mandatory first-login gate", () => {
     });
 
     expect(nextCalled).toBe(true);
+  });
+});
+
+describe("Ticket status transition contract", () => {
+  const statuses: TicketStatus[] = ["NEW", "OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED", "REOPENED", "CANCELLED"];
+  const allowed: Record<TicketStatus, readonly TicketStatus[]> = {
+    NEW: ["OPEN"],
+    OPEN: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "CANCELLED"],
+    IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
+    WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
+    RESOLVED: ["CLOSED", "REOPENED"],
+    CLOSED: ["REOPENED"],
+    REOPENED: [],
+    CANCELLED: [],
+  };
+
+  it("accepts exactly the allowed transitions and rejects all others", () => {
+    for (const from of statuses) {
+      for (const to of statuses) {
+        expect(isAllowedStatusTransition(from, to)).toBe(allowed[from].includes(to));
+      }
+    }
   });
 });

@@ -26,6 +26,17 @@ describe("Lab 3 Staff Ticket Queue", () => {
       const ticket = await prisma.ticket.create({ data: { ticketNumber: `QUEUE-${Date.now()}-${index}`, submissionKey: randomUUID(), requesterId, ownerId: fixture.owned ? staffId : null, categoryId: category.id, relatedSystemId: system.id, summary: fixture.summary, description: "Staff queue fixture", requestedPriority: fixture.priority, itPriority: fixture.priority } });
       ticketIds.push(ticket.id);
     }
+    for (let index = 0; index < 11; index += 1) {
+      const ticket = await prisma.ticket.create({ data: {
+        ticketNumber: `QUEUE-PAGE-${Date.now()}-${index}`,
+        submissionKey: randomUUID(), requesterId, ownerId: index === 0 ? staffId : null,
+        categoryId: category.id, relatedSystemId: system.id,
+        summary: `Queue page fixture ${index + 1}`, description: "Staff queue pagination fixture",
+        requestedPriority: index % 2 === 0 ? "MEDIUM" : "LOW", itPriority: index % 3 === 0 ? "HIGH" : "MEDIUM",
+        currentStatus: index % 2 === 0 ? "OPEN" : "NEW",
+      } });
+      ticketIds.push(ticket.id);
+    }
   });
   afterAll(async () => { await prisma.ticket.deleteMany({ where: { id: { in: ticketIds } } }); await prisma.session.deleteMany({ where: { userId: { in: [staffId, adminId, requesterId] } } }); await prisma.requesterUser.deleteMany({ where: { id: { in: [staffId, adminId, requesterId] } } }); await prisma.$disconnect(); });
   async function signedIn(email: string) { const agent = request.agent(app); const result = await agent.post("/api/auth/login").send({ email, password }); expect(result.status).toBe(200); return agent; }
@@ -42,6 +53,21 @@ describe("Lab 3 Staff Ticket Queue", () => {
     expect(filtered.status).toBe(200); expect(filtered.body.data.items).toHaveLength(1); expect(filtered.body.data.items[0].summary).toBe("Queue alpha");
     const empty = await agent.get("/api/staff/tickets").query({ search: "does-not-exist" });
     expect(empty.status).toBe(200); expect(empty.body.data.items).toEqual([]); expect(empty.body.data.pagination.totalPages).toBe(0);
+  });
+  it("supports real pagination, status/priority/unassigned filters and sort direction", async () => {
+    const agent = await signedIn(staffEmail);
+    const pageOne = await agent.get("/api/staff/tickets").query({ search: "Queue page fixture", page: 1, pageSize: 10, sortBy: "ticketNumber", sortOrder: "asc" });
+    const pageTwo = await agent.get("/api/staff/tickets").query({ search: "Queue page fixture", page: 2, pageSize: 10, sortBy: "ticketNumber", sortOrder: "asc" });
+    expect(pageOne.status).toBe(200); expect(pageTwo.status).toBe(200);
+    expect(pageOne.body.data.pagination).toMatchObject({ page: 1, pageSize: 10, totalItems: 11, totalPages: 2 });
+    expect(pageOne.body.data.items).toHaveLength(10); expect(pageTwo.body.data.items).toHaveLength(1);
+    expect(pageOne.body.data.items[0].id).not.toBe(pageTwo.body.data.items[0].id);
+    const filtered = await agent.get("/api/staff/tickets").query({ search: "Queue page fixture", status: "OPEN", requestedPriority: "MEDIUM", itPriority: "HIGH", ownerId: "unassigned", pageSize: 50 });
+    expect(filtered.status).toBe(200);
+    expect(filtered.body.data.items.every((item: { currentStatus: string; requestedPriority: string; itPriority: string; owner: unknown }) => item.currentStatus === "OPEN" && item.requestedPriority === "MEDIUM" && item.itPriority === "HIGH" && item.owner === null)).toBe(true);
+    const descending = await agent.get("/api/staff/tickets").query({ search: "Queue page fixture", sortBy: "ticketNumber", sortOrder: "desc", pageSize: 50 });
+    expect(descending.status).toBe(200);
+    expect(descending.body.data.items[0].ticketNumber > descending.body.data.items.at(-1).ticketNumber).toBe(true);
   });
   it("rejects invalid query and out-of-range pages safely", async () => {
     const agent = await signedIn(staffEmail);
