@@ -1,21 +1,28 @@
 # การใช้ AI และ Reflection ของ Lab 3
 
 ## 1. เครื่องมือและความรับผิดชอบ
-- LLM ที่ใช้: ____________________
-- หน้าที่ของฉัน: กำหนด requirements, ตรวจเทียบ Lab 3 sheet, ตัดสินใจด้าน scope และตรวจผลลัพธ์ก่อนนำไปใช้
-- AI ไม่ใช่ผู้อนุมัติความถูกต้องของ contract, security policy หรือ migration decision
 
-## 2. Prompt ที่ใช้จริง
-บันทึกเฉพาะ prompt ที่ใช้จริงระหว่างการทำ Lab 3 โดยคงข้อความตามที่ใช้จริง ไม่สร้างย้อนหลัง และไม่ใส่ secret หรือข้อมูลส่วนตัว
+- AI tool: OpenAI Codex ใน Codex desktop
+- LLM/model: GPT-5.6 Sol
+- Reasoning effort: Medium
+- ผู้จัดทำเป็นผู้กำหนด requirements, จำกัด scope, ตรวจเทียบ Lab sheet และ Engineering Contract ตลอดจนตรวจ source code, tests, Git diff และผลรันจริงก่อนยอมรับคำแนะนำ
+- AI ช่วยวิเคราะห์และสร้างหรือปรับโค้ด, tests และเอกสาร แต่ไม่ใช่ผู้อนุมัติความถูกต้องของ authorization, migration, security หรือหลักฐานการส่งงาน
 
-| # | Prompt excerpt ที่ใช้จริง | นำไปใช้กับงานส่วนใด | ผลที่ฉันตรวจสอบเอง |
+## 2. Selected Key Prompts และ Reflection
+
+ตารางนี้เลือก 6 Prompt สำคัญจากประวัติการสนทนาจริงระหว่างทำ Lab 3 โดยสรุปใจความเพื่อให้อ่านกระชับ ไม่ใช่ข้อความถอดคำแบบเต็มและไม่ได้สร้างคำสั่งใหม่ย้อนหลัง แต่ละรายการคงปัญหา, ขอบเขต, ข้อห้าม, ผลลัพธ์ที่ต้องการ และสิ่งที่ผู้จัดทำตรวจสอบก่อนนำคำตอบไปใช้
+
+| # | Prompt / งาน | ใจความสำคัญจาก Prompt ที่ใช้จริง | ผลลัพธ์ที่นำไปใช้และสิ่งที่ฉันตรวจสอบ |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
-| 6 |  |  |  |
+| 1 | Issue #52 - Staff Queue review revision | ตรวจ Source, Issue และ `docs/lab-03` ก่อนแก้ แล้วทำเพียงสองเรื่อง: เพิ่ม `Open Ticket` ใน desktop/mobile โดยส่ง `ticketId` ตาม navigation pattern และลด Queue owner response เหลือ `id`, `name`, `role` พร้อม tests ห้ามเพิ่ม Staff Detail operations และห้ามเปลี่ยน Test ID เป็น Pass ก่อน coverage ครบ | AI ช่วยลด response และเพิ่ม navigation contract แต่ reviewer พบว่าปุ่มยัง disabled เพราะ `App.tsx` ไม่ได้ส่ง callback ฉันจึงไม่ถือว่าการมีปุ่มเท่ากับใช้งานได้ ให้แก้ handler และตรวจว่า desktop/mobile ส่ง ID จริง ก่อนขอให้เพื่อนตรวจและอนุมัติ PR #59 อีกครั้ง |
+| 2 | Issue #53 - Staff Ticket Detail and Operations | เริ่มด้วย read-only audit ของ Issue, Lab sheet และ Engineering Contract ห้ามเดา endpoint, response, authorization หรือ transition จากนั้นทำ Detail, owner operations, IT Priority, permitted status, Public Comments, Internal Notes, requesterResolved และ Attachment download พร้อม success/denial tests โดยห้ามทำ Queue features, User Management, SLA, notifications หรือแก้ไข/ลบ comments/notes | AI ช่วยเพิ่ม Staff Detail API/UI, additive TicketStatus migration และ regression tests ฉันยืนยัน authorization matrix เองว่า IT Staff ทำ assignment/status ได้, Administrator อ่านและแก้ IT Priority ได้ และ Requester ห้ามเห็น Internal Notes รวมทั้งอนุญาตเฉพาะ additive migration ที่ไม่ reset หรือลบข้อมูลเดิม ก่อนให้เพื่อนตรวจ PR #60 |
+| 3 | Issue #53 - ตรวจข้อสงสัยก่อน Peer Review | ตรวจข้อสงสัยจาก source จริงก่อนแก้ ได้แก่ `createOrReplayTicket()` ต้องตั้ง `itPriority` จาก Requested Priority, Attachment download ต้องใช้ authenticated Requester session, status selector ต้องแสดงเฉพาะ permitted transitions และ Test IDs ต้องครอบคลุม Expected Result จริง ไม่ใช่ผ่านเพียงเพราะ Test file รันผ่าน | การตรวจยืนยันช่องว่างของ priority initialization, Requester identity และ status options จึงแก้ทั้งสามจุด พร้อมเพิ่ม tests สำหรับ priorities, owner/protected attachments, transition matrix, role denials, safe errors และ append-only behavior ฉันตรวจ diff กับ focused/full tests และไม่ยอมให้สร้าง migration เพิ่มเมื่อไม่มี schema change ใหม่ |
+| 4 | Issue #54 - Administrator User Management safety | แสดง Backend field errors ใต้ field ที่ตรงกัน, รักษา form เมื่อ conflict, ทดสอบ Non-Administrator กับทุก Admin endpoint และตรวจ duplicate email, invalid input, session revocation และ safe errors จากนั้นตรวจ reviewer feedback เรื่อง API contract, self-role refresh และ atomic last-active-Administrator guard | AI ช่วยปรับ API/UI tests, contract และ transaction guard แต่ reviewer พบต่อว่า callback หลังแก้ผู้ใช้อื่นอาจแทน authenticated Administrator ด้วย Requester/IT Staff ฉันตรวจ `App.tsx`, ยอมรับเฉพาะข้อเสนอที่ตรงกับโค้ด และเพิ่มเงื่อนไข update auth context เมื่อ ID ตรงกับผู้ใช้ที่ login พร้อม regression test ก่อนส่ง revision PR #61 |
+| 5 | Issue #55 - E2E, Regression and Visual Verification | Audit test configuration ก่อนทำงาน ห้ามเดาคำสั่งหรือผลทดสอบ; ครอบคลุม Authentication, Requester regression, Staff Queue/Detail, Administrator, direct API authorization, migration/seed, responsive, accessibility และภาพสาม viewport โดยใช้ dedicated E2E PostgreSQL พร้อม safety guard ห้าม reset Development database และห้ามเปลี่ยน `Planned` เป็น `Pass` ก่อนรันจริง | AI ช่วยเติม assertions สำหรับ filter/sort/pagination, owner changes, rejected transition, Administrator safety, keyboard focus, cleanup และ minimum component tests ฉันหยุด Commit หลายรอบเมื่อ tests ยังตรวจเพียง HTTP 200 หรือ focus assertion อ่อนเกินไป จากนั้นตั้ง E2E database แยกและยืนยัน migration/seed ซ้ำ, Server 149 tests, Client 71 tests และ Playwright 6 tests ก่อนอัปเดตหลักฐาน PR #62 |
+| 6 | Issue #56 - Release Integration and Final Verification | ตรวจ Lab sheet, README, Lab 3 documents, console evidence, Git history และ PR #57-#62 ก่อนแก้ เอกสารต้องแยก release-candidate จาก final-main, ใช้ Prompt จากประวัติจริง, อ้างเฉพาะผลและเหตุการณ์ที่ตรวจสอบได้ และห้ามแต่ง Pass, approval, merge SHA หรือข้อมูลลับ | AI ช่วยตรวจ provenance, Test paths, จำนวน tests และปรับ README, `tests.md`, `reviewer.md`, `ai-use.md` กับ sanitized console output ฉันยืนยัน PR/merge links, ตรวจว่าไม่มี secret/generated report ถูก track และคง Release PR, final-main run, final SHA กับ PDF เป็น Pending เพราะยังไม่เกิดขึ้นจริง |
 
 ## 3. My Reflection
-เขียนหลังจบงานโดยอธิบายว่า AI ช่วยแตก requirements, ตรวจความสอดคล้อง หรือช่วยงาน implementation ส่วนใด และฉันตรวจสอบคำตอบด้วย Labsheet, repository, tests และหลักฐานจริงอย่างไร
+
+AI มีประโยชน์มากที่สุดเมื่อฉันให้โจทย์ที่มี contract, ขอบเขตห้ามทำ และผลลัพธ์ที่ตรวจได้ ไม่ใช่เพียงสั่งว่า “ทำ Issue นี้” ตัวอย่างที่ช่วยลดความผิดพลาดได้จริงคือการตรวจข้อมูล Owner ที่เปิดเผยเกินจำเป็น, ปุ่มที่แสดงแต่ยังใช้งานไม่ได้, Backend authorization, concurrent last-Administrator rule และ Test ที่ประกาศ `Pass` มากกว่าสิ่งที่ assertion พิสูจน์
+
+ฉันไม่ยอมรับคำตอบแรกของ AI โดยอัตโนมัติ ฉันตรวจกลับด้วย Lab sheet, Issues/PR feedback, Engineering Contract, source code, automated tests, browser behavior, Git history และ console output และเคยหยุด Commit เมื่อหลักฐานยังไม่ครบ ข้อจำกัดของ AI คืออาจเข้าใจ environment ไม่ครบหรือสรุป coverage สูงเกินจริง ดังนั้นฉันยังรับผิดชอบการตัดสิน scope, ตรวจ diff, รันคำสั่งจริง, ปกป้องข้อมูล และขอ Peer Review ด้วยตนเอง

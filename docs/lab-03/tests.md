@@ -2,6 +2,8 @@
 
 แผนนี้จัดทำพร้อม Engineering Contract ก่อนเริ่ม implementation โดยทุก Acceptance Criterion ต้องเชื่อมกับ test อย่างน้อยหนึ่งรายการ รายการจะเปลี่ยนจาก `Planned` เป็น `Pass` เฉพาะเมื่อมีไฟล์จริง ผลรันจริง และ Expected Result ครบถ้วนตามขอบเขตของรายการนั้น
 
+> สถานะ `Pass` ในตารางนี้อ้างถึง release-candidate evidence ที่ commit `ee20123` ซึ่ง merge เข้า `lab3-staging` ด้วย commit `def61e4` แล้วเท่านั้น การยืนยันจาก final `main` ยัง Pending และต้องบันทึกใหม่หลัง Release PR merge
+
 | Test ID | Type | AC | สิ่งที่ทดสอบ | Expected Result | Automated test file | สถานะ |
 |---|---|---|---|---|---|---|
 | API-01 | API | AC-01/02 | valid, invalid และ inactive login | active credentials ตอบ `200` พร้อม safe user/session; invalid/inactive ตอบ `401` และไม่สร้าง session | `server/tests/lab-03/auth.api.test.ts` | Pass (8 tests) |
@@ -24,20 +26,27 @@
 | UI-06 | component | AC-09/12 | Administrator User Management | list/search/filter/create/edit/reset/deactivate, field-level validation, conflict preservation, retry, saving guard และ safe failure feedback | `client/tests/lab-03/UserManagement.test.tsx` | Pass (11 tests) |
 | UI-07 | security regression | AC-06/09 | role navigation, destination visibility และ auth-context refresh | Administrator เปิด User Management ได้; IT Staff/Requester ไม่เห็น destination นี้; Staff Queue และ Requester flow เดิมยังแสดงตาม role; เมื่อ Administrator เปลี่ยน role ตนเอง เมนูและ workspace เปลี่ยนทันที; เมื่อ Administrator แก้ไขบัญชีผู้อื่น shell และสิทธิ์ของ Administrator ยังคงเดิม; direct API authorization ยังคงเป็น Backend source of truth | `client/tests/lab-03/AuthorizationStates.test.tsx` | Pass (5 tests) |
 | STYLE-01 | UI style/accessibility | AC-13 | Zen Green tokens, badges, labels, focus และ read-only styling | visual conventions, labels, focus และ state cues ผ่าน accessibility/style assertions | `client/tests/lab-02/ZenGreenStyle.test.tsx`, `client/tests/lab-03/AccessibilityStyle.test.tsx` | Pass (2 style/accessibility files) |
-| RESP-01 | responsive | AC-13 | desktop/tablet/mobile layout | ไม่มี clipping, overlap หรือ page-level horizontal overflow; ตารางแบบ responsive ใช้ internal horizontal scroll อย่างตั้งใจ | `e2e/lab-03/authentication.spec.ts`, `e2e/lab-03/staff-ticket-flow.spec.ts`, `e2e/lab-03/user-administration.spec.ts` | Pass (final overflow assertions + desktop/tablet/mobile evidence) |
-| E2E-01 | E2E | AC-01/02/03/04/05/06 | login, first-login, logout และ requester regression | authentication flow และ Lab 2 requester flow ทำงานด้วย authenticated identity | `e2e/lab-03/authentication.spec.ts` | Pass (3 tests) |
-| E2E-02 | E2E | AC-07/08/09/10 | Staff queue/detail workflow | queue, assignment, priority, status, comments, notes และ resolved behavior ทำงานตาม policy | `e2e/lab-03/staff-ticket-flow.spec.ts` | Pass (2 tests; pagination/filter/sort, assign/reassign/unassign, rejected transition and requesterResolved included) |
-| E2E-03 | E2E | AC-09/12 | Administrator workflow | user management, forbidden actions, session revocation, self/last-active-Administrator safety และ next-login password change ทำงานครบ | `e2e/lab-03/user-administration.spec.ts` | Pass (1 test; revoke/self/concurrent last-admin safety and first-login continuation included) |
+| RESP-01 | responsive | AC-13 | desktop/tablet/mobile layout | ไม่มี clipping, overlap หรือ page-level horizontal overflow; ตารางแบบ responsive ใช้ internal horizontal scroll อย่างตั้งใจ | `e2e/lab-03/authentication.spec.ts`, `e2e/lab-03/staff-ticket-flow.spec.ts`, `e2e/lab-03/user-administration.spec.ts` | Pass — release candidate `ee20123` (overflow assertions + desktop/tablet/mobile evidence); final-main verification Pending |
+| E2E-01 | E2E | AC-01/02/03/04/05/06 | login, first-login, logout และ requester regression | authentication flow และ Lab 2 requester flow ทำงานด้วย authenticated identity | `e2e/lab-03/authentication.spec.ts` | Pass — release candidate `ee20123` (3 tests); final-main verification Pending |
+| E2E-02 | E2E | AC-07/08/09/10 | Staff queue/detail workflow | queue, assignment, priority, status, comments, notes และ resolved behavior ทำงานตาม policy | `e2e/lab-03/staff-ticket-flow.spec.ts` | Pass — release candidate `ee20123` (2 tests; pagination/filter/sort, assign/reassign/unassign, rejected transition and requesterResolved included); final-main verification Pending |
+| E2E-03 | E2E | AC-09/12 | Administrator workflow | user management, forbidden actions, session revocation, self/last-active-Administrator safety และ next-login password change ทำงานครบ | `e2e/lab-03/user-administration.spec.ts` | Pass — release candidate `ee20123` (1 test; revoke/self/concurrent last-admin safety and first-login continuation included); final-main verification Pending |
 
 ## Final Evidence Plan
 
 เมื่อ implementation เสร็จ ต้องบันทึก command ที่ใช้จริง, complete console output, explicit test-file paths, migration/seed evidence, responsive screenshots, accessibility/style inspection และ final-main commit provenance ห้ามเปลี่ยน `Planned` เป็น `Pass` หากยังไม่มีไฟล์หรือผลรันจริง
 
-## Lab 3 E2E execution evidence (current branch)
+## Lab 3 release-candidate execution evidence (not final `main`)
 
-- Dedicated final E2E run (2026-09-14): all 5 migrations were up to date on `toktickit_e2e`, seed completed twice, and Playwright command `npm.cmd test` from `e2e/` passed 6 tests (3 authentication/requester, 2 Staff Queue/Detail, 1 Administrator workflow). This evidence uses the isolated database and current safety guard.
+- Dedicated release-candidate E2E run (2026-09-14): all 5 migrations were up to date on `toktickit_e2e`, seed completed twice, and Playwright command `npm.cmd test` from `e2e/` passed 6 tests (3 authentication/requester, 2 Staff Queue/Detail, 1 Administrator workflow). This evidence uses the isolated database and current safety guard; it is not final-main verification.
 - Screenshot evidence is generated under `artifacts/lab-03/screenshots/{authentication,staff-queue,staff-ticket-detail,user-management}/` for desktop, tablet and mobile viewports. Screenshots contain seeded test identities only; no password, cookie, token or session data.
-- Migration and repeated-seed verification was executed against isolated `toktickit_e2e` PostgreSQL: all five migrations were deployed, migration status was up to date, and seed completed twice without resetting or deleting the development database. The final server migration-regression tests passed in the same verification run.
-- E2E-02 and E2E-03 were promoted to `Pass` only after the expanded Staff and Administrator workflows passed in the final isolated-database run.
-- Final Server (19 files/149 tests) and Client (16 files/71 tests) suites and builds, Playwright E2E, and git checks passed after the blocking-coverage revision. `console-output.txt` contains sanitized stdout/stderr and exit codes from that final run. Mobile User Management evidence includes `mobile-right.png` after horizontal scrolling to the Role/Status/Edit columns.
+- Migration and repeated-seed verification was executed against isolated `toktickit_e2e` PostgreSQL: all five migrations were deployed, migration status was up to date, and seed completed twice without resetting or deleting the development database. The release-candidate server migration-regression tests passed in the same verification run.
+- E2E-02 and E2E-03 were promoted to `Pass` only after the expanded Staff and Administrator workflows passed in the recorded isolated-database release-candidate run.
+- Release-candidate Server (19 files/149 tests) and Client (16 files/71 tests) suites and builds, Playwright E2E, and git checks passed after the blocking-coverage revision. `console-output.txt` contains sanitized stdout/stderr and the command-result manifest available from the audit. Mobile User Management evidence includes `mobile-right.png` after horizontal scrolling to the Role/Status/Edit columns.
 - Minimum-structure component coverage is present in `client/tests/lab-03/Login.test.tsx`, `client/tests/lab-03/ChangePassword.test.tsx` and `client/tests/lab-03/AccessibilityStyle.test.tsx`; E2E evidence remains separately recorded under the E2E rows.
+
+### Latest pre-release audit note (2026-09-14)
+
+- Client regression rerun passed: 16 files / 71 tests. Prisma validate/generate and Server/Client builds passed.
+- A prior parallel Full Server audit exposed shared-database fixture interference in the migration row-count assertion. The Vitest configuration now disables file parallelism, and the standard command `npm.cmd test` passed 19 files / 149 tests without requiring a caller-only option. Final `main` verification must still use a controlled database/run; no database reset was performed.
+- Playwright was rerun from the current Issue #56 working tree against the dedicated E2E database and passed 6 tests (3 authentication/requester, 2 Staff Queue/Detail and 1 Administrator workflow). This remains pre-release evidence; final-main verification is still required after the Release PR is merged.
+- No tests were skipped in the recorded Server, Client or Playwright release-candidate runs.

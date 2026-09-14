@@ -41,20 +41,20 @@
 - Editable fields ต้องแตกต่างจาก read-only fields อย่างชัดเจน
 
 ## 4. Responsive and Accessibility Rules
-- Desktop ใช้ queue table ที่มี Ticket Number, Summary, Category, Requested Priority, IT Priority, Status, Owner และ Last Updated
-- Tablet จัดข้อมูลใน card/table ที่ไม่ทำให้ page overflow
-- Mobile เปลี่ยนแต่ละแถวเป็น stacked card และยังเข้าถึง actions ได้
-- Form เปลี่ยนเป็นหนึ่งคอลัมน์เมื่อความกว้างต่ำกว่า 760px
+- Desktop (`>= 992px`) ใช้ multi-column layout และ queue table ที่มี Ticket Number, Summary, Category, Requested Priority, IT Priority, Status, Owner และ Last Updated
+- Tablet (`768-991px`) ใช้สองคอลัมน์เมื่อเหมาะสม หรือ card/table ที่เลื่อนได้ภายในโดยไม่ทำให้ทั้ง page overflow
+- Mobile (`< 768px`) เปลี่ยน fields เป็นหนึ่งคอลัมน์และ Queue แต่ละแถวเป็น stacked card โดย actions ต้องยังมองเห็นและกดได้สะดวก
+- ทุกขนาดต้องไม่มี label ถูกตัด, message ซ้อนกัน, action ถูกซ่อน หรือชื่อ Attachment อ่านไม่ได้ และต้องไม่มี page-level horizontal scrolling
 - ทุก input มี visible label; error อยู่ติด input และเชื่อมด้วย `aria-describedby`
 - Keyboard focus ต้องมองเห็นได้; status ห้ามสื่อสารด้วยสีเพียงอย่างเดียว
 - Loading/saving และ alert ใช้ `aria-live`, `role="status"` หรือ `role="alert"` ตามความเหมาะสม
 
 ## 5. Visual Review Checklist
-รายการนี้เป็นเกณฑ์ตรวจเมื่อ implementation เสร็จ ไม่ใช่ผลการทดสอบใน PR เอกสารนี้:
-- [x] Zen Green tokens และ button/badge conventions ต่อเนื่องจาก Lab 2 (ZenGreenStyle component assertions และ final screenshots)
-- [x] ชื่อและ role ของ authenticated user กับ navigation ถูกต้องตาม role (ตรวจจาก final E2E screenshots)
-- [x] Status, Requested Priority, IT Priority และ role มี text label (ตรวจจาก final E2E screenshots)
-- [x] Validation, forbidden, empty/no-results, saving และ failure feedback อ่านได้ชัดเจน (component/API tests และ final E2E evidence)
-- [x] Editable และ read-only fields แตกต่างกันชัดเจน (ตรวจ Staff Ticket Detail final screenshot)
+รายการนี้ผ่านจาก release-candidate component/E2E tests และภาพใน `artifacts/lab-03/screenshots/` แล้ว แต่ต้องตรวจซ้ำจาก final `main` หลัง Release PR merge ก่อนใช้เป็น Final submission evidence:
+- [x] Zen Green tokens และ button/badge conventions ต่อเนื่องจาก Lab 2 (ZenGreenStyle component assertions และ release-candidate screenshots)
+- [x] ชื่อและ role ของ authenticated user กับ navigation ถูกต้องตาม role (ตรวจจาก release-candidate E2E screenshots)
+- [x] Status, Requested Priority, IT Priority และ role มี text label (ตรวจจาก release-candidate E2E screenshots)
+- [x] Validation, forbidden, empty/no-results, saving และ failure feedback อ่านได้ชัดเจน (component/API tests และ release-candidate E2E evidence)
+- [x] Editable และ read-only fields แตกต่างกันชัดเจน (ตรวจ Staff Ticket Detail release-candidate screenshot)
 - [x] Desktop, tablet และ mobile ไม่มี clipping, overlap หรือ horizontal overflow (Playwright overflow assertions และ visual inspection)
 - [x] Keyboard focus, labels, table/card semantics และ non-color state cues ผ่าน accessibility review (AccessibilityStyle component test, semantic table/card markup and text status labels)
