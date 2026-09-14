@@ -12,7 +12,7 @@
 - ทุก protected endpoint ตรวจ session, active state, role และ ownership ที่ Backend
 - ห้ามส่ง password, password hash, session token, storage key, local path, SQL หรือ stack trace กลับ Client
 
-Success response ใช้ envelope เดียวกัน:
+Success response ของ Authentication, Staff และ Administrator routes ใช้ `data` envelope เดียวกัน ส่วน Requester Ticket/Attachment routes ในหัวข้อ 4–5 รักษา Lab 2-compatible response shape ตามที่ระบุราย route ด้านล่าง โดย shape ที่ระบุไว้ของแต่ละ route เป็น normative contract:
 
 ```json
 { "data": { "resource": "..." } }
@@ -122,7 +122,7 @@ The following schemas are normative. Every endpoint that returns the correspondi
 ```json
 {
   "id": 31,
-  "originalFilename": "network-error.png",
+  "originalName": "network-error.png",
   "mimeType": "image/png",
   "sizeBytes": 38400,
   "uploadedAt": "2026-09-10T10:00:00.000Z",
@@ -200,17 +200,17 @@ Errors: 401 AUTHENTICATION_REQUIRED/SESSION_INVALID, 400 VALIDATION_ERROR, 500 I
 
 ไม่มี body/query; คืนเฉพาะ active categories เรียง name asc, id asc
 
-Success 200: { "data": { "items": [{ "id": 1, "name": "Hardware" }] } }
+Success 200: `[{ "id": 1, "name": "Hardware" }]` (raw array; ไม่ห่อ `data` เพื่อคง Lab 2-compatible reference-data response)
 
-Errors: 500 REFERENCE_DATA_UNAVAILABLE
+Errors: 500 INTERNAL_ERROR
 
 ### 3.2 GET /api/related-systems
 
 ไม่มี body/query; คืนเฉพาะ active related systems เรียง name asc, id asc
 
-Success 200: { "data": { "items": [{ "id": 1, "name": "Email" }] } }
+Success 200: `[{ "id": 1, "name": "Email", "description": "Mail service" }]` (raw array; ไม่ห่อ `data` เพื่อคง Lab 2-compatible reference-data response)
 
-Errors: 500 REFERENCE_DATA_UNAVAILABLE
+Errors: 500 INTERNAL_ERROR
 
 ## 4. Requester Ticket and Comment Routes
 
@@ -232,7 +232,7 @@ Request body:
 
 Validation: submissionKey เป็น UUID; categoryId/relatedSystemId เป็น positive integer ที่อ้าง active record; summary trim 5-150 ตัวอักษร; description trim 10-5000 ตัวอักษร; requestedPriority เป็น LOW/MEDIUM/HIGH; reject requesterId, ticketNumber, status และ timestamps จาก Client
 
-Success 201 เมื่อสร้างใหม่ หรือ 200 เมื่อ replay submissionKey เดิม: `{ "data": { "ticket": TicketDetail, "replayed": false } }`
+Success 201 เมื่อสร้างใหม่ หรือ 200 เมื่อ replay submissionKey เดิม: `{ "ticket": TicketDetail, "replayed": false }` (Requester-compatible response; ไม่ห่อ `data`)
 
 Errors: 400 VALIDATION_ERROR, 401 authentication/session error, 403 PASSWORD_CHANGE_REQUIRED/ROLE_FORBIDDEN, 404 REFERENCE_NOT_FOUND, 409 TICKET_NUMBER_CONFLICT หรือ duplicate submission conflict, 500 INTERNAL_ERROR โดย transaction ที่ล้มเหลวต้องไม่เหลือ partial ticket
 
@@ -240,19 +240,19 @@ Errors: 400 VALIDATION_ERROR, 401 authentication/session error, 403 PASSWORD_CHA
 
 Query: search, categoryId, relatedSystemId, requestedPriority, currentStatus, sortBy, sortDirection, page และ pageSize; defaults updatedAt desc, page 1, pageSize 10
 
-Validation: search ยาวไม่เกิน 100, IDs เป็น positive integer, enum ถูกต้อง, page เป็น positive integer, pageSize เป็น 10/20/50; invalid query ตอบ 400 INVALID_QUERY
+Validation: search ยาวไม่เกิน 100, IDs เป็น positive integer, enum ถูกต้อง, page เป็น positive integer, pageSize เป็น 10/20/50; invalid query ตอบ 400 INVALID_TICKET_LIST_QUERY
 
-Success 200: `{ "data": { "items": [TicketSummary], "pagination": { "page": 1, "pageSize": 10, "totalItems": 0, "totalPages": 0 } } }` โดยคืนเฉพาะ Ticket ของ authenticated Requester; page 1 ที่ไม่มีผลลัพธ์ตอบ items: [] และ totalItems: 0 ไม่ใช่ error
+Success 200: `{ "items": [TicketSummary], "page": 1, "pageSize": 10, "totalOwnedItems": 0, "totalItems": 0, "totalPages": 0 }` (Requester-compatible response; ไม่ห่อ `data`) โดยคืนเฉพาะ Ticket ของ authenticated Requester; page 1 ที่ไม่มีผลลัพธ์ตอบ items: [] และ totalItems: 0 ไม่ใช่ error
 
-Errors: 401, 403 PASSWORD_CHANGE_REQUIRED, 400 INVALID_QUERY, 500 INTERNAL_ERROR
+Errors: 401, 403 PASSWORD_CHANGE_REQUIRED, 400 INVALID_TICKET_LIST_QUERY, 500 INTERNAL_ERROR
 
 ### 4.3 GET /api/tickets/:ticketId
 
 ไม่มี body/query; ticketId ต้องเป็น positive integer
 
-Success 200: `{ "data": { "ticket": TicketDetail } }`; the detail includes `AttachmentMetadata` for active and removed attachments.
+Success 200: `TicketDetail` โดยตรง (Requester-compatible response; ไม่ห่อ `data`); the detail includes `AttachmentMetadata` for active and removed attachments.
 
-Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
+Errors: 400 INVALID_TICKET_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
 ### 4.4 GET /api/tickets/:ticketId/comments
 
@@ -262,7 +262,7 @@ Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
 Success 200: `{ "data": { "items": [PublicComment] } }`
 
-Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
+Errors: 400 INVALID_TICKET_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
 ### 4.5 POST /api/tickets/:ticketId/comments
 
@@ -274,37 +274,45 @@ Validation: content เป็น trimmed non-empty string ยาวไม่เ�
 
 Success 201: `{ "data": { "comment": PublicComment } }`
 
-Errors: 400 VALIDATION_ERROR, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
+Errors: 400 INVALID_TICKET_ID/VALIDATION_ERROR, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
 ### 4.6 POST /api/tickets/:ticketId/resolved
 
 Request body: {} เท่านั้น; ticketId เป็น positive integer
 
-Success 200: { "data": { "ticketId": 15, "requesterResolvedAt": "...", "currentStatus": "IN_PROGRESS" } }; ทำซ้ำได้และไม่เปลี่ยน formal status
+Success 200: `{ "data": { "resolved": true, "requesterResolvedAt": "...", "currentStatus": "IN_PROGRESS" } }`; ทำซ้ำได้และไม่เปลี่ยน formal status
 
-Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
+Errors: 400 INVALID_TICKET_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
 ## 5. Attachment Routes
 
 ### 5.1 POST /api/tickets/:ticketId/attachments
 
-Request เป็น multipart/form-data field files (สูงสุด 5 ไฟล์) และไม่รับ requesterId
+Request เป็น multipart/form-data field `file` (ไฟล์เดียวต่อ request) และไม่รับ requesterId
 
 Validation: .jpg/.jpeg/.png/.webp/.pdf เท่านั้น, MIME ต้องตรง extension, แต่ละไฟล์ไม่เกิน 5 MiB, active attachments รวมไม่เกิน 5, backend sanitize filename และสร้าง storage key
 
-Success 201: `{ "data": { "attachments": [AttachmentMetadata] } }`
+Success 201: `AttachmentMetadata` โดยตรง (Requester-compatible response; upload route รับไฟล์เดียวต่อ request)
 
-Errors: 400 VALIDATION_ERROR, 401, 403, safe 404 TICKET_NOT_FOUND, 409 ACTIVE_ATTACHMENT_LIMIT, 413 FILE_TOO_LARGE, 415 UNSUPPORTED_MEDIA_TYPE, 500 INTERNAL_ERROR พร้อม compensation cleanup หาก metadata creation ล้มเหลว
+Errors: 400 INVALID_TICKET_ID/ATTACHMENT_REQUIRED, 401, 403, safe 404 TICKET_NOT_FOUND, 409 ATTACHMENT_LIMIT_REACHED, 413 ATTACHMENT_TOO_LARGE, 415 UNSUPPORTED_ATTACHMENT_TYPE, 500 INTERNAL_ERROR พร้อม compensation cleanup หาก metadata creation ล้มเหลว
 
 ### 5.2 GET /api/tickets/:ticketId/attachments
 
 ไม่มี body/query
 
-Success 200: `{ "data": { "items": [AttachmentMetadata] } }` รวม Active และ Removed เรียง uploadedAt asc, id asc
+Success 200: `{ "items": [AttachmentMetadata] }` (Requester-compatible response; ไม่ห่อ `data`) รวม Active และ Removed เรียง uploadedAt asc, id asc
 
-Errors: 400 INVALID_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
+Errors: 400 INVALID_TICKET_ID, 401, 403, safe 404 TICKET_NOT_FOUND, 500 INTERNAL_ERROR
 
-### 5.3 GET /api/attachments/:attachmentId/download
+### 5.3 GET /api/attachments/:attachmentId
+
+ไม่มี body/query; attachmentId ต้องเป็น positive integer และ Attachment ต้องอยู่ใน Ticket ของ authenticated Requester
+
+Success 200: `AttachmentMetadata` โดยตรง (Requester-compatible response; ไม่ห่อ `data`)
+
+Errors: 400 INVALID_ATTACHMENT_ID, 401, 403, safe 404 ATTACHMENT_NOT_FOUND, 500 INTERNAL_ERROR
+
+### 5.4 GET /api/attachments/:attachmentId/download
 
 ไม่มี body/query; ตรวจ ownership ผ่าน Ticket
 
@@ -312,17 +320,17 @@ Requester ดาวน์โหลดได้เฉพาะ Attachment ขอ�
 
 Success 200: file stream พร้อม stored MIME และ safe Content-Disposition
 
-Errors: 400 INVALID_ID, 401, 403, safe 404 ATTACHMENT_NOT_FOUND, 410 ATTACHMENT_REMOVED, 500 INTERNAL_ERROR; Removed file ห้ามถูกเปิดหรือ stream
+Errors: 400 INVALID_ATTACHMENT_ID, 401, 403, safe 404 ATTACHMENT_NOT_FOUND, 410 ATTACHMENT_REMOVED, 500 INTERNAL_ERROR; Removed file ห้ามถูกเปิดหรือ stream
 
-### 5.4 DELETE /api/attachments/:attachmentId
+### 5.5 DELETE /api/attachments/:attachmentId
 
 Request body: { "removalReason": "The wrong screenshot was attached." }
 
 Validation: reason เป็น trimmed non-empty string ยาว 5-250 ตัวอักษร; removed-by identity มาจาก authenticated Requester ไม่รับจาก Client
 
-Success 200: `{ "data": { "attachment": AttachmentMetadata } }`; record และ metadata ยังคงอยู่ แต่ Download ถูก block
+Success 200: `AttachmentMetadata` โดยตรง (Requester-compatible response; ไม่ห่อ `data`); record และ metadata ยังคงอยู่ แต่ Download ถูก block
 
-Errors: 400 VALIDATION_ERROR/INVALID_ID, 401, 403, safe 404 ATTACHMENT_NOT_FOUND, 409 ALREADY_REMOVED, 500 INTERNAL_ERROR
+Errors: 400 INVALID_ATTACHMENT_ID/INVALID_REMOVAL_REASON, 401, 403, safe 404 ATTACHMENT_NOT_FOUND, 409 ATTACHMENT_ALREADY_REMOVED, 500 INTERNAL_ERROR
 
 ## 6. IT Staff Queue and Ticket Routes
 
