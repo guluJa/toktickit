@@ -16,6 +16,9 @@
 | [PR #60](https://github.com/guluJa/toktickit/pull/60) / `feature/05-lab3-staff-ticket-detail` | Staff Ticket Detail และ operations | [Reviewer confirmation](https://github.com/guluJa/toktickit/pull/60#pullrequestreview-5187440061) | [Author response](https://github.com/guluJa/toktickit/pull/60#issuecomment-5647709733) หลังตรวจ priority, attachment authorization และ transitions | [Approved](https://github.com/guluJa/toktickit/pull/60#pullrequestreview-5187449223) | `5d488d9` |
 | [PR #61](https://github.com/guluJa/toktickit/pull/61) / `feature/06-lab3-administrator-user-management` | Administrator User Management | [Request changes](https://github.com/guluJa/toktickit/pull/61#pullrequestreview-5188753321) | [Author response](https://github.com/guluJa/toktickit/pull/61#issuecomment-5653162961): แก้ API contract, auth context และ atomic last-admin guard | [Approved](https://github.com/guluJa/toktickit/pull/61#pullrequestreview-5190926289) | `f1cccf4` |
 | [PR #62](https://github.com/guluJa/toktickit/pull/62) / `feature/07-lab3-e2e-regression-visual` | E2E, regression, responsive และ visual evidence | [Review](https://github.com/guluJa/toktickit/pull/62#pullrequestreview-5192709805) | [Author response](https://github.com/guluJa/toktickit/pull/62#issuecomment-5656313914) | [Approved](https://github.com/guluJa/toktickit/pull/62#pullrequestreview-5195479007) | `def61e4` |
+| [PR #63](https://github.com/guluJa/toktickit/pull/63) / `feature/08-lab3-release-integration-final-verification` | Release-candidate documentation, evidence และ final-verification preparation | [Request changes](https://github.com/guluJa/toktickit/pull/63#pullrequestreview-5199944009) | [Author response](https://github.com/guluJa/toktickit/pull/63#issuecomment-5666975971) | [Approved](https://github.com/guluJa/toktickit/pull/63#pullrequestreview-5200194813) | `eba2f2a` |
+| [PR #64](https://github.com/guluJa/toktickit/pull/64) / `lab3-staging` | Release integration จาก `lab3-staging` เข้า `main` | [Request changes — API contract และ reviewer record](https://github.com/guluJa/toktickit/pull/64#pullrequestreview-5200748846) | แก้ไข API contract ผ่าน PR #65 และบันทึก reviewer record ใน revision นี้ | Pending | Pending |
+| [PR #65](https://github.com/guluJa/toktickit/pull/65) / `feature/08-lab3-api-contract-fix` | Align Requester API contract with implementation | [Review](https://github.com/guluJa/toktickit/pull/65#pullrequestreview-5200628813) | [Author response](https://github.com/guluJa/toktickit/pull/65#issuecomment-5667763371) | [Approved](https://github.com/guluJa/toktickit/pull/65#pullrequestreview-5200638382) | `1a8f8a5` |
 
 ## หลักฐานที่ฉันตรวจงานของเพื่อน
 
@@ -41,7 +44,7 @@
 - [x] บันทึกลิงก์ review conversation, approval และ merge commit จริง
 
 ## Final Note
-ตารางมี direct links สำหรับ review, response และ approval ทั้งงานที่เพื่อนตรวจให้ฉัน (PR #57–#62) และงานที่ฉันตรวจให้เพื่อน (PR #39–#45) พร้อม merge SHA ที่ตรวจสอบได้ ห้ามบันทึก password, secret หรือค่า `.env` ในเอกสารหรือ PDF
+ตารางมี direct links สำหรับ review, response และ approval ของ Feature/verification PR #57–#63 และ corrective PR #65 พร้อมบันทึกสถานะที่ยัง Pending ของ Release PR #64 รวมทั้งหลักฐานงานที่ฉันตรวจให้เพื่อน PR #39–#45 ห้ามบันทึก password, secret หรือค่า `.env` ในเอกสารหรือ PDF
 
 ## Pre-release Verification (author-run evidence)
 - Source: `feature/07-lab3-e2e-regression-visual` commit `ee20123`, merged into `lab3-staging` as `def61e4`; this is release-candidate evidence, not final-main evidence.
@@ -51,7 +54,7 @@
 - Minimum-structure component tests are present: `client/tests/lab-03/Login.test.tsx`, `ChangePassword.test.tsx` and `AccessibilityStyle.test.tsx`; E2E coverage remains separately reported.
 - Isolated PostgreSQL migration/repeated-seed E2E evidence: Passed on `toktickit_e2e`; no development/production reset was run.
 - Complete release-candidate console output: Saved in `artifacts/lab-03/console-output.txt` with personal paths and credentials redacted. A new final-main output is still required after the release PR is merged.
-- Feature PRs #57–#62: merged into `lab3-staging` (merge SHAs recorded above)
-- Issue #56 documentation/evidence revision: current working tree verification passed; commit SHA and Peer Review remain Pending until the author commits and opens the PR.
+- Feature/verification PRs #57–#63 and corrective API contract PR #65: merged into `lab3-staging` (merge SHAs recorded above)
+- Issue #56 documentation/evidence revision: PR #63 merged as `eba2f2a` and API contract correction PR #65 merged as `1a8f8a5`; Release PR #64 and Final-main verification remain Pending.
 - Release PR `lab3-staging → main`: Pending
 - Final-main verification and final reviewer record: Pending
