@@ -1,6 +1,6 @@
-# Lab 3 release-candidate verification console output
+# Lab 3 final-main verification console output
 
-Executed from the Issue #56 working tree against the dedicated toktickit_e2e database.
+Executed from main commit 8755d21 against the dedicated E2E database.
 Repository paths are replaced with <repo>; no credential or database URL is recorded.
 The `stderr` blocks below are deliberate safe-failure fixtures; the final Vitest summary is the source of pass/fail status and confirms that all tests passed.
 
@@ -234,6 +234,28 @@ To open last HTML report run:
 
   npx playwright show-report ..\playwright-report-lab3
 
+PS <repo>\e2e> npm.cmd run test:responsive
+
+> test:responsive
+> playwright test lab-03
+
+Running 6 tests using 1 worker
+
+✓  1 …3 › Lab 3 authentication and requester regression › rejects invalid credentials, authenticates an Administrator, and logs out (5.6s)
+✓  2 …tication and requester regression › enforces first-login password change, logout invalidation, and inactive-account rejection (2.9s)
+✓  3 …b 3 authentication and requester regression › keeps requester ownership authenticated and blocks role-forbidden direct access (2.5s)
+✓  4 lab-03\staff-ticket-flow.spec.ts:47:1 › IT Staff can search the Queue, open Detail, operate safely, and use responsive layouts (7.3s)
+✓  5 lab-03\staff-ticket-flow.spec.ts:215:1 › rejects malformed Queue queries with a safe error (336ms)
+✓  6 …r-administration.spec.ts:32:1 › Administrator manages users with search, role filtering, safe editing and responsive evidence (4.0s)
+
+6 passed (36.9s)
+
+To open last HTML report run:
+
+npx playwright show-report ..\playwright-report-lab3
+
+RESPONSIVE_PLAYWRIGHT_EXIT=0
+
 ## Command-result manifest for the Issue #56 audit
 
 PRISMA_VALIDATE_EXIT=0
@@ -246,3 +268,22 @@ PLAYWRIGHT_STATUS=passed
 PLAYWRIGHT_TESTS=6
 PLAYWRIGHT_FAILED_TESTS=0
 PLAYWRIGHT_NUMERIC_EXIT_NOT_PRINTED_BY_SOURCE_TRANSCRIPT=true
+RESPONSIVE_PLAYWRIGHT_STATUS=passed
+RESPONSIVE_PLAYWRIGHT_TESTS=6
+RESPONSIVE_PLAYWRIGHT_FAILED_TESTS=0
+RESPONSIVE_PLAYWRIGHT_EXIT=0
+
+FINAL-MAIN RESULT
+Commit: 8755d21
+Prisma validate: PASS
+Prisma generate: PASS
+Prisma migrate deploy: PASS - no pending migrations
+Repeated seed: PASS - two executions
+Server tests: PASS - 19 files, 149 tests
+Server build: PASS
+Client tests: PASS - 16 files, 71 tests
+Client build: PASS
+Playwright: PASS - 6 tests
+Responsive Playwright: PASS - 6 tests
+Skipped tests: 0
+Exit status: 0
