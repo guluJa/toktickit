@@ -1,5 +1,123 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
+export interface AuthUser {
+  id: number; name: string; email: string;
+  role: "REQUESTER" | "IT_STAFF" | "ADMINISTRATOR";
+  isActive: boolean; mustChangePassword: boolean;
+}
+
+export class AuthApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(message: string, status: number, code: string) {
+    super(message);
+    this.name = "AuthApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export async function getCurrentUser(): Promise<AuthUser> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/auth/me`, { credentials: "include" });
+  } catch {
+    throw new AuthApiError("Unable to verify the session. Please try again.", 0, "AUTH_SERVICE_UNAVAILABLE");
+  }
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new AuthApiError(
+      response.status === 401 ? "Authentication required." : "Unable to verify the session. Please try again.",
+      response.status,
+      body.error?.code ?? (response.status === 401 ? "AUTHENTICATION_REQUIRED" : "AUTH_SERVICE_UNAVAILABLE"),
+    );
+  }
+  return body.data.user as AuthUser;
+}
+export async function login(email: string, password: string): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/api/auth/login`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error?.message ?? "Unable to sign in.");
+  return body.data.user as AuthUser;
+}
+export async function logout(): Promise<void> {
+  const response = await fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new AuthApiError(body.error?.message ?? "Unable to sign out. Please try again.", response.status, body.error?.code ?? "LOGOUT_FAILED");
+  }
+}
+export async function changePassword(newPassword: string, confirmPassword: string): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/api/auth/change-password`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ newPassword, confirmPassword }) });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error?.message ?? "Unable to change password.");
+  return body.data.user as AuthUser;
+}
+
+export type AdminRole = AuthUser["role"];
+
+export interface AdminUsersQuery {
+  search?: string;
+  role?: AdminRole;
+  isActive?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AdminUsersResponse {
+  items: AuthUser[];
+  pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
+async function adminRequest<T>(url: string, init: RequestInit, fallback: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      credentials: "include",
+      headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+    });
+  } catch {
+    throw new TicketApiError(fallback, 0, "ADMIN_REQUEST_FAILED");
+  }
+  const body = await response.json().catch(() => ({})) as { data?: T; error?: { code?: string; message?: string; fields?: Record<string, string> } };
+  if (!response.ok) {
+    throw new TicketApiError(body.error?.message ?? fallback, response.status, body.error?.code ?? "ADMIN_REQUEST_FAILED", body.error?.fields);
+  }
+  return body.data as T;
+}
+
+export async function getAdminUsers(query: AdminUsersQuery = {}): Promise<AdminUsersResponse> {
+  const parameters = new URLSearchParams();
+  if (query.search?.trim()) parameters.set("search", query.search.trim());
+  if (query.role) parameters.set("role", query.role);
+  if (query.isActive !== undefined) parameters.set("isActive", String(query.isActive));
+  parameters.set("page", String(query.page ?? 1));
+  parameters.set("pageSize", String(query.pageSize ?? 20));
+  return adminRequest<AdminUsersResponse>(`${API_URL}/api/admin/users?${parameters.toString()}`, { method: "GET" }, "Unable to load users.");
+}
+
+export interface AdminUserInput {
+  name: string;
+  email: string;
+  role: AdminRole;
+  isActive: boolean;
+  initialPassword: string;
+}
+
+export async function createAdminUser(input: AdminUserInput): Promise<{ user: AuthUser }> {
+  return adminRequest<{ user: AuthUser }>(`${API_URL}/api/admin/users`, { method: "POST", body: JSON.stringify(input) }, "Unable to create user.");
+}
+
+export async function updateAdminUser(userId: number, input: Partial<Pick<AdminUserInput, "name" | "email" | "role" | "isActive">>): Promise<{ user: AuthUser }> {
+  return adminRequest<{ user: AuthUser }>(`${API_URL}/api/admin/users/${userId}`, { method: "PATCH", body: JSON.stringify(input) }, "Unable to update user.");
+}
+
+export async function resetAdminInitialPassword(userId: number, initialPassword: string): Promise<{ user: AuthUser }> {
+  return adminRequest<{ user: AuthUser }>(`${API_URL}/api/admin/users/${userId}/initial-password`, { method: "POST", body: JSON.stringify({ initialPassword }) }, "Unable to reset the initial password.");
+}
+
 export interface HealthResponse {
   status: string;
   service: string;
@@ -57,42 +175,10 @@ export async function checkSystem(): Promise<SystemStatus> {
   };
 }
 
-export interface DevelopmentRequester {
+export interface RequesterSummary {
   id: number;
   name: string;
   email: string;
-}
-
-export async function getDevelopmentRequesters(): Promise<
-  DevelopmentRequester[]
-> {
-  const response = await fetch(
-    `${API_URL}/api/development-requesters`,
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      "Unable to load development requesters.",
-    );
-  }
-
-  return response.json();
-}
-
-export async function getDevelopmentRequester(
-  requesterId: number,
-): Promise<DevelopmentRequester> {
-  const response = await fetch(
-    `${API_URL}/api/development-requesters/${requesterId}`,
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      "The selected development requester is unavailable.",
-    );
-  }
-
-  return response.json();
 }
 
 export interface RelatedSystem {
@@ -105,6 +191,10 @@ export type RequestedPriority =
   | "LOW"
   | "MEDIUM"
   | "HIGH";
+
+export type TicketStatus =
+  | "NEW" | "OPEN" | "IN_PROGRESS" | "WAITING_FOR_REQUESTER"
+  | "RESOLVED" | "CLOSED" | "REOPENED" | "CANCELLED";
 
 export interface CreateTicketInput {
   submissionKey: string;
@@ -130,7 +220,7 @@ export interface AttachmentMetadata {
 export interface TicketDetail {
   id: number;
   ticketNumber: string;
-  requester: DevelopmentRequester;
+  requester: RequesterSummary;
   category: Category;
   relatedSystem: {
     id: number;
@@ -138,11 +228,78 @@ export interface TicketDetail {
   };
   summary: string;
   requestedPriority: RequestedPriority;
+  itPriority?: RequestedPriority;
   description: string;
-  currentStatus: "NEW";
+  currentStatus: TicketStatus;
+  owner?: { id: number; name: string; role: AuthUser["role"] } | null;
   createdAt: string;
   updatedAt: string;
   attachments: AttachmentMetadata[];
+  comments?: PublicComment[];
+  internalNotes?: InternalNote[];
+  requesterResolvedAt?: string | null;
+}
+
+export interface PublicComment {
+  id: number;
+  author: { id: number; name: string };
+  content: string;
+  createdAt: string;
+}
+
+export interface InternalNote {
+  id: number;
+  author: { id: number; name: string };
+  content: string;
+  createdAt: string;
+}
+
+export async function getTicketComments(
+  requesterId: number,
+  ticketId: number,
+): Promise<PublicComment[]> {
+  const response = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, { credentials: "include" });
+  if (!response.ok) {
+    let body: TicketApiErrorResponse = {};
+    try { body = await response.json(); } catch { /* safe fallback */ }
+    throw new TicketApiError(body.error?.message ?? "Unable to load comments.", response.status, body.error?.code ?? "COMMENT_LIST_FAILED", body.error?.fields);
+  }
+  const body = await response.json();
+  return (body.data?.items ?? []) as PublicComment[];
+}
+
+export async function createTicketComment(
+  requesterId: number,
+  ticketId: number,
+  content: string,
+): Promise<PublicComment> {
+  const response = await fetch(`${API_URL}/api/tickets/${ticketId}/comments`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!response.ok) {
+    let body: TicketApiErrorResponse = {};
+    try { body = await response.json(); } catch { /* safe fallback */ }
+    throw new TicketApiError(body.error?.message ?? "Unable to add comment.", response.status, body.error?.code ?? "COMMENT_CREATE_FAILED", body.error?.fields);
+  }
+  const body = await response.json();
+  return body.data.comment as PublicComment;
+}
+
+export async function markTicketResolved(
+  requesterId: number,
+  ticketId: number,
+): Promise<{ resolved: boolean; requesterResolvedAt: string; currentStatus: string }> {
+  const response = await fetch(`${API_URL}/api/tickets/${ticketId}/resolved`, { method: "POST", credentials: "include" });
+  if (!response.ok) {
+    let body: TicketApiErrorResponse = {};
+    try { body = await response.json(); } catch { /* safe fallback */ }
+    throw new TicketApiError(body.error?.message ?? "Unable to update the Ticket.", response.status, body.error?.code ?? "TICKET_RESOLVED_FAILED", body.error?.fields);
+  }
+  const body = await response.json();
+  return body.data as { resolved: boolean; requesterResolvedAt: string; currentStatus: string };
 }
 
 export interface CreateTicketResponse {
@@ -160,9 +317,28 @@ export interface TicketSummary {
     name: string;
   };
   requestedPriority: RequestedPriority;
-  currentStatus: "NEW";
+  itPriority?: RequestedPriority;
+  currentStatus: TicketStatus;
+  owner?: { id: number; name: string; role: AuthUser["role"] } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type StaffQueueSortField = "ticketNumber" | "summary" | "createdAt" | "updatedAt" | "itPriority" | "currentStatus";
+export interface StaffQueueQuery {
+  search?: string;
+  status?: TicketStatus;
+  requestedPriority?: RequestedPriority;
+  itPriority?: RequestedPriority;
+  ownerId?: number | "unassigned";
+  sortBy: StaffQueueSortField;
+  sortOrder: "asc" | "desc";
+  page: number;
+  pageSize: 10 | 20 | 50;
+}
+export interface StaffQueueResponse {
+  items: TicketSummary[];
+  pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
 }
 
 export type MyTicketsSortField =
@@ -222,6 +398,90 @@ export class TicketApiError extends Error {
   }
 }
 
+export async function getStaffTickets(query: StaffQueueQuery): Promise<StaffQueueResponse> {
+  const parameters = new URLSearchParams();
+  if (query.search?.trim()) parameters.set("search", query.search.trim());
+  if (query.status) parameters.set("status", query.status);
+  if (query.requestedPriority) parameters.set("requestedPriority", query.requestedPriority);
+  if (query.itPriority) parameters.set("itPriority", query.itPriority);
+  if (query.ownerId !== undefined) parameters.set("ownerId", String(query.ownerId));
+  parameters.set("sortBy", query.sortBy);
+  parameters.set("sortOrder", query.sortOrder);
+  parameters.set("page", String(query.page));
+  parameters.set("pageSize", String(query.pageSize));
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}/api/staff/tickets?${parameters.toString()}`, { credentials: "include" });
+  } catch {
+    throw new TicketApiError("Unable to load the Staff Ticket Queue. Please try again.", 0, "STAFF_QUEUE_REQUEST_FAILED");
+  }
+  let body: TicketApiErrorResponse | { data?: StaffQueueResponse } = {};
+  try { body = await response.json(); } catch { /* safe fallback */ }
+  if (!response.ok) {
+    const errorBody = body as TicketApiErrorResponse;
+    throw new TicketApiError(errorBody.error?.message ?? "Unable to load the Staff Ticket Queue.", response.status, errorBody.error?.code ?? "STAFF_QUEUE_REQUEST_FAILED", errorBody.error?.fields);
+  }
+  return (body as { data: StaffQueueResponse }).data;
+}
+
+export interface StaffTicketDetailResponse {
+  ticket: TicketDetail;
+  comments: PublicComment[];
+  internalNotes: InternalNote[];
+}
+
+async function staffMutation<T>(url: string, init: RequestInit, fallback: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(url, { ...init, credentials: "include", headers: { "Content-Type": "application/json", ...(init.headers ?? {}) } });
+  } catch {
+    throw new TicketApiError(fallback, 0, "STAFF_DETAIL_REQUEST_FAILED");
+  }
+  let body: TicketApiErrorResponse | { data?: T } = {};
+  try { body = await response.json(); } catch { /* safe fallback */ }
+  if (!response.ok) {
+    const errorBody = body as TicketApiErrorResponse;
+    throw new TicketApiError(errorBody.error?.message ?? fallback, response.status, errorBody.error?.code ?? "STAFF_DETAIL_REQUEST_FAILED", errorBody.error?.fields);
+  }
+  return (body as { data: T }).data;
+}
+
+export async function getStaffTicketDetail(ticketId: number): Promise<StaffTicketDetailResponse> {
+  return staffMutation<StaffTicketDetailResponse>(`${API_URL}/api/staff/tickets/${ticketId}`, { method: "GET" }, "Unable to load Staff Ticket Detail.");
+}
+
+export async function updateStaffAssignment(ticketId: number, ownerId: number | null): Promise<{ ticket: TicketDetail }> {
+  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/assignment`, { method: "POST", body: JSON.stringify({ ownerId }) }, "Unable to update Ticket ownership.");
+}
+
+export async function updateStaffPriority(ticketId: number, itPriority: RequestedPriority): Promise<{ ticket: TicketDetail }> {
+  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/priority`, { method: "PATCH", body: JSON.stringify({ itPriority }) }, "Unable to update IT Priority.");
+}
+
+export async function updateStaffStatus(ticketId: number, status: TicketStatus): Promise<{ ticket: TicketDetail }> {
+  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/status`, { method: "PATCH", body: JSON.stringify({ status }) }, "Unable to update Ticket status.");
+}
+
+export async function getStaffComments(ticketId: number): Promise<PublicComment[]> {
+  const data = await staffMutation<{ items: PublicComment[] }>(`${API_URL}/api/staff/tickets/${ticketId}/comments`, { method: "GET" }, "Unable to load Public Comments.");
+  return data.items;
+}
+
+export async function createStaffComment(ticketId: number, content: string): Promise<PublicComment> {
+  const data = await staffMutation<{ comment: PublicComment }>(`${API_URL}/api/staff/tickets/${ticketId}/comments`, { method: "POST", body: JSON.stringify({ content }) }, "Unable to create Public Comment.");
+  return data.comment;
+}
+
+export async function getInternalNotes(ticketId: number): Promise<InternalNote[]> {
+  const data = await staffMutation<{ items: InternalNote[] }>(`${API_URL}/api/staff/tickets/${ticketId}/notes`, { method: "GET" }, "Unable to load Internal Notes.");
+  return data.items;
+}
+
+export async function createInternalNote(ticketId: number, content: string): Promise<InternalNote> {
+  const data = await staffMutation<{ note: InternalNote }>(`${API_URL}/api/staff/tickets/${ticketId}/notes`, { method: "POST", body: JSON.stringify({ content }) }, "Unable to create Internal Note.");
+  return data.note;
+}
+
 export async function getMyTickets(
   requesterId: number,
   query: MyTicketsQuery,
@@ -273,12 +533,7 @@ export async function getMyTickets(
 
   const response = await fetch(
     `${API_URL}/api/tickets?${parameters.toString()}`,
-    {
-      headers: {
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
-    },
+    { credentials: "include" },
   );
 
   if (!response.ok) {
@@ -309,12 +564,7 @@ export async function getTicketDetail(
 ): Promise<TicketDetail> {
   const response = await fetch(
     `${API_URL}/api/tickets/${ticketId}`,
-    {
-      headers: {
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
-    },
+    { credentials: "include" },
   );
 
   if (!response.ok) {
@@ -373,10 +623,7 @@ export async function uploadAttachment(
     `${API_URL}/api/tickets/${ticketId}/attachments`,
     {
       method: "POST",
-      headers: {
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
+      credentials: "include",
       body: formData,
     },
   );
@@ -400,11 +647,8 @@ export async function removeAttachment(
     `${API_URL}/api/attachments/${attachmentId}`,
     {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ removalReason }),
     },
   );
@@ -431,10 +675,7 @@ export async function downloadAttachment(
   const response = await fetch(
     `${API_URL}/api/attachments/${attachmentId}/download`,
     {
-      headers: {
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
+      credentials: "include",
     },
   );
 
@@ -499,11 +740,8 @@ export async function createTicket(
     `${API_URL}/api/tickets`,
     {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Development-Requester-Id":
-          String(requesterId),
-      },
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     },
   );

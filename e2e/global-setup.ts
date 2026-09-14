@@ -1,5 +1,9 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 const API_URL = "http://127.0.0.1:3000";
-const CLIENT_URL = "http://127.0.0.1:5173";
+const CLIENT_URL = "http://localhost:5173";
 
 async function requireSuccessfulResponse(
   url: string,
@@ -20,11 +24,11 @@ export default async function globalSetup(): Promise<void> {
     "Backend health",
   );
   await requireSuccessfulResponse(
-    `${API_URL}/api/development-requesters`,
-    "PostgreSQL-backed Development Requester API",
-  );
-  await requireSuccessfulResponse(
     CLIENT_URL,
     "Frontend",
   );
+  const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
+  for (const directory of ["authentication", "staff-queue", "staff-ticket-detail", "user-management"]) {
+    await fs.mkdir(path.join(repositoryRoot, "artifacts", "lab-03", "screenshots", directory), { recursive: true });
+  }
 }

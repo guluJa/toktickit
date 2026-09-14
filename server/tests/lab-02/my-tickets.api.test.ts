@@ -437,7 +437,7 @@ describe("GET /api/tickets", () => {
     ["categoryId", "0"],
     ["relatedSystemId", "invalid"],
     ["requestedPriority", "URGENT"],
-    ["currentStatus", "CLOSED"],
+    ["currentStatus", "NOT_A_STATUS"],
     ["sortBy", "summary"],
     ["sortDirection", "sideways"],
     ["page", "0"],

@@ -4,19 +4,26 @@ import {
 } from "react";
 import {
   checkSystem,
-  DevelopmentRequester,
-  getDevelopmentRequester,
-  getDevelopmentRequesters,
+  AuthUser,
+  AuthApiError,
+  getCurrentUser,
+  login,
+  logout,
+  changePassword,
   Category,
 } from "./api.js";
 import CreateTicket from "./CreateTicket.js";
 import MyTickets from "./MyTickets.js";
 import RequesterTicketDetail from "./RequesterTicketDetail.js";
+import StaffTicketQueue from "./StaffTicketQueue.js";
+import StaffTicketDetail from "./StaffTicketDetail.js";
+import UserManagement from "./UserManagement.js";
 
 type ActiveView =
   | "create"
   | "tickets"
   | "detail";
+type AdminView = "users" | "queue";
 
 type UiState =
   | "idle"
@@ -24,40 +31,11 @@ type UiState =
   | "success"
   | "error";
 
-type RequesterViewState =
-  | "loading"
-  | "ready"
-  | "empty"
-  | "error";
-
-const REQUESTER_STORAGE_KEY =
-  "toktickit.developmentRequesterId";
-
 export default function App() {
-  const [
-    requesterViewState,
-    setRequesterViewState,
-  ] = useState<RequesterViewState>("loading");
-
-  const [
-    requesters,
-    setRequesters,
-  ] = useState<DevelopmentRequester[]>([]);
-
-  const [
-    selectedRequesterId,
-    setSelectedRequesterId,
-  ] = useState("");
-
-  const [
-    currentRequester,
-    setCurrentRequester,
-  ] = useState<DevelopmentRequester | null>(null);
-
-  const [
-    isContinuing,
-    setIsContinuing,
-  ] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
+  const [authSubmitting, setAuthSubmitting] = useState(false);
 
   const [state, setState] =
     useState<UiState>("idle");
@@ -71,128 +49,60 @@ export default function App() {
   const [selectedTicketId, setSelectedTicketId] =
     useState<number | null>(null);
 
+  const [staffTicketId, setStaffTicketId] =
+    useState<number | null>(null);
+
+  const [adminView, setAdminView] =
+    useState<AdminView>("users");
+
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] =
     useState(true);
 
-  async function loadRequesterOptions() {
-    setRequesterViewState("loading");
-    setRequesters([]);
-    setSelectedRequesterId("");
-
-    try {
-      const result =
-        await getDevelopmentRequesters();
-
-      setRequesters(result);
-      setRequesterViewState(
-        result.length > 0 ? "ready" : "empty",
-      );
-    } catch {
-      setRequesterViewState("error");
-    }
-  }
-
   useEffect(() => {
-    let cancelled = false;
-
-    async function initialiseRequesterContext() {
-      const storedRequesterId =
-        localStorage.getItem(
-          REQUESTER_STORAGE_KEY,
-        );
-
-      if (storedRequesterId) {
-        const requesterId =
-          Number(storedRequesterId);
-
-        if (
-          Number.isSafeInteger(requesterId) &&
-          requesterId > 0
-        ) {
-          try {
-            const requester =
-              await getDevelopmentRequester(
-                requesterId,
-              );
-
-            if (!cancelled) {
-              setCurrentRequester(requester);
-            }
-
-            return;
-          } catch {
-            localStorage.removeItem(
-              REQUESTER_STORAGE_KEY,
-            );
-          }
+    void getCurrentUser()
+      .then((user) => {
+        setAuthUser(user);
+        setAuthError("");
+      })
+      .catch((error) => {
+        if (error instanceof AuthApiError && error.status === 401) {
+          setAuthUser(null);
+          setAuthError("");
         } else {
-          localStorage.removeItem(
-            REQUESTER_STORAGE_KEY,
-          );
+          setAuthError("Unable to verify your session. Please try again.");
         }
-      }
-
-      if (!cancelled) {
-        await loadRequesterOptions();
-      }
-    }
-
-    void initialiseRequesterContext();
-
-    return () => {
-      cancelled = true;
-    };
+      })
+      .finally(() => setAuthLoading(false));
   }, []);
 
-  async function handleContinue() {
-    const requesterId =
-      Number(selectedRequesterId);
-
-    if (
-      !Number.isSafeInteger(requesterId) ||
-      requesterId <= 0
-    ) {
-      return;
-    }
-
-    setIsContinuing(true);
-
-    try {
-      const requester =
-        await getDevelopmentRequester(
-          requesterId,
-        );
-
-      localStorage.setItem(
-        REQUESTER_STORAGE_KEY,
-        String(requester.id),
-      );
-
-      setCurrentRequester(requester);
-    } catch {
-      localStorage.removeItem(
-        REQUESTER_STORAGE_KEY,
-      );
-      setRequesterViewState("error");
-    } finally {
-      setIsContinuing(false);
-    }
+  if (authLoading) {
+    return <main className="container py-5"><div className="alert alert-info" role="status">Loading session...</div></main>;
   }
 
-  function handleChangeRequester() {
-    localStorage.removeItem(
-      REQUESTER_STORAGE_KEY,
-    );
-
-    setCurrentRequester(null);
-    setState("idle");
-    setCategories([]);
-    setActiveView("create");
-    setSelectedTicketId(null);
-    setIsMobileNavigationOpen(true);
-
-    void loadRequesterOptions();
+  if (!authUser) {
+    return <main className="container py-5" style={{ maxWidth: 560 }}><section className="card border-success shadow-sm"><div className="card-body p-4"><h1 className="h3 text-success">TokTickIT IT Service Desk</h1><h2 className="h5">Sign in</h2>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<form onSubmit={async (event) => { event.preventDefault(); if (authSubmitting) return; const form = new FormData(event.currentTarget); setAuthSubmitting(true); try { const user = await login(String(form.get("email")), String(form.get("password"))); setAuthUser(user); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign in."); } finally { setAuthSubmitting(false); } }}><label className="form-label" htmlFor="auth-email">Email</label><input id="auth-email" name="email" type="email" className="form-control mb-3" required aria-required="true" /><label className="form-label" htmlFor="auth-password">Password</label><input id="auth-password" name="password" type="password" className="form-control mb-3" required aria-required="true" /><button className="btn btn-success" type="submit" disabled={authSubmitting} aria-busy={authSubmitting}>{authSubmitting ? "Signing in..." : "Sign in"}</button></form></div></section></main>;
   }
+
+  if (authUser?.mustChangePassword) {
+    return <main className="container py-5" style={{ maxWidth: 560 }}><section className="card border-success shadow-sm"><div className="card-body p-4"><h1 className="h3 text-success">Change password required</h1><p>Please change your initial password before continuing.</p>{authError && <div className="alert alert-danger" role="alert">{authError}</div>}<form onSubmit={async (event) => { event.preventDefault(); if (authSubmitting) return; const form = new FormData(event.currentTarget); setAuthSubmitting(true); try { const user = await changePassword(String(form.get("newPassword")), String(form.get("confirmPassword"))); setAuthUser(user); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to change password."); } finally { setAuthSubmitting(false); } }}><label className="form-label" htmlFor="new-password">New password</label><input id="new-password" name="newPassword" type="password" className="form-control mb-3" required aria-required="true" /><label className="form-label" htmlFor="confirm-password">Confirm password</label><input id="confirm-password" name="confirmPassword" type="password" className="form-control mb-3" required aria-required="true" /><button className="btn btn-success" type="submit" disabled={authSubmitting} aria-busy={authSubmitting}>{authSubmitting ? "Changing password..." : "Change password"}</button></form></div></section></main>;
+  }
+
+  if (authUser && authUser.role !== "REQUESTER") {
+    const isAdministrator = authUser.role === "ADMINISTRATOR";
+    return <main className="container py-4" style={{ maxWidth: 1200 }}>
+      <header className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div><h1 className="h3 mb-1">TokTickIT <span className="text-success">IT Service Desk</span></h1><p className="mb-0 text-body-secondary">Authenticated User: <strong>{authUser.name}</strong></p><p className="small text-body-secondary mb-0">Role: {authUser.role}</p></div>
+        <button type="button" className="btn btn-outline-success" onClick={async () => { try { await logout(); setAuthUser(null); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign out."); } }}>Logout</button>
+      </header>
+      {authError && <div className="alert alert-danger" role="alert">{authError}</div>}
+      {isAdministrator && !staffTicketId && <nav className="nav nav-pills gap-2 mb-4" aria-label="Administrator workspace">
+        <button type="button" className={`nav-link ${adminView === "users" ? "active" : "text-success"}`} aria-current={adminView === "users" ? "page" : undefined} onClick={() => setAdminView("users")}>User Management</button>
+        <button type="button" className={`nav-link ${adminView === "queue" ? "active" : "text-success"}`} aria-current={adminView === "queue" ? "page" : undefined} onClick={() => setAdminView("queue")}>Staff Ticket Queue</button>
+      </nav>}
+      {staffTicketId ? <StaffTicketDetail ticketId={staffTicketId} currentUserId={authUser.id} role={authUser.role} onBack={() => setStaffTicketId(null)} /> : isAdministrator && adminView === "users" ? <UserManagement onUserUpdated={(updatedUser) => { if (updatedUser.id === authUser.id) setAuthUser(updatedUser); }} /> : <StaffTicketQueue role={authUser.role} onOpenTicket={(ticketId) => setStaffTicketId(ticketId)} />}
+    </main>;
+  }
+  const requester = authUser;
 
   async function handleCheck() {
     setState("loading");
@@ -205,158 +115,6 @@ export default function App() {
     } catch {
       setState("error");
     }
-  }
-
-  if (!currentRequester) {
-    return (
-      <main
-        className="container py-5"
-        style={{ maxWidth: 680 }}
-      >
-        <section
-          className="card border-success shadow-sm"
-          aria-labelledby="requester-selection-title"
-        >
-          <div className="card-body p-4">
-            <h1
-              id="requester-selection-title"
-              className="h3 text-success mb-3"
-            >
-              TokTickIT
-            </h1>
-
-            <h2 className="h5">
-              Select a Development Requester
-            </h2>
-
-            <p className="text-body-secondary">
-              Select a Development Requester
-              to test requester-specific ticket
-              behavior. This is not a login
-              screen. Authentication and
-              role-based access will be
-              introduced in Lab 3.
-            </p>
-
-            {requesterViewState ===
-              "loading" && (
-              <div
-                className="alert alert-info"
-                role="status"
-                aria-live="polite"
-              >
-                Loading development
-                requesters...
-              </div>
-            )}
-
-            {requesterViewState ===
-              "empty" && (
-              <div
-                className="alert alert-warning"
-                role="status"
-              >
-                <p className="mb-3">
-                  No active Development
-                  Requesters are available.
-                </p>
-
-                <button
-                  type="button"
-                  className="btn btn-outline-success"
-                  onClick={() =>
-                    void loadRequesterOptions()
-                  }
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {requesterViewState ===
-              "error" && (
-              <div
-                className="alert alert-danger"
-                role="alert"
-              >
-                <p className="mb-3">
-                  Unable to load Development
-                  Requesters. Please try again.
-                </p>
-
-                <button
-                  type="button"
-                  className="btn btn-outline-danger"
-                  onClick={() =>
-                    void loadRequesterOptions()
-                  }
-                >
-                  Retry
-                </button>
-              </div>
-            )}
-
-            {requesterViewState ===
-              "ready" && (
-              <>
-                <div className="mb-3">
-                  <label
-                    className="form-label"
-                    htmlFor="development-requester"
-                  >
-                    Development Requester
-                  </label>
-
-                  <select
-                    id="development-requester"
-                    className="form-select"
-                    value={selectedRequesterId}
-                    disabled={isContinuing}
-                    onChange={(event) =>
-                      setSelectedRequesterId(
-                        event.target.value,
-                      )
-                    }
-                  >
-                    <option value="">
-                      Select a requester
-                    </option>
-
-                    {requesters.map(
-                      (requester) => (
-                        <option
-                          key={requester.id}
-                          value={requester.id}
-                        >
-                          {requester.name} (
-                          {requester.email})
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn btn-success"
-                  disabled={
-                    !selectedRequesterId ||
-                    isContinuing
-                  }
-                  onClick={() =>
-                    void handleContinue()
-                  }
-                >
-                  {isContinuing
-                    ? "Continuing..."
-                    : "Continue"}
-                </button>
-              </>
-            )}
-          </div>
-        </section>
-      </main>
-    );
   }
 
   return (
@@ -376,22 +134,23 @@ export default function App() {
           <p className="mb-0 text-body-secondary">
             Current Requester:{" "}
             <strong>
-              {currentRequester.name}
+              {requester.name}
             </strong>
           </p>
           <p className="small text-body-secondary mb-0">
-            Development Testing Context - not authentication
+            Authenticated session
           </p>
         </div>
 
         <button
           type="button"
           className="btn btn-outline-success"
-          onClick={handleChangeRequester}
+          onClick={async () => { try { await logout(); setAuthUser(null); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign out."); } }}
         >
-          Change Requester
+          Logout
         </button>
       </header>
+      {authError && <div className="alert alert-danger" role="alert">{authError}</div>}
 
       <button
         type="button"
@@ -462,8 +221,8 @@ export default function App() {
         <>
           <div className="mb-4">
             <CreateTicket
-              requesterId={currentRequester.id}
-              requesterName={currentRequester.name}
+              requesterId={requester.id}
+              requesterName={requester.name}
               onMyTickets={() =>
                 setActiveView("tickets")
               }
@@ -540,8 +299,8 @@ export default function App() {
         </>
       ) : activeView === "tickets" ? (
         <MyTickets
-          requesterId={currentRequester.id}
-          requesterName={currentRequester.name}
+          requesterId={requester.id}
+          requesterName={requester.name}
           onCreateTicket={() =>
             setActiveView("create")
           }
@@ -552,7 +311,7 @@ export default function App() {
         />
       ) : selectedTicketId ? (
         <RequesterTicketDetail
-          requesterId={currentRequester.id}
+          requesterId={requester.id}
           ticketId={selectedTicketId}
           onBack={() => {
             setSelectedTicketId(null);
@@ -561,8 +320,8 @@ export default function App() {
         />
       ) : (
         <MyTickets
-          requesterId={currentRequester.id}
-          requesterName={currentRequester.name}
+          requesterId={requester.id}
+          requesterName={requester.name}
           onCreateTicket={() =>
             setActiveView("create")
           }

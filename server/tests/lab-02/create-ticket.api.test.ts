@@ -161,6 +161,7 @@ describe("POST /api/tickets", () => {
                 summary:
                     "Laptop cannot connect to Wi-Fi",
                 requestedPriority: "MEDIUM",
+                itPriority: "MEDIUM",
                 description:
                     "The connection disconnects after a few minutes.",
                 currentStatus: "NEW",
@@ -190,6 +191,7 @@ describe("POST /api/tickets", () => {
                 summary:
                     "Laptop cannot connect to Wi-Fi",
                 requestedPriority: "MEDIUM",
+                itPriority: "MEDIUM",
                 description:
                     "The connection disconnects after a few minutes.",
                 currentStatus: "NEW",

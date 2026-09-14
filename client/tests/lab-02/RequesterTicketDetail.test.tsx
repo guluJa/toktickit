@@ -14,7 +14,10 @@ import {
 } from "vitest";
 import RequesterTicketDetail from "../../src/RequesterTicketDetail.js";
 import {
+  createTicketComment,
+  getTicketComments,
   getTicketDetail,
+  markTicketResolved,
   TicketApiError,
   TicketDetail,
 } from "../../src/api.js";
@@ -26,11 +29,17 @@ vi.mock(
       typeof import("../../src/api.js")
     >()),
     getTicketDetail: vi.fn(),
+    getTicketComments: vi.fn(),
+    createTicketComment: vi.fn(),
+    markTicketResolved: vi.fn(),
   }),
 );
 
 const mockedGetTicketDetail =
   vi.mocked(getTicketDetail);
+const mockedGetTicketComments = vi.mocked(getTicketComments);
+const mockedCreateTicketComment = vi.mocked(createTicketComment);
+const mockedMarkTicketResolved = vi.mocked(markTicketResolved);
 
 const ticket: TicketDetail = {
   id: 101,
@@ -91,6 +100,18 @@ beforeEach(() => {
   mockedGetTicketDetail.mockResolvedValue(
     ticket,
   );
+  mockedGetTicketComments.mockResolvedValue([]);
+  mockedCreateTicketComment.mockResolvedValue({
+    id: 77,
+    author: { id: 1, name: "Development Requester 1" },
+    content: "Added from the requester workspace.",
+    createdAt: "2099-02-01T10:00:00.000Z",
+  });
+  mockedMarkTicketResolved.mockResolvedValue({
+    resolved: true,
+    requesterResolvedAt: "2099-02-01T10:00:00.000Z",
+    currentStatus: "NEW",
+  });
 });
 
 describe("Requester Ticket Detail", () => {
@@ -396,4 +417,17 @@ describe("Requester Ticket Detail", () => {
       });
     },
   );
+
+  it("allows the owner to add a public comment and mark the problem resolved", async () => {
+    const user = userEvent.setup();
+    render(<RequesterTicketDetail requesterId={1} ticketId={101} onBack={vi.fn()} />);
+    await screen.findByRole("heading", { name: ticket.ticketNumber });
+    await user.type(screen.getByLabelText(/add a public comment/i), "Added from the requester workspace.");
+    await user.click(screen.getByRole("button", { name: "Add Comment" }));
+    expect(await screen.findByText("Comment added successfully.")).toBeInTheDocument();
+    expect(mockedCreateTicketComment).toHaveBeenCalledWith(1, 101, "Added from the requester workspace.");
+    await user.click(screen.getByRole("button", { name: "Problem Appears Resolved" }));
+    expect(await screen.findByText("Problem marked as resolved.")).toBeInTheDocument();
+    expect(mockedMarkTicketResolved).toHaveBeenCalledWith(1, 101);
+  });
 });

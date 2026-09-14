@@ -1,0 +1,248 @@
+# Lab 3 release-candidate verification console output
+
+Executed from the Issue #56 working tree against the dedicated toktickit_e2e database.
+Repository paths are replaced with <repo>; no credential or database URL is recorded.
+The `stderr` blocks below are deliberate safe-failure fixtures; the final Vitest summary is the source of pass/fail status and confirms that all tests passed.
+
+PS <repo>\server> npx.cmd prisma validate
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+The schema at prisma\schema.prisma is valid 🚀
+PS <repo>\server> npx.cmd prisma generate
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 105ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want real-time updates to your database without manual polling? Discover how with Pulse: https://pris.ly/tip-0-pulse
+
+PS <repo>\server> npx.cmd prisma migrate deploy
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "toktickit_e2e", schema "public" at "localhost:5432"
+
+5 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+PS <repo>\server> npx.cmd prisma migrate status
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "toktickit_e2e", schema "public" at "localhost:5432"
+
+5 migrations found in prisma/migrations
+
+Database schema is up to date!
+PS <repo>\server> npm.cmd run prisma:seed
+
+> toktickit-server@1.0.0 prisma:seed
+> tsx prisma/seed.ts
+
+Seeded Lab 3 local users, reference data and tickets successfully.
+PS <repo>\server> npm.cmd run prisma:seed
+
+> toktickit-server@1.0.0 prisma:seed
+> tsx prisma/seed.ts
+
+Seeded Lab 3 local users, reference data and tickets successfully.
+PS <repo>\server> npm.cmd test
+
+> toktickit-server@1.0.0 test
+> vitest run
+
+
+ RUN  v2.1.9 <repo>/server
+
+stderr | tests/lab-02/create-ticket.api.test.ts > POST /api/tickets > returns a safe 500 response without saving a partial Ticket
+Unable to create Ticket: Error: Prisma database failure with private SQL and password details
+    at <repo>\server\tests\lab-02\create-ticket.api.test.ts:611:17
+    at file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:533:5
+    at runTest (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1056:11)
+    at runSuite (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///<repo>/server/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+    at withEnv (file:///<repo>/server/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:90:5)
+    at run (file:///<repo>/server/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:112:3)
+
+stderr | tests/lab-02/attachments.api.test.ts > Requester-owned Attachment lifecycle > returns a safe 500 when the Attachment download database query fails
+Unable to download Attachment: Error: Private SQL, local path, and database password details
+    at <repo>\server\tests\lab-02\attachments.api.test.ts:647:9
+    at file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at runSuite (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1271:3)
+    at file:///<repo>/server/node_modules/vitest/dist/chunks/runBaseTests.3qpJUEJM.js:126:11
+
+stderr | tests/lab-02/attachments.api.test.ts > Requester-owned Attachment lifecycle > removes a written file when metadata creation fails
+Unable to upload Attachment: PrismaClientKnownRequestError:
+Invalid `tx.attachment.create()` invocation in
+<repo>\server\src\app.ts:1726:34
+
+  1723 );
+  1724 writtenStoragePath = storagePath;
+  1725
+→ 1726 return tx.attachment.create(
+Unique constraint failed on the fields: (`storageKey`)
+    at $n.handleRequestError (<repo>\server\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (<repo>\server\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (<repo>\server\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at l (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at Proxy._transactionWithCallback (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:8000)
+    at <repo>\server\src\app.ts:1675:9 {
+  code: 'P2002',
+  clientVersion: '5.22.0',
+  meta: { modelName: 'Attachment', target: [ 'storageKey' ] }
+}
+
+stderr | tests/lab-02/my-tickets.api.test.ts > GET /api/tickets > returns a safe 500 response when the Ticket query fails unexpectedly
+Unable to load Tickets: Error: All elements of the array need to be Prisma Client promises. Hint: Please make sure you are not awaiting the Prisma client calls you intended to pass in the $transaction function.
+    at <repo>\server\node_modules\@prisma\client\runtime\library.js:130:7211
+    at Array.map (<anonymous>)
+    at Proxy._transactionWithArray (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:7148)
+    at o (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:8749)
+    at Object.runInChildSpan (<repo>\server\node_modules\@prisma\client\runtime\library.js:121:1509)
+    at Proxy.$transaction (<repo>\server\node_modules\@prisma\client\runtime\library.js:130:8884)
+    at <repo>\server\src\app.ts:1434:24
+    at Layer.handle [as handle_request] (<repo>\server\node_modules\express\lib\router\layer.js:95:5)
+    at next (<repo>\server\node_modules\express\lib\router\route.js:149:13)
+    at Module.requireDevelopmentRequester (<repo>\server\src\requester-context.ts:88:5)
+
+stderr | tests/lab-02/ticket-detail.api.test.ts > GET /api/tickets/:ticketId > returns a safe 500 response when the Ticket Detail query fails unexpectedly
+Unable to load Ticket Detail: Error: Private SQL, local path, and database password details
+    at <repo>\server\tests\lab-02\ticket-detail.api.test.ts:458:11
+    at file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:146:14
+    at file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:533:11
+    at runWithTimeout (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:39:7)
+    at runTest (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1056:17)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runSuite (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runSuite (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1205:15)
+    at runFiles (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1262:5)
+    at startTests (file:///<repo>/server/node_modules/@vitest/runner/dist/index.js:1271:3)
+
+stdout | tests/lab-03/migration-regression.api.test.ts > Lab 3 migration compatibility > provisions every placeholder Requester and allows initial-password login
+Seeded Lab 3 local users, reference data and tickets successfully.
+
+stdout | tests/lab-03/migration-regression.api.test.ts > Lab 3 migration compatibility > keeps repeated seed execution idempotent
+Seeded Lab 3 local users, reference data and tickets successfully.
+
+stdout | tests/lab-03/migration-regression.api.test.ts > Lab 3 migration compatibility > preserves attachments and reference-data row counts across repeated seed
+Seeded Lab 3 local users, reference data and tickets successfully.
+
+stdout | tests/lab-03/migration-regression.api.test.ts > Lab 3 migration compatibility > preserves attachments and reference-data row counts across repeated seed
+Seeded Lab 3 local users, reference data and tickets successfully.
+
+ ✓ tests/lab-01/categories.test.ts (1)
+ ✓ tests/lab-01/health.test.ts (1)
+ ✓ tests/lab-02/attachment-validation.unit.test.ts (16)
+ ✓ tests/lab-02/attachments.api.test.ts (11) 463ms
+ ✓ tests/lab-02/create-ticket.api.test.ts (8) 421ms
+ ✓ tests/lab-02/development-requesters.api.test.ts (13)
+ ✓ tests/lab-02/my-tickets.api.test.ts (16) 404ms
+ ✓ tests/lab-02/reference-data.api.test.ts (2)
+ ✓ tests/lab-02/ticket-detail.api.test.ts (12)
+ ✓ tests/lab-02/ticket-number.unit.test.ts (4)
+ ✓ tests/lab-02/validation.unit.test.ts (8)
+ ✓ tests/lab-03/auth.api.test.ts (8) 709ms
+ ✓ tests/lab-03/auth.unit.test.ts (10)
+ ✓ tests/lab-03/authorization.api.test.ts (4) 482ms
+ ✓ tests/lab-03/comments-notes.api.test.ts (3) 645ms
+ ✓ tests/lab-03/migration-regression.api.test.ts (6) 420ms
+ ✓ tests/lab-03/staff-queue.api.test.ts (5) 522ms
+ ✓ tests/lab-03/staff-ticket-detail.api.test.ts (8) 1245ms
+ ✓ tests/lab-03/users-admin.api.test.ts (13) 1617ms
+
+ Test Files  19 passed (19)
+      Tests  149 passed (149)
+   Start at  20:44:53
+   Duration  28.46s (transform 345ms, setup 42ms, collect 3.38s, tests 7.72s, environment 3ms, prepare 1.41s)
+
+PS <repo>\server> npm.cmd run build
+
+> toktickit-server@1.0.0 build
+> tsc
+
+PS <repo>\server> Set-Location ..\client
+PS <repo>\client> npm.cmd test
+
+> toktickit-client@1.0.0 test
+> vitest run
+
+
+ RUN  v2.1.9 <repo>/client
+
+ ✓ tests/lab-01/App.test.tsx (3) 658ms
+ ✓ tests/lab-02/accessibility.test.tsx (1) 310ms
+ ✓ tests/lab-02/AttachmentSection.test.tsx (6) 1587ms
+ ✓ tests/lab-02/CreateTicket.test.tsx (6) 6608ms
+ ✓ tests/lab-02/DevelopmentRequesterSelection.test.tsx (2)
+ ✓ tests/lab-02/MyTickets.test.tsx (7) 1780ms
+ ✓ tests/lab-02/RequesterTicketDetail.test.tsx (7) 1473ms
+ ✓ tests/lab-02/ZenGreenStyle.test.tsx (2) 430ms
+ ✓ tests/lab-03/AccessibilityStyle.test.tsx (1) 532ms
+ ✓ tests/lab-03/AuthorizationStates.test.tsx (5) 1233ms
+ ✓ tests/lab-03/ChangePassword.test.tsx (2) 1239ms
+ ✓ tests/lab-03/Login.test.tsx (3) 2252ms
+ ✓ tests/lab-03/RequesterRegression.test.tsx (2) 539ms
+ ✓ tests/lab-03/StaffTicketDetail.test.tsx (8) 1922ms
+ ✓ tests/lab-03/StaffTicketQueue.test.tsx (5) 1191ms
+ ✓ tests/lab-03/UserManagement.test.tsx (11) 7822ms
+
+ Test Files  16 passed (16)
+      Tests  71 passed (71)
+   Start at  20:45:55
+   Duration  24.60s (transform 2.31s, setup 4.69s, collect 9.93s, tests 29.72s, environment 22.55s, prepare 8.75s)
+
+PS <repo>\client> npm.cmd run build
+
+> toktickit-client@1.0.0 build
+> tsc && vite build
+
+vite v6.4.3 building for production...
+✓ 36 modules transformed.
+dist/index.html                   0.39 kB │ gzip:  0.27 kB
+dist/assets/index-F-wCIacU.css  233.50 kB │ gzip: 31.49 kB
+dist/assets/index-BPyZ7e79.js   228.25 kB │ gzip: 63.01 kB
+✓ built in 805ms
+PS <repo>\client> Set-Location ..\e2e
+PS <repo>\e2e> npm.cmd test
+
+> test
+> playwright test
+
+
+Running 6 tests using 1 worker
+
+  ✓  1 …3 › Lab 3 authentication and requester regression › rejects invalid credentials, authenticates an Administrator, and logs out (5.2s)
+  ✓  2 …tication and requester regression › enforces first-login password change, logout invalidation, and inactive-account rejection (2.6s)
+  ✓  3 …b 3 authentication and requester regression › keeps requester ownership authenticated and blocks role-forbidden direct access (2.5s)
+  ✓  4 lab-03\staff-ticket-flow.spec.ts:47:1 › IT Staff can search the Queue, open Detail, operate safely, and use responsive layouts (5.9s)
+  ✓  5 lab-03\staff-ticket-flow.spec.ts:215:1 › rejects malformed Queue queries with a safe error (205ms)
+  ✓  6 …r-administration.spec.ts:32:1 › Administrator manages users with search, role filtering, safe editing and responsive evidence (3.8s)
+
+  6 passed (34.3s)
+
+To open last HTML report run:
+
+  npx playwright show-report ..\playwright-report-lab3
+
+## Command-result manifest for the Issue #56 audit
+
+PRISMA_VALIDATE_EXIT=0
+PRISMA_GENERATE_EXIT=0
+SERVER_TEST_EXIT=0
+SERVER_BUILD_EXIT=0
+CLIENT_TEST_EXIT=0
+CLIENT_BUILD_EXIT=0
+PLAYWRIGHT_STATUS=passed
+PLAYWRIGHT_TESTS=6
+PLAYWRIGHT_FAILED_TESTS=0
+PLAYWRIGHT_NUMERIC_EXIT_NOT_PRINTED_BY_SOURCE_TRANSCRIPT=true

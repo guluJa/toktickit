@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "test:responsive": "playwright test lab-02/responsive.spec.ts"
+    "test:responsive": "playwright test lab-03"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0"
