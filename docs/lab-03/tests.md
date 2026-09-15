@@ -2,7 +2,7 @@
 
 แผนนี้จัดทำพร้อม Engineering Contract ก่อนเริ่ม implementation โดยทุก Acceptance Criterion ต้องเชื่อมกับ test อย่างน้อยหนึ่งรายการ รายการจะเปลี่ยนจาก `Planned` เป็น `Pass` เฉพาะเมื่อมีไฟล์จริง ผลรันจริง และ Expected Result ครบถ้วนตามขอบเขตของรายการนั้น
 
-> สถานะ `Pass` ในตารางนี้อ้างถึง release-candidate evidence ที่ commit `ee20123` ซึ่ง merge เข้า `lab3-staging` ด้วย commit `def61e4` แล้วเท่านั้น การยืนยันจาก final `main` ยัง Pending และต้องบันทึกใหม่หลัง Release PR merge
+> สถานะ `Pass` ในตารางนี้อ้างถึงผลรันจริงของ Final-main commit `8755d21` หลัง Release PR #64 merge เข้า `main` แล้ว
 
 | Test ID | Type | AC | สิ่งที่ทดสอบ | Expected Result | Automated test file | สถานะ |
 |---|---|---|---|---|---|---|
@@ -26,10 +26,10 @@
 | UI-06 | component | AC-09/12 | Administrator User Management | list/search/filter/create/edit/reset/deactivate, field-level validation, conflict preservation, retry, saving guard และ safe failure feedback | `client/tests/lab-03/UserManagement.test.tsx` | Pass (11 tests) |
 | UI-07 | security regression | AC-06/09 | role navigation, destination visibility และ auth-context refresh | Administrator เปิด User Management ได้; IT Staff/Requester ไม่เห็น destination นี้; Staff Queue และ Requester flow เดิมยังแสดงตาม role; เมื่อ Administrator เปลี่ยน role ตนเอง เมนูและ workspace เปลี่ยนทันที; เมื่อ Administrator แก้ไขบัญชีผู้อื่น shell และสิทธิ์ของ Administrator ยังคงเดิม; direct API authorization ยังคงเป็น Backend source of truth | `client/tests/lab-03/AuthorizationStates.test.tsx` | Pass (5 tests) |
 | STYLE-01 | UI style/accessibility | AC-13 | Zen Green tokens, badges, labels, focus และ read-only styling | visual conventions, labels, focus และ state cues ผ่าน accessibility/style assertions | `client/tests/lab-02/ZenGreenStyle.test.tsx`, `client/tests/lab-03/AccessibilityStyle.test.tsx` | Pass (2 style/accessibility files) |
-| RESP-01 | responsive | AC-13 | desktop/tablet/mobile layout | ไม่มี clipping, overlap หรือ page-level horizontal overflow; ตารางแบบ responsive ใช้ internal horizontal scroll อย่างตั้งใจ | `e2e/lab-03/authentication.spec.ts`, `e2e/lab-03/staff-ticket-flow.spec.ts`, `e2e/lab-03/user-administration.spec.ts` | Pass — release candidate `ee20123` (overflow assertions + desktop/tablet/mobile evidence); final-main verification Pending |
-| E2E-01 | E2E | AC-01/02/03/04/05/06 | login, first-login, logout และ requester regression | authentication flow และ Lab 2 requester flow ทำงานด้วย authenticated identity | `e2e/lab-03/authentication.spec.ts` | Pass — release candidate `ee20123` (3 tests); final-main verification Pending |
-| E2E-02 | E2E | AC-07/08/09/10 | Staff queue/detail workflow | queue, assignment, priority, status, comments, notes และ resolved behavior ทำงานตาม policy | `e2e/lab-03/staff-ticket-flow.spec.ts` | Pass — release candidate `ee20123` (2 tests; pagination/filter/sort, assign/reassign/unassign, rejected transition and requesterResolved included); final-main verification Pending |
-| E2E-03 | E2E | AC-09/12 | Administrator workflow | user management, forbidden actions, session revocation, self/last-active-Administrator safety และ next-login password change ทำงานครบ | `e2e/lab-03/user-administration.spec.ts` | Pass — release candidate `ee20123` (1 test; revoke/self/concurrent last-admin safety and first-login continuation included); final-main verification Pending |
+| RESP-01 | responsive | AC-13 | desktop/tablet/mobile layout | ไม่มี clipping, overlap หรือ page-level horizontal overflow; ตารางแบบ responsive ใช้ internal horizontal scroll อย่างตั้งใจ | `e2e/lab-03/authentication.spec.ts`, `e2e/lab-03/staff-ticket-flow.spec.ts`, `e2e/lab-03/user-administration.spec.ts` | Pass — final-main `8755d21` (overflow assertions + desktop/tablet/mobile evidence) |
+| E2E-01 | E2E | AC-01/02/03/04/05/06 | login, first-login, logout และ requester regression | authentication flow และ Lab 2 requester flow ทำงานด้วย authenticated identity | `e2e/lab-03/authentication.spec.ts` | Pass — final-main `8755d21` (3 tests) |
+| E2E-02 | E2E | AC-07/08/09/10 | Staff queue/detail workflow | queue, assignment, priority, status, comments, notes และ resolved behavior ทำงานตาม policy | `e2e/lab-03/staff-ticket-flow.spec.ts` | Pass — final-main `8755d21` (2 tests; pagination/filter/sort, assign/reassign/unassign, rejected transition and requesterResolved included) |
+| E2E-03 | E2E | AC-09/12 | Administrator workflow | user management, forbidden actions, session revocation, self/last-active-Administrator safety และ next-login password change ทำงานครบ | `e2e/lab-03/user-administration.spec.ts` | Pass — final-main `8755d21` (1 test; revoke/self/concurrent last-admin safety and first-login continuation included) |
 
 ## Final Evidence Plan
 
@@ -47,6 +47,22 @@
 ### Latest pre-release audit note (2026-09-14)
 
 - Client regression rerun passed: 16 files / 71 tests. Prisma validate/generate and Server/Client builds passed.
-- A prior parallel Full Server audit exposed shared-database fixture interference in the migration row-count assertion. The Vitest configuration now disables file parallelism, and the standard command `npm.cmd test` passed 19 files / 149 tests without requiring a caller-only option. Final `main` verification must still use a controlled database/run; no database reset was performed.
-- Playwright was rerun from the current Issue #56 working tree against the dedicated E2E database and passed 6 tests (3 authentication/requester, 2 Staff Queue/Detail and 1 Administrator workflow). This remains pre-release evidence; final-main verification is still required after the Release PR is merged.
+- A prior parallel Full Server audit exposed shared-database fixture interference in the migration row-count assertion. The Vitest configuration now disables file parallelism, and the standard command `npm.cmd test` passed 19 files / 149 tests without requiring a caller-only option. At the time of this pre-release audit, Final-main verification was still pending; the final-main result is recorded below.
+- Playwright was rerun from the current Issue #56 working tree against the dedicated E2E database and passed 6 tests (3 authentication/requester, 2 Staff Queue/Detail and 1 Administrator workflow). This was pre-release evidence; the later Final-main verification is recorded below.
 - No tests were skipped in the recorded Server, Client or Playwright release-candidate runs.
+
+## Final-main verification
+
+- Source: `main` commit `8755d21`
+- Prisma validate and generate: Passed
+- Prisma migrate deploy: No pending migrations
+- Dedicated E2E PostgreSQL migration: Passed
+- Repeated seed: Passed twice
+- Server: 19 files / 149 tests passed
+- Client: 16 files / 71 tests passed
+- Server build: Passed
+- Client build: Passed
+- Playwright Lab 3: 6 tests passed
+- Responsive Playwright run: 6 tests passed
+- Skipped tests: None
+- No development database reset was performed
