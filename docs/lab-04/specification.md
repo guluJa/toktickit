@@ -1,0 +1,227 @@
+# TokTickIT Lab 4 Sprint 4 Engineering Contract
+
+สถานะ: Draft ก่อนเริ่ม implementation
+แหล่งอ้างอิง: SE Lab 4 Labsheet และผลตรวจ Lab 3 main
+Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 3 verification commit 8755d21
+
+เอกสารนี้เป็น Contract สำหรับ Lab 4 เท่านั้น จึงยังไม่มีการประกาศว่า Feature ใดผ่านหรือเสร็จแล้ว สิ่งที่ยังไม่มีใน Repository จะระบุเป็น Planned หรือ Assumption อย่างชัดเจน
+
+## 1. Sprint Goal
+
+ต่อยอด TokTickIT ให้รองรับการบันทึก Actions Taken ใต้ Ticket, Dashboard ตาม Role และ Ticket workflow ที่ตรวจสอบได้ โดยไม่ทำลาย Authentication, Authorization, Ticket, Attachment, Comment, Internal Note และ Regression behavior จาก Lab 1–3
+
+## 2. Stakeholder Request
+
+- IT Staff และ Administrator ที่มีสิทธิ์สามารถสร้างและแก้ไข Actions Taken ของ Ticket ได้
+- Ticket หนึ่งรายการมี Actions Taken ได้ศูนย์ หนึ่ง หรือหลายรายการ
+- Ticket มี Primary Owner ได้หนึ่งคน แต่ผู้ปฏิบัติงานของ Action อาจเป็น IT Staff คนอื่น
+- Requester เห็นข้อมูลของ Ticket ของตนเองตามสิทธิ์ แต่ไม่สร้างหรือแก้ไข Action
+- Requester ระบุได้ว่าปัญหาดูเหมือนแก้แล้ว แต่ไม่เปลี่ยน Formal Ticket Status
+- ต้องมี Dashboard สำหรับ Requester และ IT Staff/Administrator
+- Dashboard ต้องสรุปข้อมูลจาก Backend และเชื่อมไปยังหน้ารายละเอียดได้
+
+## 3. Scope
+
+### Included
+
+- ActionTaken model, additive migration, seed และ regression
+- Action list/create/update พร้อม validation, authorization และ conflict handling
+- Ticket workflow และ resolution gate
+- Requester, IT Staff และ Administrator dashboard metrics
+- Dashboard drill-down, loading, empty, forbidden และ safe failure
+- Responsive/accessibility/Zen Green extension
+- Unit, API, UI, workflow, migration, performance-smoke, responsive และ E2E tests
+- Lab 1–3 regression และ Final-main evidence
+
+### Explicitly Excluded
+
+- SLA clock, escalation engine และ on-call scheduling
+- Email, SMS, LINE, push notification, MFA, SSO และ self-registration
+- Inventory, purchasing, payroll, billing และ multi-tenant operation
+- User deletion, bulk import/export และ cloud deployment
+- Feature ที่ไม่อยู่ใน Contract หรือ Issue ที่ได้รับอนุมัติ
+
+## 4. Domain Terms and Data Contract
+
+### 4.1 Proposed ActionTaken fields
+
+ชื่อ Model ที่เสนอ: ActionTaken
+
+| Field | Rule |
+|---|---|
+| id | Primary key |
+| ticketId | Required foreign key ไปยัง Ticket |
+| actionAt | Required server timestamp; เก็บเป็น UTC |
+| description | Required trimmed text; ห้ามว่าง |
+| result | Required trimmed text; ห้ามว่าง |
+| performedById | Required; ได้จาก authenticated session เท่านั้น |
+| followUpRequired | Required Boolean |
+| followUpNote | เมื่อ followUpRequired เป็น true ต้องเป็นข้อความที่ trim แล้วไม่ว่าง; เมื่อเป็น false ต้องเป็น `null` |
+| attachmentNotes | Optional trimmed text; เป็นคำอธิบายไฟล์/รูปที่ควรตรวจ ไม่ใช่การ upload ใหม่โดยอัตโนมัติ |
+| createdAt | Server-managed timestamp |
+| updatedAt | Server-managed timestamp |
+| version | Backend-managed optimistic-concurrency value; เริ่มที่ 1 และเพิ่มทีละหนึ่งเมื่อ update |
+
+Primary Ticket Owner ใช้ Ticket.ownerId เดิมและไม่ทำซ้ำใน ActionTaken เพื่อไม่ให้ข้อมูล Owner สองชุดขัดกัน การตอบกลับ API แสดง ticketOwner เป็นข้อมูลอ่านอย่างเดียว และแสดง performedBy จาก ActionTaken
+
+### 4.2 Zero/one/many behavior
+
+- Ticket ที่ไม่มี Action แสดง empty state และยังเปิดดู Ticket ได้
+- Ticket ที่มีหนึ่ง Action แสดงรายการเดียวพร้อมรายละเอียดครบ
+- Ticket ที่มีหลาย Action เรียงตาม actionAt จากเก่าไปใหม่ โดยใช้ id เป็น tie-breaker
+- ห้ามลบ Action หรือจัดลำดับใหม่จาก Client
+- การ Update เป็นการแก้ข้อมูลที่อนุญาตและไม่ลบประวัติรายการเดิม
+
+### 4.3 Ticket workflow version
+
+`Ticket.version` เป็นค่า integer ที่ Backend จัดการสำหรับ optimistic concurrency ของ Status workflow โดยเริ่มที่ `1` สำหรับ Ticket เดิมและ Ticket ใหม่ และเพิ่มทีละหนึ่งเมื่อ Status update สำเร็จ การเปลี่ยน Status ต้องตรวจ `Ticket.version` ใน transaction เดียวกับ transition; ค่าเก่าห้ามเขียนทับข้อมูลใหม่
+
+## 5. Role and Authorization Contract
+
+Backend เป็นผู้ตัดสินสิทธิ์ขั้นสุดท้าย การซ่อนหรือ disable control ใน Client เป็นเพียง usability
+
+| Operation | Requester | IT Staff | Administrator |
+|---|---|---|---|
+| อ่าน Action ของ Ticket ตนเอง | ได้ | ไม่ใช้ route นี้ | ไม่ใช้ route นี้ |
+| อ่าน Action ใน Staff Ticket Detail | ไม่ได้ | ได้ตาม Ticket access | ได้แบบอ่าน |
+| สร้าง Action | ไม่ได้ | ได้ตาม Ticket access | ได้ตาม Ticket access |
+| แก้ Action | ไม่ได้ | ได้ตาม policy และ version | ได้ตาม policy และ version |
+| ลบ Action | ไม่ได้ | ไม่ได้ | ไม่ได้ |
+| เปลี่ยน Ticket status | ไม่ได้ | ได้ตาม matrix | คงสิทธิ์ Lab 3: ไม่ได้ จนกว่าจะอนุมัติการเปลี่ยน |
+| แก้ IT Priority | ไม่ได้ | ได้ | ได้ |
+| ดู Dashboard ของตนเอง | ได้เฉพาะ Requester | ได้เฉพาะ Staff | ได้เฉพาะ Admin/Staff metrics |
+
+ทุก Action ต้องตรวจ session, active user, role, Ticket access และ ownership policy ใน Backend
+
+## 6. Ticket Status Transition Matrix
+
+Baseline คือ Matrix จาก Lab 3; ตารางนี้เป็น Contract ที่เสนอสำหรับ Lab 4 และต้องมี Test ครบทุก transition
+
+| From | To ที่อนุญาต | Actor | เงื่อนไข |
+|---|---|---|---|
+| NEW | OPEN | IT Staff | Ticket มีข้อมูลถูกต้องและเข้าถึงได้ |
+| OPEN | IN_PROGRESS, WAITING_FOR_REQUESTER, CANCELLED | IT Staff | ต้องเป็น transition ที่ policy อนุญาต |
+| IN_PROGRESS | WAITING_FOR_REQUESTER, RESOLVED, CANCELLED | IT Staff | RESOLVED ต้องผ่าน resolution gate |
+| WAITING_FOR_REQUESTER | IN_PROGRESS, RESOLVED, CANCELLED | IT Staff | ต้องตรวจข้อมูล Requester/Action ตาม gate |
+| RESOLVED | CLOSED, REOPENED | IT Staff | CLOSED ต้องไม่ขัดกับ conflict หรือ stale update |
+| CLOSED | REOPENED | IT Staff | ต้องส่ง `reopenReason` ที่ trim แล้วไม่ว่าง |
+| REOPENED | ไม่มี | ไม่มี | คง Baseline ของ Lab 3; Lab 4 ไม่ขยาย transition นี้โดยไม่มี Issue อนุมัติ |
+| CANCELLED | ไม่มี | ไม่มี | Terminal state |
+
+Transition ที่ไม่อยู่ในตารางตอบ 409 STATUS_TRANSITION_NOT_ALLOWED และต้องไม่เปลี่ยนข้อมูล
+
+## 7. Resolution Gate and Conflict
+
+### 7.1 Requester indication
+
+Requester endpoint สำหรับ Problem Appears Resolved บันทึก requesterResolvedAt เท่านั้น ไม่เปลี่ยน currentStatus
+
+### 7.2 Resolution gate
+
+ก่อน IT Staff เปลี่ยนเป็น RESOLVED ต้องมี:
+
+- Current status เป็น IN_PROGRESS หรือ WAITING_FOR_REQUESTER
+- Ticket ต้องมี Primary Owner ที่ active เสมอ โดย `ownerId` ต้องอ้างถึงผู้ใช้ที่ active และเป็น role ที่ Lab 3 อนุญาตให้เป็น Ticket owner
+- มี ActionTaken อย่างน้อยหนึ่งรายการที่มี description และ result ครบ
+- `followUpRequired` ต้องเป็น false; ถ้าเป็น true ต้องไม่เปลี่ยนเป็น RESOLVED จนกว่าจะจัดการ Follow-up แล้ว
+- Request มี `Ticket.version` ล่าสุด
+
+หาก gate ไม่ผ่านตอบ 409 RESOLUTION_GATE_FAILED
+
+### 7.3 Stale update
+
+Client ต้องส่ง `ActionTaken.version` เมื่อ Update Action และส่ง `Ticket.version` เมื่อเปลี่ยน workflow หาก version ไม่ตรงกับ Database:
+
+- ตอบ 409 STALE_UPDATE
+- ไม่เขียนทับข้อมูลใหม่
+- ส่ง current version และ safe summary ที่จำเป็นต่อการ refresh
+- Client ต้องแสดง conflict state และให้ผู้ใช้โหลดข้อมูลใหม่
+
+## 8. Dashboard Contract
+
+ฐานเวลา: เก็บ timestamp ใน UTC; API รับ/ส่ง ISO 8601; การคำนวณ “วันนี้” ใช้ timezone Asia/Bangkok และช่วงเวลาแบบ half-open [start, end)
+
+### 8.1 Requester metrics
+
+- openCount: Ticket ของ Requester ที่อยู่ใน NEW, OPEN, IN_PROGRESS, WAITING_FOR_REQUESTER หรือ REOPENED
+- waitingForRequesterCount: Ticket ที่ currentStatus เป็น WAITING_FOR_REQUESTER
+- resolvedCount: Ticket ที่ currentStatus เป็น RESOLVED หรือ CLOSED
+- recentlyUpdatedCount: จำนวน Ticket ของ Requester ที่ updatedAt อยู่ในช่วง 7 วันล่าสุด
+- recentlyResolvedCount: Ticket ที่ currentStatus เป็น RESOLVED หรือ CLOSED และ updatedAt อยู่ในช่วง 7 วันล่าสุด
+- recentlyResolvedTickets: รายการ Ticket ที่เข้าเงื่อนไข recentlyResolvedCount สำหรับ drill-down
+- drillDown: ส่ง ticketId หรือ query ที่เปิด My Tickets/Detail ได้
+
+### 8.2 Staff metrics
+
+- unassignedCount: Ticket ที่ ownerId เป็น null และไม่ใช่ CANCELLED/CLOSED
+- mineCount: Ticket ที่ ownerId เท่ากับ authenticated Staff และไม่ใช่สถานะ terminal
+- byStatus: จำนวน Ticket ที่ Staff เห็นได้ แยกตาม TicketStatus
+- byPriority: จำนวน Ticket ที่ Staff เห็นได้ แยกตาม IT Priority
+- highPriorityCount: Ticket ที่ IT Priority เป็น HIGH และยังไม่ terminal
+- recentlyUpdatedCount: จำนวน Ticket ที่ updatedAt อยู่ในช่วง 7 วันล่าสุด
+- recentActions: Actions Taken ของ Ticket ที่ Staff เห็นได้และ actionAt อยู่ในช่วง 7 วันล่าสุด
+- drillDown: Queue query หรือ Ticket Detail link
+
+### 8.3 Administrator metrics
+
+Administrator อ่าน Staff metrics ชุดเดียวกับ IT Staff ผ่าน `/api/staff/dashboard`; ไม่เพิ่ม activeUserCount หรือ route ใหม่ใน Lab 4 นี้
+
+ทุก Dashboard ต้องมี metric definitions ใน API spec, empty state เมื่อค่าเป็นศูนย์ และไม่ส่งข้อมูล Ticket ที่ Role ไม่มีสิทธิ์
+
+## 9. Migration, Legacy Data, Seed and Recovery
+
+- ใช้ additive migration เท่านั้น ห้าม reset หรือลบฐานข้อมูลเดิม
+- Ticket, User, Attachment, Comment และ Internal Note เดิมต้องรักษา ID และ foreign key
+- Migration ต้องเพิ่ม `Ticket.version` แบบ additive และ backfill Ticket เดิมเป็น `1` โดยไม่เปลี่ยน ID หรือข้อมูลธุรกิจเดิม
+- Ticket เดิมที่ไม่มี Action ถือเป็น valid zero-action state ไม่สร้าง Action ปลอมโดยไม่มีเหตุผล
+- เพิ่ม index สำหรับ ticketId, actionAt, performedById และ dashboard query ที่จำเป็น
+- Seed ต้อง idempotent และสร้าง Action fixtures แบบ 0/1/many
+- Seed ต้องมี Ticket หลาย Status, Priority, owner/unassigned และ Dashboard metric ที่ทั้งศูนย์และไม่ศูนย์
+- Migration test ต้องตรวจ preserved IDs, row counts, foreign keys, Action references, `Ticket.version` และ repeated seed
+- Recovery plan ต้องระบุว่าจะหยุดก่อนเขียนข้อมูลเมื่อ precondition ไม่ผ่าน และจะ backup/restore อย่างไรใน local verification
+- Backup/restore เป็นหลักฐานและขั้นตอนตรวจสอบฐานข้อมูล E2E แบบแยก ไม่ใช่ Product API หรือการอนุญาตให้ใช้ `prisma migrate reset` กับ Development database
+
+## 10. Acceptance Criteria
+
+- AC-01: IT Staff ที่มีสิทธิ์สร้าง ActionTaken ใต้ Ticket ที่ถูกต้องได้ โดย performer มาจาก session
+- AC-02: Administrator สร้างและแก้ Action ตาม policy ได้ แต่ไม่สามารถลบหรือปลอม performer
+- AC-03: Requester อ่าน Action ของ Ticket ตนเองได้ตาม field visibility และแก้ไม่ได้
+- AC-04: Ticket รองรับ zero, one และ many Actions พร้อมลำดับที่เสถียร
+- AC-05: Follow-Up Required บังคับ Follow-Up Note ตาม validation rule
+- AC-06: Ticket status ทุก transition ผ่าน Matrix และ transition ที่ไม่อนุญาตตอบ 409
+- AC-07: RESOLVED ผ่าน resolution gate และ Requester indication ไม่เปลี่ยน formal status
+- AC-08: Stale update ตอบ 409 และไม่เขียนทับข้อมูลใหม่
+- AC-09: Requester Dashboard คืนเฉพาะ metrics/Tickets ของ Requester ปัจจุบัน
+- AC-10: Staff/Admin Dashboard ใช้สูตรที่ระบุและ drill-down ได้
+- AC-11: Migration รักษา Lab 3 data และ seed ซ้ำได้โดยไม่ซ้ำ/หาย
+- AC-12: API มี request/response shape, status code และ safe error ตาม api-spec.md
+- AC-13: UI ครบ loading, empty, forbidden, validation, conflict และ safe failure
+- AC-14: UI ผ่าน responsive, keyboard focus, labels, semantics และ non-color cues
+- AC-15: Regression ของ Lab 1–3 ผ่านและไม่มี feature เดิมเสีย
+
+สถานะปัจจุบันของ AC-01 ถึง AC-15: Planned; ยังไม่มี Lab 4 implementation หรือผลรันจริง
+
+## 11. Product Definition of Done
+
+- Contract, API spec, UI spec และ Test Plan ผ่านการทบทวนก่อน implementation
+- Additive migration, legacy preservation และ idempotent seed ผ่านจริง
+- Backend authorization ครบทุก protected Action, Dashboard และ workflow route
+- ทุก AC เชื่อมกับ test file จริงและผล Final-main
+- Server, Client, build, migration, performance-smoke, responsive และ E2E ผ่าน
+- Reviewer record มี comment, response, approval และ merge SHA ที่เกิดขึ้นจริง
+- AI-use บันทึกเฉพาะ Prompt ที่ใช้จริง
+- ไม่มี secret, credential, cookie, token หรือ database URL ใน Repository/evidence
+- Final PDF ใช้ Answer Part 1–9 และ working links ตาม Labsheet
+
+สถานะ DoD ปัจจุบัน: Planned; ยังไม่มี Final Result
+
+## 12. Assumptions and Open Decisions
+
+- Assumption A-01: ActionTaken ไม่มี ownerId ซ้ำกับ Ticket; owner ใช้ Ticket.ownerId และ performer ใช้ performedById
+- Assumption A-02: Update Action อนุญาตให้แก้ข้อมูล แต่ห้ามลบและห้าม reorder
+- Assumption A-03: ใช้ `ActionTaken.version` สำหรับ Action update และ `Ticket.version` สำหรับ Status workflow
+- Decision D-01: ใช้ Lab 3 baseline ให้ REOPENED ไม่มี outgoing transition; การขยายต้องเป็น Issue ใหม่ที่อนุมัติแยกต่างหาก
+- Decision D-02: Administrator สร้าง/แก้ ActionTaken และอ่าน Staff Dashboard ได้ แต่ยังเปลี่ยน Ticket status ไม่ได้ตาม Lab 3
+- Decision D-03 (resolved): Resolution gate ต้องมี Action ที่มี description/result ครบ และ `followUpRequired=false`
+- Decision D-04 (resolved): Dashboard ใช้ Asia/Bangkok, ช่วง 7 วันล่าสุด และช่วงเวลาแบบ [start, end)
+- Decision D-05 (resolved): ใช้ `updatedAt` และ `version` สำหรับการแก้ไข/ตรวจ stale update; ไม่เพิ่ม edit-history model ใน Lab 4 นี้
