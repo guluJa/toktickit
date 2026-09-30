@@ -25,6 +25,10 @@ Prompt excerpts ที่บันทึกใน revision นี้คัดจ
 
 Prompt excerpt นี้ใช้กำหนดการตัดสิน Required/Clarification/Out of Scope และบังคับให้แก้เฉพาะเอกสารใน Issue #67; ไม่ใช่หลักฐานว่า implementation หรือ test ใดผ่านแล้ว
 
+> “เพื่อนตรวจ revision `ce86e6b` แล้วขอแก้ 5 จุด ... ช่วยตรวจให้หน่อยค่ะ อันไหนควรแก้ก็แก้ให้ที อันไหนไม่ควรก็ต้องมีเหตุผล ไม่ทำอะไรเกินขอบเขตงาน”
+
+Prompt excerpt นี้ใช้กำหนดการตรวจ follow-up รอบล่าสุด โดยแก้เฉพาะ Contract/Test Plan และไม่อ้างว่า regression test หรือ implementation ผ่านแล้ว
+
 ## 3. Reflection สถานะเริ่มต้น
 
 ผลจากช่วงนี้คือปรับ Contract/Test Plan ตามหลักฐาน Labsheet, Lab 3 baseline, Issue #67 และ Review PR #68 โดยยังไม่มี Lab 4 implementation, test result หรือ Final evidence สถานะจึงยังเป็น `Planned`/`Pending` ทั้งหมด ฉันตรวจเองว่า feedback บางข้อเป็นการเพิ่มความชัดเจน, บางข้อเป็น requirement จาก Labsheet และ Idempotency-Key เป็นกลไกที่อยู่นอก Scope

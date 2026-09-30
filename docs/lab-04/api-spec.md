@@ -15,6 +15,8 @@ Baseline: ใช้ response envelope และ security conventions ของ d
 - Backend เป็นผู้ตรวจ authentication, role, ownership, validation และ conflict
 - ห้ามคืน password, passwordHash, token, cookie, SQL, stack trace หรือ internal path
 
+Dashboard link shape: `{ "rel": "recentTickets|recentlyResolved|recentActions|ticketDetail", "target": "requester-tickets|staff-queue|requester-ticket-detail|staff-ticket-detail", "ticketId": integer?, "query": object? }`. `ticketDetail` ใช้ `ticketId`; metric link ใช้ `query` ที่นำไปยังรายการเดิมของ Lab 3 และไม่สร้าง route ใหม่
+
 ## 2. Existing Lab 1–3 API Compatibility
 
 ต้องคง API เดิมของ Authentication, Requester Ticket, Attachment, Comments, Requester Resolved, Staff Queue, Staff Ticket Detail และ Administrator User Management ตาม docs/lab-03/api-spec.md
@@ -44,6 +46,8 @@ ActionTaken response ต้องมี:
 performedBy และ ticketOwner ต้องเป็น safe user object ตาม Lab 3; ห้ามส่ง passwordHash, session fields หรือข้อมูลลับ
 
 Requester เห็นเฉพาะ `id`, `ticketId`, `actionAt`, `description`, `result`, `followUpRequired`, `followUpNote`, `attachmentNotes`, `performedBy`, `ticketOwner`, `createdAt`, `updatedAt` และ `version` ของ Ticket ตนเองตาม visibility policy; ไม่มี field สำหรับแก้ไข. IT Staff และ Administrator ที่มีสิทธิ์เข้าถึง Ticket แก้ Action ของผู้ปฏิบัติงานคนอื่นได้เฉพาะ field ใน PATCH body และ version ล่าสุด โดย `performedBy` ยังคงเป็นผู้สร้างเดิมและห้าม impersonate
+
+Baseline model name: `performedById` เป็น foreign key ไปยัง Prisma model `RequesterUser.id` (คำว่า User ใน Contract ก่อนหน้านี้เป็นคำเชิงแนวคิดเท่านั้น); response ใช้ `SafeUser` ตาม Lab 3
 
 ### 3.2 Create request
 
@@ -100,6 +104,8 @@ IT Staff และ Administrator สร้าง Action ได้ตาม autho
 performedBy ต้องมาจาก session ของผู้เรียก ไม่ใช่ request body
 
 Contract นี้ไม่กำหนด `Idempotency-Key` หรือ server-side deduplication สำหรับคำขอ POST ที่ถูกส่งซ้ำจาก network retry. ระหว่างรอให้ UI แสดง saving guard; หาก timeout หรือไม่ทราบผลลัพธ์ ให้เข้าสู่ `submission-uncertain`, คงข้อมูลในฟอร์มและเรียก GET รายการ Actions ล่าสุดเพื่อ reconcile ก่อน ผู้ใช้จึงค่อยยืนยันการสร้างรายการใหม่อย่างชัดเจนได้ และ UI ห้าม retry POST อัตโนมัติ เพราะคำขอเดิมอาจบันทึกสำเร็จภายหลัง
+
+ผลการ reconcile ต้องแยกชัดเจน: (1) ถ้าพบ Action เดิมที่ตรงกับข้อมูลที่ส่ง ให้ถือว่าบันทึกสำเร็จ แสดงรายการนั้นและไม่ส่ง POST ซ้ำ; (2) ถ้ายังไม่พบ ให้คง `submission-uncertain`, เก็บข้อมูลไว้ และให้ผู้ใช้เลือกตรวจซ้ำหรือยืนยันการสร้างใหม่เอง; (3) ถ้า GET รายการล้มเหลว ให้แสดง safe failure พร้อมข้อมูลเดิมและห้ามส่ง POST ซ้ำอัตโนมัติ. Test ต้องครอบคลุมกรณี POST timeout แต่คำขอเดิมบันทึกสำเร็จภายหลังแล้ว GET พบ Action เดิม
 
 ### PATCH /api/staff/tickets/:ticketId/actions/:actionId
 
@@ -173,7 +179,7 @@ Request body:
 
 ### Lab 3 assignment compatibility
 
-`POST /api/staff/tickets/:ticketId/assignment` ยังคงใช้ request `{ "ownerId": integer | null }` และ response envelope/error ของ `docs/lab-03/api-spec.md`; เฉพาะ IT Staff แก้ assignment ได้. `ownerId` ต้องเป็นผู้ใช้ที่ active และเป็น IT Staff หรือ Administrator ตาม baseline หากเป็น inactive user หรือ role อื่นให้ตอบ `400 VALIDATION_ERROR` และไม่เปลี่ยน Owner; Administrator ยังได้ `403 ROLE_FORBIDDEN`. คำว่า complete ในการสาธิตหมายถึงการเปลี่ยน Ticket เป็น `RESOLVED`/`CLOSED` ตาม Matrix ไม่ใช่สถานะของ Action เพิ่มใหม่ ส่วน cancel ใช้ `PATCH /api/staff/tickets/:ticketId/status` กับ `CANCELLED` ตาม Matrix
+`POST /api/staff/tickets/:ticketId/assignment` ยังคงใช้ request `{ "ownerId": integer | null }` และ response envelope/error ของ `docs/lab-03/api-spec.md`; เฉพาะ IT Staff แก้ assignment ได้. `ownerId` ต้องเป็นผู้ใช้ที่ active และเป็น IT Staff หรือ Administrator ตาม baseline หากเป็น inactive user หรือ role อื่นให้ตอบ `404 USER_NOT_FOUND` และไม่เปลี่ยน Owner; Administrator ยังได้ `403 ROLE_FORBIDDEN`. คำว่า complete ในการสาธิตหมายถึงการเปลี่ยน Ticket เป็น `RESOLVED`/`CLOSED` ตาม Matrix ไม่ใช่สถานะของ Action เพิ่มใหม่ ส่วน cancel ใช้ `PATCH /api/staff/tickets/:ticketId/status` กับ `CANCELLED` ตาม Matrix
 
 ## 7. Dashboard Routes
 
@@ -200,7 +206,7 @@ Response:
       }
     }
 
-`recentTickets` และ `recentlyResolvedTickets` ใช้รายการสรุปที่มี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `updatedAt` และ `detailLink`; `detailLink` ต้องพาไปยังหน้ารายละเอียดเดิมของ Lab 3 ด้วย `ticketId` และห้ามมีข้อมูลของ Requester คนอื่น
+`recentTickets` และ `recentlyResolvedTickets` ใช้รายการสรุปที่มี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `updatedAt` และ `detailLink` ซึ่งเป็น Dashboard link ที่มี `target=requester-ticket-detail` กับ `ticketId`; metric link ต้องพาไปยังรายการ My Tickets เดิมของ Lab 3 และห้ามมีข้อมูลของ Requester คนอื่น
 
 - 200: success, รวม empty metrics ได้
 - 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
@@ -223,8 +229,17 @@ Response:
           "recentlyUpdatedCount": 0,
           "recentlyResolvedCount": 0
         },
-        "byStatus": {},
-        "byPriority": {},
+        "byStatus": {
+          "NEW": 0,
+          "OPEN": 0,
+          "IN_PROGRESS": 0,
+          "WAITING_FOR_REQUESTER": 0,
+          "RESOLVED": 0,
+          "CLOSED": 0,
+          "REOPENED": 0,
+          "CANCELLED": 0
+        },
+        "byPriority": { "LOW": 0, "MEDIUM": 0, "HIGH": 0 },
         "recentTickets": [],
         "recentlyResolvedTickets": [],
         "recentActions": [],
@@ -232,13 +247,15 @@ Response:
       }
     }
 
-Metrics ต้องประกอบด้วย unassignedCount, mineCount, byStatus, byPriority, highPriorityCount, recentlyUpdatedCount, recentlyResolvedCount และ drill-down links
+Metrics ต้องประกอบด้วย unassignedCount, mineCount, byStatus, byPriority, highPriorityCount, recentlyUpdatedCount, recentlyResolvedCount และ drill-down links. `byStatus` ต้องมี key ของทุก TicketStatus และ `byPriority` ต้องมี `LOW`, `MEDIUM`, `HIGH` แม้ไม่มีข้อมูล โดยใช้ค่า 0
 
 `recentTickets` แต่ละรายการต้องมี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `owner`, `updatedAt` และ `detailLink` โดย `owner` เป็น SafeUser หรือ `null`
 
-`recentlyResolvedTickets` ใช้รายการ Ticket ที่เป็น RESOLVED/CLOSED และ `updatedAt` อยู่ในช่วง 7 วันล่าสุด โดยมี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `owner`, `updatedAt` และ `detailLink`; `detailLink` ไป `/staff/tickets/:ticketId`.
+`recentlyResolvedTickets` ใช้รายการ Ticket ที่เป็น RESOLVED/CLOSED และ `updatedAt` อยู่ในช่วง 7 วันล่าสุด โดยมี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `owner`, `updatedAt` และ `detailLink` ซึ่งเป็น Dashboard link ที่มี `target=staff-ticket-detail` กับ `ticketId`.
 
-`recentActions` คือ Actions ของผู้ใช้ที่ authenticate อยู่ (`performedBy.id` เท่ากับ session user) ในช่วง 7 วันล่าสุด แต่ละรายการมี `id`, `ticketId`, `actionAt`, `description`, `result`, `performedBy` และ `detailLink` โดย `performedBy` เป็น SafeUser และ `detailLink` ไป `/staff/tickets/:ticketId`. `recentTickets` และ `recentlyResolvedTickets` เรียง `updatedAt DESC, id DESC`; `recentActions` เรียง `actionAt DESC, id DESC`; ทั้งหมดใช้ `limit` เดียวกันและคืน empty array ได้
+`recentActions` คือ Actions ของผู้ใช้ที่ authenticate อยู่ (`performedBy.id` เท่ากับ session user) ในช่วง 7 วันล่าสุด แต่ละรายการมี `id`, `ticketId`, `actionAt`, `description`, `result`, `performedBy` และ `detailLink` โดย `performedBy` เป็น SafeUser และ `detailLink` เป็น Dashboard link ที่มี `target=staff-ticket-detail` กับ `ticketId`. `recentTickets` และ `recentlyResolvedTickets` เรียง `updatedAt DESC, id DESC`; `recentActions` เรียง `actionAt DESC, id DESC`; ทั้งหมดใช้ `limit` เดียวกันและคืน empty array ได้
+
+Query ของ metric link ใช้ API เดิม: Requester ใช้ `GET /api/tickets?status=<status>&page=1&pageSize=<queuePageSize>` และ Staff ใช้ `GET /api/staff/tickets?status=<status>&ownerId=<id|unassigned>&sortBy=updatedAt&sortOrder=desc&page=1&pageSize=<queuePageSize>`. `queuePageSize` ต้องเลือกจากค่าที่ Lab 3 รองรับ (10, 20 หรือ 50) และไม่เกิน limit ของ Dashboard; ค่าเริ่มต้นคือ 20. สำหรับ Recently Resolved ให้สร้าง link แยกตาม `RESOLVED` และ `CLOSED`; สำหรับ Recent Actions ให้เปิด Staff Ticket Detail ด้วย `ticketId` เพราะเป็นรายการ Action ไม่ใช่ Queue filter
 
 - 200: success
 - 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
@@ -251,7 +268,7 @@ Administrator ใช้ GET /api/staff/dashboard ตาม role policy เดี
 - 400 VALIDATION_ERROR: field missing, type ผิด, trimmed text ว่าง, `followUpRequired=true` แต่ไม่มี followUpNote, `followUpRequired=false` แต่ followUpNote ไม่เป็น `null` หรือ `status=REOPENED` แต่ไม่มี reopenReason
 - 401 AUTHENTICATION_REQUIRED หรือ SESSION_INVALID: ไม่มีหรือใช้ session ไม่ได้; `AUTHENTICATION_FAILED` ใช้กับ Login ที่ credentials ไม่ถูกต้องหรือ account inactive ตาม Lab 3 baseline
 - 403 ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN: role/ownership ไม่อนุญาต
-- 404 TICKET_NOT_FOUND หรือ ACTION_NOT_FOUND: ไม่พบ resource หรือใช้ safe response
+- 404 TICKET_NOT_FOUND, ACTION_NOT_FOUND หรือ USER_NOT_FOUND: ไม่พบ resource/assignee หรือใช้ safe response
 - 405 METHOD_NOT_ALLOWED: operation ถูกห้าม เช่น Delete Action
 - 409 STATUS_TRANSITION_NOT_ALLOWED: transition ไม่อยู่ใน matrix
 - 409 RESOLUTION_GATE_FAILED: gate ก่อน RESOLVED หรือ CLOSED ไม่ผ่าน

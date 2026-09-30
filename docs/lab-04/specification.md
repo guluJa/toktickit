@@ -91,7 +91,7 @@ Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 
 
 Primary Ticket Owner ใช้ Ticket.ownerId เดิมและไม่ทำซ้ำใน ActionTaken เพื่อไม่ให้ข้อมูล Owner สองชุดขัดกัน การตอบกลับ API แสดง ticketOwner เป็นข้อมูลอ่านอย่างเดียว และแสดง performedBy จาก ActionTaken
 
-ชนิดข้อมูลและความสัมพันธ์ที่เสนอ: `ActionTaken.id`, `ticketId`, `performedById` และ `Ticket.version` เป็น integer; `actionAt`, `createdAt` และ `updatedAt` เป็น `DateTime(3)` ที่เก็บ UTC; `description`, `result`, `followUpNote` และ `attachmentNotes` เป็น text โดย note เป็น nullable; `followUpRequired` เป็น Boolean. `ticketId` อ้างถึง `Ticket.id` และ `performedById` อ้างถึง `User.id` โดยห้าม cascade delete ที่ทำให้หลักฐาน Action หาย. Index ขั้นต่ำคือ `(ticketId, actionAt, id)` สำหรับหน้า Detail, `(performedById, actionAt, id)` สำหรับ Actions ของผู้ใช้ปัจจุบัน และ index ของ Ticket ที่ใช้ owner/status/updatedAt สำหรับ Dashboard; เหตุผลคือรองรับ query ตาม Ticket, ผู้ปฏิบัติงาน และช่วงเวลาโดยไม่เปลี่ยนข้อมูลเดิม
+ชนิดข้อมูลและความสัมพันธ์ที่เสนอ: `ActionTaken.id`, `ticketId`, `performedById` และ `Ticket.version` เป็น integer; `actionAt`, `createdAt` และ `updatedAt` เป็น `DateTime(3)` ที่เก็บ UTC; `description`, `result`, `followUpNote` และ `attachmentNotes` เป็น text โดย note เป็น nullable; `followUpRequired` เป็น Boolean. `ticketId` อ้างถึง `Ticket.id` และ `performedById` อ้างถึง Prisma model `RequesterUser.id` โดยห้าม cascade delete ที่ทำให้หลักฐาน Action หาย. Index ขั้นต่ำคือ `(ticketId, actionAt, id)` สำหรับหน้า Detail, `(performedById, actionAt, id)` สำหรับ Actions ของผู้ใช้ปัจจุบัน และ index ของ Ticket ที่ใช้ owner/status/updatedAt สำหรับ Dashboard; เหตุผลคือรองรับ query ตาม Ticket, ผู้ปฏิบัติงาน และช่วงเวลาโดยไม่เปลี่ยนข้อมูลเดิม
 
 ### 4.2 Zero/one/many behavior
 
@@ -196,16 +196,17 @@ Client ต้องส่ง `ActionTaken.version` เมื่อ Update Action
 - สำหรับ Dashboard ให้ถือ `RESOLVED`, `CLOSED` และ `CANCELLED` เป็นสถานะที่ไม่ใช่งานเปิด แม้ `RESOLVED` จะยังอนุญาตให้แก้ follow-up ใน Ticket Detail ได้
 - unassignedCount: Ticket ที่ ownerId เป็น null และไม่ใช่ RESOLVED/CANCELLED/CLOSED
 - mineCount: Ticket ที่ ownerId เท่ากับ authenticated Staff และไม่ใช่ RESOLVED/CANCELLED/CLOSED
-- byStatus: จำนวน Ticket ที่ Staff เห็นได้ แยกตาม TicketStatus
-- byPriority: จำนวน Ticket ที่ Staff เห็นได้ แยกตาม IT Priority
+- byStatus: จำนวน Ticket ที่ Staff เห็นได้ แยกตาม TicketStatus; ต้องคืน key ของทุก status ที่กำหนดพร้อมค่า 0 เมื่อไม่มีข้อมูล
+- byPriority: จำนวน Ticket ที่ Staff เห็นได้ แยกตาม IT Priority; ต้องคืน `LOW`, `MEDIUM`, `HIGH` พร้อมค่า 0 เมื่อไม่มีข้อมูล
 - highPriorityCount: Ticket ที่ IT Priority เป็น HIGH และไม่ใช่ RESOLVED/CANCELLED/CLOSED
 - recentlyUpdatedCount: จำนวน Ticket ที่ updatedAt อยู่ในช่วง 7 วันล่าสุด
 - recentTickets: รายการ Ticket ของช่วง recentlyUpdated สำหรับ drill-down
 - recentlyResolvedCount: Ticket ที่ currentStatus เป็น RESOLVED หรือ CLOSED และ `updatedAt` อยู่ในช่วง 7 วันล่าสุด
 - recentlyResolvedTickets: รายการตาม metric เดียวกัน
 - recentActions: Actions Taken ของผู้ใช้ที่ authenticate อยู่ (`performedById` เท่ากับ session user) และ `actionAt` อยู่ในช่วง 7 วันล่าสุด
-- recentTickets, recentlyResolvedTickets และ recentActions เรียงเวลาล่าสุดก่อน โดยใช้ id เป็น tie-breaker และจำกัดรายการตาม limit เดียวกัน
-- drillDown: Queue query สำหรับรายการคิว และ `/staff/tickets/:ticketId` สำหรับ Ticket/Action ทุกแถว
+- recentTickets และ recentlyResolvedTickets เรียง `updatedAt DESC, id DESC` จำกัดค่าเริ่มต้น 20 รายการและไม่เกิน 100 รายการ; เมื่อไม่มีข้อมูลให้คืนรายการว่างและค่า metric เป็น 0
+- recentActions เรียง `actionAt DESC, id DESC` ใช้ limit เดียวกัน และคืนรายการว่างเมื่อไม่มีข้อมูล
+- drillDown: Dashboard link object ไปยัง Queue query สำหรับรายการคิว และไปยัง Staff Ticket Detail ด้วย `ticketId` สำหรับ Ticket/Action ทุกแถว
 
 ### 8.3 Administrator metrics
 

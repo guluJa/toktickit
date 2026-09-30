@@ -17,6 +17,7 @@
 - Reviewer: [PhraewaS](https://github.com/PhraewaS)
 - Review status: Request changes
 - Review link: [PR #68 review](https://github.com/guluJa/toktickit/pull/68#pullrequestreview-5362373108)
+- Latest revision inspected: [ce86e6b](https://github.com/guluJa/toktickit/commit/ce86e6be5984a8e8847c792c36a73d473bd61462)
 - Review scope: ตรวจเอกสาร Lab 4 ทั้ง 6 ไฟล์และเสนอข้อสังเกต 8 ข้อ
 - Approval: Pending
 - Merge SHA: Pending
@@ -53,6 +54,18 @@ No separate review event was recorded for Actions Taken, Ticket workflow, Dashbo
 | 4 | REQUIRED | trace assignment/complete/cancel, inactive-assignee rejection และ append-only ไปยัง API/E2E ที่ Labsheet กำหนด; ยังไม่มี TA confirmation ให้บันทึก |
 | 5 | CLARIFY | ระบุแหล่งอ่าน `Ticket.version`, สิทธิ์แก้ Action ของผู้อื่น, Requester-visible fields และชื่อ authentication errors ตาม Lab 3 |
 | 6 | CLARIFY | เพิ่มชนิดข้อมูล/FK/index rationale และ recovery procedure ใน Contract/Test Plan; ไม่แก้ Prisma หรือสร้าง migration ใน Issue นี้ |
+
+## 3.2 Follow-up review on revision `ce86e6b`
+
+ลิงก์ Revision ล่าสุดถูกบันทึกไว้ด้านบนตามหลักฐานที่ตรวจสอบได้; ยังไม่มีลิงก์ Review event แยกจาก thread เดิม จึงไม่เติม Approval หรือ Merge:
+
+| # | Classification | Decision and evidence-based reason |
+|---|---|---|
+| 1 | REQUIRED | แก้ inactive assignee เป็น `404 USER_NOT_FOUND` ให้ตรงกับ Lab 3 baseline และเพิ่มใน Test Plan |
+| 2 | REQUIRED | เพิ่มแผนปรับ regression assertions สำหรับ `Ticket.version`, Resolution Gate และ `REOPENED → IN_PROGRESS` โดยไม่แก้ test code ใน PR นี้ |
+| 3 | REQUIRED | เปลี่ยน FK ในเอกสารเป็น Prisma `RequesterUser.id`; คำว่า User ใช้ได้เฉพาะในฐานะคำเชิงแนวคิด |
+| 4 | REQUIRED | ระบุผลลัพธ์เมื่อ reconcile พบรายการเดิม/ไม่พบ/GET ล้มเหลว และเพิ่ม test case สำหรับ POST เดิมที่สำเร็จภายหลัง |
+| 5 | REQUIRED | เพิ่ม Dashboard link object, Queue query ที่ใช้ parameter ของ Lab 3 และค่า 0 ครบทุก key เมื่อ `byStatus`/`byPriority` ไม่มีข้อมูล |
 
 ## 4. Current Verification State
 

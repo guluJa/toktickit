@@ -33,7 +33,8 @@ Controls:
 - Filter/drill-down links ไป Queue และ Detail
 - Recently Resolved ใช้ช่วง 7 วันล่าสุดตาม `updatedAt`; Recent Actions แสดงเฉพาะ Action ของผู้ใช้ที่ authenticate อยู่และใช้ช่วง 7 วันล่าสุดตาม `actionAt`
 - รายการ Dashboard ใช้ limit เดียวกับ API, เรียง `updatedAt DESC, id DESC` หรือ `actionAt DESC, id DESC` ตามรายการ และแสดง empty state เมื่อไม่มีรายการ
-- ลิงก์ Ticket และ Action ไป `/staff/tickets/:ticketId`; ลิงก์คิวใช้ query ที่กรองตาม metric
+- ลิงก์ใช้ Dashboard link object เดียวกับ API: Ticket/Action เปิด Staff Ticket Detail ด้วย `ticketId`; metric card เปิด Queue ด้วย `status`, `ownerId`, `sortBy`, `sortOrder`, `page=1` และ `pageSize` ที่ Lab 3 รองรับ (10/20/50)
+- เมื่อ `byStatus` หรือ `byPriority` ไม่มีข้อมูล ให้แสดงทุก label พร้อมค่า 0 ไม่ซ่อน card และแสดง empty state ของรายการ
 - Keyboard accessible controls
 
 ### 2.2 Requester Dashboard
@@ -58,7 +59,7 @@ Metric ขั้นต่ำต้องมี Open Tickets, Waiting for Request
 - Create form
 - Edit form
 - Saving/success/failure
-- Submission-uncertain เมื่อ timeout หรือไม่ทราบผล POST: คงข้อมูล, โหลดรายการ Actions ล่าสุดเพื่อ reconcile และห้าม retry POST อัตโนมัติ; ผู้ใช้ต้องยืนยันก่อนสร้างรายการใหม่
+- Submission-uncertain เมื่อ timeout หรือไม่ทราบผล POST: คงข้อมูลและโหลดรายการ Actions ล่าสุดเพื่อ reconcile. ถ้าพบรายการเดิมให้แสดงเป็นสำเร็จโดยไม่ส่งซ้ำ; ถ้าไม่พบให้คงสถานะ uncertain และรอการยืนยันจากผู้ใช้; ถ้าโหลดไม่สำเร็จให้แสดง safe failure และเก็บข้อมูลเดิม. ห้าม retry POST อัตโนมัติ
 - Validation ของ description, result และ follow-up
 - Conflict state เมื่อ version เก่า
 - Performer read-only จาก session
@@ -96,7 +97,7 @@ Frontend restrictions ต้องมี Backend authorization รองรั�
 - safe failure
 - success feedback ผ่าน aria-live หรือ role=status
 - saving guard ป้องกัน double submit
-- หากคำขอหมดเวลา/ตอบกลับไม่ชัดเจน ต้องคงข้อมูลในฟอร์มและเข้าสู่ submission-uncertain; UI ต้อง reload รายการก่อนให้ผู้ใช้ยืนยันการส่งใหม่ และไม่อ้างว่า Backend รวมคำขอซ้ำให้เอง
+- หากคำขอหมดเวลา/ตอบกลับไม่ชัดเจน ต้องคงข้อมูลในฟอร์มและเข้าสู่ submission-uncertain; UI ต้อง reload รายการก่อนให้ผู้ใช้ยืนยันการส่งใหม่. กรณีคำขอเดิมบันทึกสำเร็จภายหลังต้องแสดง Action เดิมหลัง reconcile และไม่สร้างรายการซ้ำจากการ retry อัตโนมัติ
 
 ## 5. Responsive Rules
 
