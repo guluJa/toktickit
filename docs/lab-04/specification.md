@@ -41,6 +41,33 @@ Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 
 - User deletion, bulk import/export และ cloud deployment
 - Feature ที่ไม่อยู่ใน Contract หรือ Issue ที่ได้รับอนุมัติ
 
+### 3.1 Functional Requirements
+
+| ID | Requirement | Trace to AC |
+|---|---|---|
+| FR-01 | Ticket รองรับ Actions Taken แบบ zero/one/many พร้อม owner, performer, follow-up และ attachment notes | AC-01–AC-05 |
+| FR-02 | Backend บังคับใช้สิทธิ์ Requester, IT Staff และ Administrator | AC-02, AC-03, AC-15 |
+| FR-03 | Ticket workflow ใช้ Status Matrix และ Resolution Gate ที่ตรวจสอบได้ | AC-06, AC-07 |
+| FR-04 | Action และ Status update รองรับ optimistic concurrency และ safe conflict | AC-08 |
+| FR-05 | Requester และ Staff/Admin Dashboard แสดง metrics และ drill-down ตามสิทธิ์ | AC-09, AC-10 |
+| FR-06 | Migration, legacy preservation, seed และ recovery safety ทำงานแบบ additive | AC-11 |
+| FR-07 | UI มี loading, empty, forbidden, validation, conflict, responsive, accessibility และ recoverable-save states | AC-13, AC-14, AC-16 |
+| FR-08 | Regression ของ Lab 1–3 ไม่ถูกทำลาย | AC-15 |
+| FR-09 | การส่ง Action ซ้ำจากการกดซ้ำหรือ recoverable network failure ต้องถูกป้องกันหรือจัดการอย่างปลอดภัย | AC-16 |
+
+### 3.2 Business Rules
+
+| ID | Rule | Trace to AC |
+|---|---|---|
+| BR-01 | `performedById` ต้องมาจาก authenticated session และห้ามรับจาก Client | AC-01, AC-02 |
+| BR-02 | `Ticket.ownerId` เป็น Primary Owner เดียวของ Ticket; Assignment/reassignment ยังคงใช้กติกา Lab 3 และไม่สร้าง Owner ซ้ำใน Action | AC-01, AC-15 |
+| BR-03 | Action ที่ `followUpRequired=true` ถือว่ายังมีงานค้าง; ไม่ขวาง RESOLVED แต่ขวาง CLOSED จนกว่าจะเคลียร์ follow-up และยังแก้ Action บน RESOLVED ได้ | AC-05, AC-07 |
+| BR-04 | `CLOSED → REOPENED` ต้องมี `reopenReason` ที่ trim แล้วไม่ว่าง | AC-06 |
+| BR-05 | Action ใช้ `ActionTaken.version`; Status workflow ใช้ `Ticket.version`; Backend ต้องตรวจ conflict แบบ atomic และห้ามเกิด partial write โดยกลไกฐานข้อมูลจริงเป็น implementation decision | AC-08 |
+| BR-06 | Dashboard ใช้ UTC storage, Asia/Bangkok local boundary, 7-day window, fixed limit และ stable sort | AC-09, AC-10 |
+| BR-07 | Action ไม่มี Delete, ไม่มี separate completion state และไม่มี edit-history model เพิ่มใน Lab 4; ใช้ `updatedAt/version` เท่านั้น | AC-04, AC-08 |
+| BR-08 | ระหว่างการบันทึกต้องมี saving guard; เมื่อเกิด recoverable failure ต้องคงข้อมูลที่กรอกและให้ reload/retry อย่างปลอดภัย โดยไม่รับรองการรวมคำขอซ้ำด้วย Idempotency-Key | AC-16 |
+
 ## 4. Domain Terms and Data Contract
 
 ### 4.1 Proposed ActionTaken fields
@@ -71,6 +98,8 @@ Primary Ticket Owner ใช้ Ticket.ownerId เดิมและไม่ท�
 - Ticket ที่มีหลาย Action เรียงตาม actionAt จากเก่าไปใหม่ โดยใช้ id เป็น tie-breaker
 - ห้ามลบ Action หรือจัดลำดับใหม่จาก Client
 - การ Update เป็นการแก้ข้อมูลที่อนุญาตและไม่ลบประวัติรายการเดิม
+
+การแก้ Action ไม่ใช่การทำเครื่องหมาย completion แยกต่างหาก; สถานะการติดตามงานใช้ `followUpRequired` และ `followUpNote` เท่านั้น
 
 ### 4.3 Ticket workflow version
 
@@ -103,12 +132,14 @@ Baseline คือ Matrix จาก Lab 3; ตารางนี้เป็น 
 | OPEN | IN_PROGRESS, WAITING_FOR_REQUESTER, CANCELLED | IT Staff | ต้องเป็น transition ที่ policy อนุญาต |
 | IN_PROGRESS | WAITING_FOR_REQUESTER, RESOLVED, CANCELLED | IT Staff | RESOLVED ต้องผ่าน resolution gate |
 | WAITING_FOR_REQUESTER | IN_PROGRESS, RESOLVED, CANCELLED | IT Staff | ต้องตรวจข้อมูล Requester/Action ตาม gate |
-| RESOLVED | CLOSED, REOPENED | IT Staff | CLOSED ต้องไม่ขัดกับ conflict หรือ stale update |
+| RESOLVED | CLOSED, REOPENED | IT Staff | RESOLVED ยังแก้ follow-up ได้; CLOSED ต้องไม่มี Action ที่ยัง `followUpRequired=true` และต้องไม่ขัดกับ conflict หรือ stale update |
 | CLOSED | REOPENED | IT Staff | ต้องส่ง `reopenReason` ที่ trim แล้วไม่ว่าง |
 | REOPENED | ไม่มี | ไม่มี | คง Baseline ของ Lab 3; Lab 4 ไม่ขยาย transition นี้โดยไม่มี Issue อนุมัติ |
 | CANCELLED | ไม่มี | ไม่มี | Terminal state |
 
 Transition ที่ไม่อยู่ในตารางตอบ 409 STATUS_TRANSITION_NOT_ALLOWED และต้องไม่เปลี่ยนข้อมูล
+
+ใน Contract นี้ `CLOSED` และ `CANCELLED` เป็น terminal สำหรับการแก้ Action; `RESOLVED` ยังเป็นสถานะที่ Staff/Admin แก้ follow-up ได้ก่อนขอ CLOSED
 
 ## 7. Resolution Gate and Conflict
 
@@ -123,14 +154,18 @@ Requester endpoint สำหรับ Problem Appears Resolved บันทึ�
 - Current status เป็น IN_PROGRESS หรือ WAITING_FOR_REQUESTER
 - Ticket ต้องมี Primary Owner ที่ active เสมอ โดย `ownerId` ต้องอ้างถึงผู้ใช้ที่ active และเป็น role ที่ Lab 3 อนุญาตให้เป็น Ticket owner
 - มี ActionTaken อย่างน้อยหนึ่งรายการที่มี description และ result ครบ
-- `followUpRequired` ต้องเป็น false; ถ้าเป็น true ต้องไม่เปลี่ยนเป็น RESOLVED จนกว่าจะจัดการ Follow-up แล้ว
+- `RESOLVED` ทำได้เมื่อมี Action อย่างน้อยหนึ่งรายการที่มี description และ result ครบ แม้บาง Action จะมี `followUpRequired=true`; ค่า true ยังคงแสดงว่างานติดตามยังค้างอยู่
 - Request มี `Ticket.version` ล่าสุด
 
 หาก gate ไม่ผ่านตอบ 409 RESOLUTION_GATE_FAILED
 
+การเปลี่ยนเป็น CLOSED ทำได้เฉพาะจาก RESOLVED ตาม Status Matrix และต้องไม่มี Action ที่ยังมี follow-up ค้าง หากยังมีอย่างน้อยหนึ่งรายการเป็น `true` ให้ตอบ `409 RESOLUTION_GATE_FAILED`; Staff ต้องแก้ Action เป็น `false` พร้อม `followUpNote=null` ก่อน retry
+
 ### 7.3 Stale update
 
 Client ต้องส่ง `ActionTaken.version` เมื่อ Update Action และส่ง `Ticket.version` เมื่อเปลี่ยน workflow หาก version ไม่ตรงกับ Database:
+
+การสร้าง/แก้ Action และการเปลี่ยน Status ของ Ticket เดียวกันต้องถูกประมวลผลแบบ atomic โดยตรวจ gate/version ก่อนยืนยันผลลัพธ์ หาก Ticket กลายเป็น CLOSED หรือ CANCELLED ก่อน Action mutation จะยืนยันผล ให้ตอบ `409 ACTION_STATE_CONFLICT` และไม่เขียน Action; หาก Action mutation ยืนยันผลก่อน Status mutation ต้องอ่านข้อมูล Action ล่าสุดและประเมิน Resolution Gate ใหม่ กลไกที่ใช้ทำให้ atomic เป็น implementation decision และไม่กำหนดวิธีฐานข้อมูลเฉพาะ
 
 - ตอบ 409 STALE_UPDATE
 - ไม่เขียนทับข้อมูลใหม่
@@ -149,17 +184,20 @@ Client ต้องส่ง `ActionTaken.version` เมื่อ Update Action
 - recentlyUpdatedCount: จำนวน Ticket ของ Requester ที่ updatedAt อยู่ในช่วง 7 วันล่าสุด
 - recentlyResolvedCount: Ticket ที่ currentStatus เป็น RESOLVED หรือ CLOSED และ updatedAt อยู่ในช่วง 7 วันล่าสุด
 - recentlyResolvedTickets: รายการ Ticket ที่เข้าเงื่อนไข recentlyResolvedCount สำหรับ drill-down
+- recentlyUpdated และ recentlyResolved เรียง `updatedAt DESC, id DESC` จำกัดค่าเริ่มต้น 20 รายการ และไม่เกิน 100 รายการ
 - drillDown: ส่ง ticketId หรือ query ที่เปิด My Tickets/Detail ได้
 
 ### 8.2 Staff metrics
 
-- unassignedCount: Ticket ที่ ownerId เป็น null และไม่ใช่ CANCELLED/CLOSED
-- mineCount: Ticket ที่ ownerId เท่ากับ authenticated Staff และไม่ใช่สถานะ terminal
+- สำหรับ Dashboard ให้ถือ `RESOLVED`, `CLOSED` และ `CANCELLED` เป็นสถานะที่ไม่ใช่งานเปิด แม้ `RESOLVED` จะยังอนุญาตให้แก้ follow-up ใน Ticket Detail ได้
+- unassignedCount: Ticket ที่ ownerId เป็น null และไม่ใช่ RESOLVED/CANCELLED/CLOSED
+- mineCount: Ticket ที่ ownerId เท่ากับ authenticated Staff และไม่ใช่ RESOLVED/CANCELLED/CLOSED
 - byStatus: จำนวน Ticket ที่ Staff เห็นได้ แยกตาม TicketStatus
 - byPriority: จำนวน Ticket ที่ Staff เห็นได้ แยกตาม IT Priority
-- highPriorityCount: Ticket ที่ IT Priority เป็น HIGH และยังไม่ terminal
+- highPriorityCount: Ticket ที่ IT Priority เป็น HIGH และไม่ใช่ RESOLVED/CANCELLED/CLOSED
 - recentlyUpdatedCount: จำนวน Ticket ที่ updatedAt อยู่ในช่วง 7 วันล่าสุด
 - recentActions: Actions Taken ของ Ticket ที่ Staff เห็นได้และ actionAt อยู่ในช่วง 7 วันล่าสุด
+- recentTickets และ recentActions เรียงเวลาล่าสุดก่อน โดยใช้ id เป็น tie-breaker และจำกัดรายการตาม limit เดียวกัน
 - drillDown: Queue query หรือ Ticket Detail link
 
 ### 8.3 Administrator metrics
@@ -189,7 +227,7 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - AC-04: Ticket รองรับ zero, one และ many Actions พร้อมลำดับที่เสถียร
 - AC-05: Follow-Up Required บังคับ Follow-Up Note ตาม validation rule
 - AC-06: Ticket status ทุก transition ผ่าน Matrix และ transition ที่ไม่อนุญาตตอบ 409
-- AC-07: RESOLVED ผ่าน resolution gate และ Requester indication ไม่เปลี่ยน formal status
+- AC-07: RESOLVED ผ่าน resolution gate และ Requester indication ไม่เปลี่ยน formal status; CLOSED ปฏิเสธเมื่อยังมี follow-up ค้าง
 - AC-08: Stale update ตอบ 409 และไม่เขียนทับข้อมูลใหม่
 - AC-09: Requester Dashboard คืนเฉพาะ metrics/Tickets ของ Requester ปัจจุบัน
 - AC-10: Staff/Admin Dashboard ใช้สูตรที่ระบุและ drill-down ได้
@@ -198,8 +236,9 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - AC-13: UI ครบ loading, empty, forbidden, validation, conflict และ safe failure
 - AC-14: UI ผ่าน responsive, keyboard focus, labels, semantics และ non-color cues
 - AC-15: Regression ของ Lab 1–3 ผ่านและไม่มี feature เดิมเสีย
+- AC-16: การกดบันทึกซ้ำหรือ recoverable network failure ไม่ทำให้ผู้ใช้สูญเสียข้อมูลที่กรอก และ UI มี saving guard/reload-retry ที่ปลอดภัย โดย Contract นี้ไม่รับรอง Idempotency-Key หรือการรวมคำขอซ้ำใน Backend
 
-สถานะปัจจุบันของ AC-01 ถึง AC-15: Planned; ยังไม่มี Lab 4 implementation หรือผลรันจริง
+สถานะปัจจุบันของ AC-01 ถึง AC-16: Planned; ยังไม่มี Lab 4 implementation หรือผลรันจริง
 
 ## 11. Product Definition of Done
 
@@ -221,7 +260,8 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - Assumption A-02: Update Action อนุญาตให้แก้ข้อมูล แต่ห้ามลบและห้าม reorder
 - Assumption A-03: ใช้ `ActionTaken.version` สำหรับ Action update และ `Ticket.version` สำหรับ Status workflow
 - Decision D-01: ใช้ Lab 3 baseline ให้ REOPENED ไม่มี outgoing transition; การขยายต้องเป็น Issue ใหม่ที่อนุมัติแยกต่างหาก
-- Decision D-02: Administrator สร้าง/แก้ ActionTaken และอ่าน Staff Dashboard ได้ แต่ยังเปลี่ยน Ticket status ไม่ได้ตาม Lab 3
-- Decision D-03 (resolved): Resolution gate ต้องมี Action ที่มี description/result ครบ และ `followUpRequired=false`
+- Decision D-02: Administrator ใช้สิทธิ์แบบ IT Staff เฉพาะขอบเขต Actions Taken ตาม Lab 4, อ่าน Staff Dashboard ได้ แต่ยังเปลี่ยน Ticket status ไม่ได้ตาม Lab 3 baseline
+- Decision D-03 (resolved): RESOLVED ต้องมี Action ที่มี description/result ครบและยังแสดง follow-up ได้; CLOSED ต้องรอให้ทุก follow-up ถูกเคลียร์
 - Decision D-04 (resolved): Dashboard ใช้ Asia/Bangkok, ช่วง 7 วันล่าสุด และช่วงเวลาแบบ [start, end)
 - Decision D-05 (resolved): ใช้ `updatedAt` และ `version` สำหรับการแก้ไข/ตรวจ stale update; ไม่เพิ่ม edit-history model ใน Lab 4 นี้
+- Decision D-06: ใช้ saving guard และ reload/retry flow เพื่อจัดการการส่ง Action ซ้ำใน UI; ไม่กำหนด Idempotency-Key หรือ server-side deduplication เพราะ Labsheet ไม่ได้ระบุกลไกนี้

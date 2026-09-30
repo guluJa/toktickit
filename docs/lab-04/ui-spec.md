@@ -27,9 +27,11 @@ Controls:
 
 - Metric cards
 - Recently Updated Tickets
+- Recently Resolved Tickets
 - Unassigned Tickets
 - My Assigned Tickets
 - Filter/drill-down links ไป Queue และ Detail
+- รายการ Dashboard ใช้ limit เดียวกับ API, เรียงรายการล่าสุดก่อน และแสดง empty state เมื่อไม่มีรายการ
 - Keyboard accessible controls
 
 ### 2.2 Requester Dashboard
@@ -41,7 +43,7 @@ Controls:
 - zero-ticket empty state
 - failure
 
-ต้องแสดงเฉพาะข้อมูลของ authenticated Requester และ drill-down ไป My Tickets/Detail ของตนเอง
+ต้องแสดงเฉพาะข้อมูลของ authenticated Requester และ drill-down ด้วย `ticketId` ไปยัง My Tickets/Detail เดิมของตนเอง
 
 Metric ขั้นต่ำต้องมี Open Tickets, Waiting for Requester, Recently Updated และ Recently Resolved โดย Recently Resolved แสดงจำนวนและรายการ Ticket ที่เป็น RESOLVED/CLOSED และ updatedAt อยู่ในช่วงเวลาที่ Contract กำหนด
 
@@ -74,6 +76,8 @@ Requester อ่าน Actions ของ Ticket ตนเองได้ตา�
 | IT Staff | Staff Dashboard, Staff Queue, Staff Detail และ Action create/edit |
 | Administrator | Staff Dashboard เดียวกับ IT Staff, User Management, Staff Detail read-only ตาม Lab 3 และ Action create/edit ตาม Lab 4 policy; เปลี่ยน Ticket status ไม่ได้ |
 
+บน Ticket ที่อยู่ RESOLVED ผู้มีสิทธิ์ยังแก้ follow-up เพื่อเตรียม CLOSED ได้; Ticket ที่ CLOSED หรือ CANCELLED เป็น read-only สำหรับ Action
+
 Frontend restrictions ต้องมี Backend authorization รองรับเสมอ
 
 ## 4. Visual and Feedback States
@@ -88,6 +92,7 @@ Frontend restrictions ต้องมี Backend authorization รองรั�
 - safe failure
 - success feedback ผ่าน aria-live หรือ role=status
 - saving guard ป้องกัน double submit
+- หากคำขอหมดเวลา/ตอบกลับไม่ชัดเจน ต้องคงข้อมูลในฟอร์มและให้ผู้ใช้ reload รายการก่อน retry; UI ไม่อ้างว่า Backend รวมคำขอซ้ำให้เอง
 
 ## 5. Responsive Rules
 

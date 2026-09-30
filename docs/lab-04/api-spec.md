@@ -11,6 +11,7 @@ Baseline: ใช้ response envelope และ security conventions ของ d
 - Session: HttpOnly toktickit_session cookie
 - Timestamp: ISO 8601; เก็บใน UTC
 - Pagination: `{ page, pageSize, totalItems, totalPages }`; ค่าเริ่มต้น `page=1`, `pageSize=20`, สูงสุด `pageSize=100`
+- Dashboard lists: ค่าเริ่มต้น `limit=20`, สูงสุด `limit=100`; `recentTickets`/`recentlyResolvedTickets` sort ด้วย `updatedAt DESC, id DESC` และ `recentActions` sort ด้วย `actionAt DESC, id DESC`
 - Backend เป็นผู้ตรวจ authentication, role, ownership, validation และ conflict
 - ห้ามคืน password, passwordHash, token, cookie, SQL, stack trace หรือ internal path
 
@@ -92,13 +93,15 @@ IT Staff และ Administrator สร้าง Action ได้ตาม autho
 - 401: AUTH_REQUIRED หรือ SESSION_INVALID
 - 403: ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN
 - 404: TICKET_NOT_FOUND
-- 409: ACTION_CONFLICT หรือ ACTION_STATE_CONFLICT
+- 409: `ACTION_STATE_CONFLICT` เมื่อ Ticket เป็น CLOSED/CANCELLED หรือเกิด concurrent mutation ที่ทำให้เขียน Action ต่อไม่ได้
 
 performedBy ต้องมาจาก session ของผู้เรียก ไม่ใช่ request body
 
+Contract นี้ไม่กำหนด `Idempotency-Key` หรือ server-side deduplication สำหรับคำขอ POST ที่ถูกส่งซ้ำจาก network retry การป้องกันการกดซ้ำและการกู้คืนจาก timeout เป็นหน้าที่ของ UI saving guard และ reload/retry flow; Client ต้องโหลดรายการล่าสุดก่อนส่งซ้ำเมื่อไม่ทราบผลลัพธ์ของคำขอเดิม
+
 ### PATCH /api/staff/tickets/:ticketId/actions/:actionId
 
-IT Staff และ Administrator แก้ Action ได้เมื่อ version ตรงกัน
+IT Staff และ Administrator แก้ Action ได้เมื่อ version ตรงกัน และ Ticket ยังไม่อยู่ใน CLOSED หรือ CANCELLED; RESOLVED ยังแก้ follow-up ได้เพื่อเตรียมปิด Ticket
 
 Request body:
 
@@ -118,7 +121,7 @@ Request body:
 - 401: AUTH_REQUIRED หรือ SESSION_INVALID
 - 403: ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN
 - 404: ACTION_NOT_FOUND หรือ TICKET_NOT_FOUND
-- 409: STALE_UPDATE หรือ ACTION_CONFLICT
+- 409: `STALE_UPDATE` หรือ `ACTION_STATE_CONFLICT`
 
 ### DELETE /api/staff/tickets/:ticketId/actions/:actionId
 
@@ -156,6 +159,8 @@ Request body:
 - 404: TICKET_NOT_FOUND
 - 409: `STATUS_TRANSITION_NOT_ALLOWED`, `RESOLUTION_GATE_FAILED` หรือ `STALE_UPDATE`
 - เมื่อ version ไม่ตรง ต้องตอบ `{ error: { code: "STALE_UPDATE", message, fields: { expectedVersion, actualVersion } } }` และต้องไม่เปลี่ยน Status หรือ version
+- Status mutation และ Action mutation ของ Ticket เดียวกันต้องถูกตรวจและยืนยันแบบ atomic ตาม specification; ไม่มี partial success หากอีก mutation ทำให้ gate หรือ version ไม่ผ่าน กลไกฐานข้อมูลที่ใช้เป็น implementation decision
+- `CLOSED` ทำได้เฉพาะจาก `RESOLVED`; หากยังมี Action ที่ `followUpRequired=true` การขอ `CLOSED` ต้องตอบ `409 RESOLUTION_GATE_FAILED` ส่วน `RESOLVED` ยังทำได้เมื่อมี Action ที่ valid และจะแสดง follow-up ที่ยังค้างอยู่
 
 ### POST /api/tickets/:ticketId/resolved
 
@@ -168,7 +173,7 @@ Request body:
 
 ### GET /api/requester/dashboard
 
-ใช้ได้เฉพาะ authenticated REQUESTER และคำนวณจาก Ticket ของตนเอง
+ใช้ได้เฉพาะ authenticated REQUESTER และคำนวณจาก Ticket ของตนเอง รับ query `limit` ตาม Dashboard list convention
 
 Response:
 
@@ -189,7 +194,7 @@ Response:
       }
     }
 
-`recentTickets` และ `recentlyResolvedTickets` ใช้รายการสรุปที่มี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `updatedAt` และ `detailLink`; ห้ามมีข้อมูลของ Requester คนอื่น
+`recentTickets` และ `recentlyResolvedTickets` ใช้รายการสรุปที่มี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `updatedAt` และ `detailLink`; `detailLink` ต้องพาไปยังหน้ารายละเอียดเดิมของ Lab 3 ด้วย `ticketId` และห้ามมีข้อมูลของ Requester คนอื่น
 
 - 200: success, รวม empty metrics ได้
 - 401: AUTH_REQUIRED หรือ SESSION_INVALID
@@ -197,7 +202,7 @@ Response:
 
 ### GET /api/staff/dashboard
 
-ใช้ได้โดย IT Staff และ Administrator ตาม role policy
+ใช้ได้โดย IT Staff และ Administrator ตาม role policy และรับ query `limit` ตาม Dashboard list convention
 
 Response:
 
@@ -241,7 +246,7 @@ Administrator ใช้ GET /api/staff/dashboard ตาม role policy เดี
 - 409 STATUS_TRANSITION_NOT_ALLOWED: transition ไม่อยู่ใน matrix
 - 409 RESOLUTION_GATE_FAILED: gate ก่อน Resolved ไม่ผ่าน
 - 409 STALE_UPDATE: version ไม่ตรง
-- 409 ACTION_CONFLICT: conflict อื่นที่ระบุใน Contract
+- 409 ACTION_STATE_CONFLICT: Ticket อยู่ใน CLOSED/CANCELLED หรือ mutation พร้อมกันทำให้ Action เขียนต่อไม่ได้
 - 500 INTERNAL_ERROR: error ปลอดภัยและไม่เผยรายละเอียดภายใน
 
 ## 9. Query and Date Rules
@@ -249,6 +254,7 @@ Administrator ใช้ GET /api/staff/dashboard ตาม role policy เดี
 - Dashboard default recentlyUpdated ใช้ช่วง 7 วันล่าสุด
 - Requester recentlyResolved ใช้ currentStatus เป็น RESOLVED/CLOSED และ updatedAt อยู่ในช่วง 7 วันล่าสุด
 - Action list routes รับ query `page` และ `pageSize` ตาม Pagination convention; ไม่รับค่า metric count จาก Client
+- Dashboard routes รับ `limit` เป็นจำนวนเต็ม 1–100; ค่าอื่นตอบ `400 VALIDATION_ERROR`
 - ช่วงวันที่ใช้ [start, end) และรับ ISO 8601
 - “วันนี้” แปลง Asia/Bangkok local midnight เป็น UTC ก่อน query
 - ไม่ให้ Client ส่ง metric count เพื่อบังคับผลลัพธ์
