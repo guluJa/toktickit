@@ -43,6 +43,8 @@ ActionTaken response ต้องมี:
 
 performedBy และ ticketOwner ต้องเป็น safe user object ตาม Lab 3; ห้ามส่ง passwordHash, session fields หรือข้อมูลลับ
 
+Requester เห็นเฉพาะ `id`, `ticketId`, `actionAt`, `description`, `result`, `followUpRequired`, `followUpNote`, `attachmentNotes`, `performedBy`, `ticketOwner`, `createdAt`, `updatedAt` และ `version` ของ Ticket ตนเองตาม visibility policy; ไม่มี field สำหรับแก้ไข. IT Staff และ Administrator ที่มีสิทธิ์เข้าถึง Ticket แก้ Action ของผู้ปฏิบัติงานคนอื่นได้เฉพาะ field ใน PATCH body และ version ล่าสุด โดย `performedBy` ยังคงเป็นผู้สร้างเดิมและห้าม impersonate
+
 ### 3.2 Create request
 
 POST body (เวลาของ Action และ version ถูกสร้าง/ควบคุมโดย Backend):
@@ -65,7 +67,7 @@ Client ห้ามส่ง actionAt, performedById, createdAt, updatedAt, vers
 
 - 200: `{ data: { items: ActionTaken[], pagination: { page, pageSize, totalItems, totalPages } } }`
 - 400: `VALIDATION_ERROR` เมื่อ page/pageSize ไม่ถูกต้อง
-- 401: `AUTH_REQUIRED` หรือ `SESSION_INVALID`
+- 401: `AUTHENTICATION_REQUIRED` หรือ `SESSION_INVALID` ตามชื่อ error ของ Lab 3 baseline
 - 404: `TICKET_NOT_FOUND` หรือ safe owner-not-found response
 - 500: `INTERNAL_ERROR` แบบไม่เปิดเผยรายละเอียด
 
@@ -79,7 +81,7 @@ IT Staff และ Administrator อ่าน Actions ของ Ticket ที่
 
 - 200: `{ data: { items: ActionTaken[], pagination: { page, pageSize, totalItems, totalPages } } }`
 - 400: `VALIDATION_ERROR` เมื่อ page/pageSize ไม่ถูกต้อง
-- 401: `AUTH_REQUIRED` หรือ `SESSION_INVALID`
+- 401: `AUTHENTICATION_REQUIRED` หรือ `SESSION_INVALID`
 - 403: `ROLE_FORBIDDEN` หรือ `TICKET_FORBIDDEN`
 - 404: `TICKET_NOT_FOUND`
 - 500: `INTERNAL_ERROR` แบบไม่เปิดเผยรายละเอียด
@@ -90,14 +92,14 @@ IT Staff และ Administrator สร้าง Action ได้ตาม autho
 
 - 201: { data: { action: ActionTaken } }
 - 400: VALIDATION_ERROR
-- 401: AUTH_REQUIRED หรือ SESSION_INVALID
+- 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
 - 403: ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN
 - 404: TICKET_NOT_FOUND
 - 409: `ACTION_STATE_CONFLICT` เมื่อ Ticket เป็น CLOSED/CANCELLED หรือเกิด concurrent mutation ที่ทำให้เขียน Action ต่อไม่ได้
 
 performedBy ต้องมาจาก session ของผู้เรียก ไม่ใช่ request body
 
-Contract นี้ไม่กำหนด `Idempotency-Key` หรือ server-side deduplication สำหรับคำขอ POST ที่ถูกส่งซ้ำจาก network retry การป้องกันการกดซ้ำและการกู้คืนจาก timeout เป็นหน้าที่ของ UI saving guard และ reload/retry flow; Client ต้องโหลดรายการล่าสุดก่อนส่งซ้ำเมื่อไม่ทราบผลลัพธ์ของคำขอเดิม
+Contract นี้ไม่กำหนด `Idempotency-Key` หรือ server-side deduplication สำหรับคำขอ POST ที่ถูกส่งซ้ำจาก network retry. ระหว่างรอให้ UI แสดง saving guard; หาก timeout หรือไม่ทราบผลลัพธ์ ให้เข้าสู่ `submission-uncertain`, คงข้อมูลในฟอร์มและเรียก GET รายการ Actions ล่าสุดเพื่อ reconcile ก่อน ผู้ใช้จึงค่อยยืนยันการสร้างรายการใหม่อย่างชัดเจนได้ และ UI ห้าม retry POST อัตโนมัติ เพราะคำขอเดิมอาจบันทึกสำเร็จภายหลัง
 
 ### PATCH /api/staff/tickets/:ticketId/actions/:actionId
 
@@ -118,7 +120,7 @@ Request body:
 
 - 200: { data: { action: ActionTaken } }
 - 400: VALIDATION_ERROR
-- 401: AUTH_REQUIRED หรือ SESSION_INVALID
+- 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
 - 403: ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN
 - 404: ACTION_NOT_FOUND หรือ TICKET_NOT_FOUND
 - 409: `STALE_UPDATE` หรือ `ACTION_STATE_CONFLICT`
@@ -140,9 +142,9 @@ Request body:
       "version": 3
     }
 
-`version` ต้องเป็นค่า `Ticket.version` ล่าสุดที่อ่านจาก Backend ไม่ใช่ `ActionTaken.version` และไม่ใช่ `updatedAt` ที่ Client สร้างเอง เมื่อสำเร็จ Backend เปลี่ยน Status และเพิ่ม `Ticket.version` เป็น 4 ใน transaction เดียวกัน
+`version` ต้องเป็นค่า `Ticket.version` ล่าสุดที่อ่านจาก Backend จาก `GET /api/staff/tickets/:ticketId` หรือ `GET /api/tickets/:ticketId` response (`ticket.version`) ไม่ใช่ `ActionTaken.version` และไม่ใช่ `updatedAt` ที่ Client สร้างเอง เมื่อสำเร็จ Backend เปลี่ยน Status และเพิ่ม `Ticket.version` ใน transaction เดียวกัน
 
-เมื่อ `status` เป็น `REOPENED` ต้องส่ง `reopenReason` ที่ trim แล้วไม่ว่างเพิ่มใน body; Status อื่นต้องไม่ส่ง `reopenReason` หรือส่งเป็น `null`
+เมื่อ `status` เป็น `REOPENED` ต้องส่ง `reopenReason` ที่ trim แล้วไม่ว่างเพิ่มใน body; Status อื่นต้องไม่ส่ง `reopenReason` หรือส่งเป็น `null`. หลังจาก Ticket อยู่ `REOPENED` แล้ว IT Staff ใช้ route เดิมเปลี่ยนเป็น `IN_PROGRESS` ได้ตาม Matrix และต้องใช้ `Ticket.version` ล่าสุด
 
 ตัวอย่าง `CLOSED → REOPENED`:
 
@@ -154,7 +156,7 @@ Request body:
 
 - 200: `{ data: { ticket: StaffTicket } }` โดย `ticket.version` เป็นค่าหลัง update
 - 400: VALIDATION_ERROR
-- 401: AUTH_REQUIRED หรือ SESSION_INVALID
+- 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
 - 403: ROLE_FORBIDDEN
 - 404: TICKET_NOT_FOUND
 - 409: `STATUS_TRANSITION_NOT_ALLOWED`, `RESOLUTION_GATE_FAILED` หรือ `STALE_UPDATE`
@@ -168,6 +170,10 @@ Request body:
 
 - 200: { data: { resolved: true, requesterResolvedAt, currentStatus } }
 - ต้องไม่เปลี่ยน currentStatus เป็น RESOLVED
+
+### Lab 3 assignment compatibility
+
+`POST /api/staff/tickets/:ticketId/assignment` ยังคงใช้ request `{ "ownerId": integer | null }` และ response envelope/error ของ `docs/lab-03/api-spec.md`; เฉพาะ IT Staff แก้ assignment ได้. `ownerId` ต้องเป็นผู้ใช้ที่ active และเป็น IT Staff หรือ Administrator ตาม baseline หากเป็น inactive user หรือ role อื่นให้ตอบ `400 VALIDATION_ERROR` และไม่เปลี่ยน Owner; Administrator ยังได้ `403 ROLE_FORBIDDEN`. คำว่า complete ในการสาธิตหมายถึงการเปลี่ยน Ticket เป็น `RESOLVED`/`CLOSED` ตาม Matrix ไม่ใช่สถานะของ Action เพิ่มใหม่ ส่วน cancel ใช้ `PATCH /api/staff/tickets/:ticketId/status` กับ `CANCELLED` ตาม Matrix
 
 ## 7. Dashboard Routes
 
@@ -197,7 +203,7 @@ Response:
 `recentTickets` และ `recentlyResolvedTickets` ใช้รายการสรุปที่มี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `updatedAt` และ `detailLink`; `detailLink` ต้องพาไปยังหน้ารายละเอียดเดิมของ Lab 3 ด้วย `ticketId` และห้ามมีข้อมูลของ Requester คนอื่น
 
 - 200: success, รวม empty metrics ได้
-- 401: AUTH_REQUIRED หรือ SESSION_INVALID
+- 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
 - 403: ROLE_FORBIDDEN
 
 ### GET /api/staff/dashboard
@@ -214,24 +220,28 @@ Response:
           "unassignedCount": 0,
           "mineCount": 0,
           "highPriorityCount": 0,
-          "recentlyUpdatedCount": 0
+          "recentlyUpdatedCount": 0,
+          "recentlyResolvedCount": 0
         },
         "byStatus": {},
         "byPriority": {},
         "recentTickets": [],
+        "recentlyResolvedTickets": [],
         "recentActions": [],
         "links": []
       }
     }
 
-Metrics ต้องประกอบด้วย unassignedCount, mineCount, byStatus, byPriority, highPriorityCount, recentlyUpdatedCount และ drill-down links
+Metrics ต้องประกอบด้วย unassignedCount, mineCount, byStatus, byPriority, highPriorityCount, recentlyUpdatedCount, recentlyResolvedCount และ drill-down links
 
 `recentTickets` แต่ละรายการต้องมี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `owner`, `updatedAt` และ `detailLink` โดย `owner` เป็น SafeUser หรือ `null`
 
-`recentActions` แต่ละรายการต้องมี `id`, `ticketId`, `actionAt`, `description`, `result`, `performedBy` และ `detailLink` โดย `performedBy` เป็น SafeUser
+`recentlyResolvedTickets` ใช้รายการ Ticket ที่เป็น RESOLVED/CLOSED และ `updatedAt` อยู่ในช่วง 7 วันล่าสุด โดยมี `id`, `ticketNumber`, `summary`, `currentStatus`, `requestedPriority`, `itPriority`, `owner`, `updatedAt` และ `detailLink`; `detailLink` ไป `/staff/tickets/:ticketId`.
+
+`recentActions` คือ Actions ของผู้ใช้ที่ authenticate อยู่ (`performedBy.id` เท่ากับ session user) ในช่วง 7 วันล่าสุด แต่ละรายการมี `id`, `ticketId`, `actionAt`, `description`, `result`, `performedBy` และ `detailLink` โดย `performedBy` เป็น SafeUser และ `detailLink` ไป `/staff/tickets/:ticketId`. `recentTickets` และ `recentlyResolvedTickets` เรียง `updatedAt DESC, id DESC`; `recentActions` เรียง `actionAt DESC, id DESC`; ทั้งหมดใช้ `limit` เดียวกันและคืน empty array ได้
 
 - 200: success
-- 401: AUTH_REQUIRED หรือ SESSION_INVALID
+- 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
 - 403: ROLE_FORBIDDEN
 
 Administrator ใช้ GET /api/staff/dashboard ตาม role policy เดียวกัน ไม่สร้าง `/api/admin/dashboard` แยกใน Lab 4 เวอร์ชันนี้ เพื่อลด route ซ้ำและคงสิทธิ์ Dashboard ที่ตรวจสอบได้จาก Backend
@@ -239,20 +249,21 @@ Administrator ใช้ GET /api/staff/dashboard ตาม role policy เดี
 ## 8. Validation and Safe Errors
 
 - 400 VALIDATION_ERROR: field missing, type ผิด, trimmed text ว่าง, `followUpRequired=true` แต่ไม่มี followUpNote, `followUpRequired=false` แต่ followUpNote ไม่เป็น `null` หรือ `status=REOPENED` แต่ไม่มี reopenReason
-- 401 AUTH_REQUIRED หรือ SESSION_INVALID: ไม่มีหรือใช้ session ไม่ได้
+- 401 AUTHENTICATION_REQUIRED หรือ SESSION_INVALID: ไม่มีหรือใช้ session ไม่ได้; `AUTHENTICATION_FAILED` ใช้กับ Login ที่ credentials ไม่ถูกต้องหรือ account inactive ตาม Lab 3 baseline
 - 403 ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN: role/ownership ไม่อนุญาต
 - 404 TICKET_NOT_FOUND หรือ ACTION_NOT_FOUND: ไม่พบ resource หรือใช้ safe response
 - 405 METHOD_NOT_ALLOWED: operation ถูกห้าม เช่น Delete Action
 - 409 STATUS_TRANSITION_NOT_ALLOWED: transition ไม่อยู่ใน matrix
-- 409 RESOLUTION_GATE_FAILED: gate ก่อน Resolved ไม่ผ่าน
+- 409 RESOLUTION_GATE_FAILED: gate ก่อน RESOLVED หรือ CLOSED ไม่ผ่าน
 - 409 STALE_UPDATE: version ไม่ตรง
 - 409 ACTION_STATE_CONFLICT: Ticket อยู่ใน CLOSED/CANCELLED หรือ mutation พร้อมกันทำให้ Action เขียนต่อไม่ได้
 - 500 INTERNAL_ERROR: error ปลอดภัยและไม่เผยรายละเอียดภายใน
 
 ## 9. Query and Date Rules
 
-- Dashboard default recentlyUpdated ใช้ช่วง 7 วันล่าสุด
+- Dashboard `recentTickets`, `recentlyResolvedTickets` และ `recentActions` ใช้ช่วงคงที่ `[asOf - 7 days, asOf)` ตาม timezone Asia/Bangkok; Client ไม่ส่ง start/end เองใน Lab 4
 - Requester recentlyResolved ใช้ currentStatus เป็น RESOLVED/CLOSED และ updatedAt อยู่ในช่วง 7 วันล่าสุด
+- Staff recentlyResolved ใช้ currentStatus เป็น RESOLVED/CLOSED และ updatedAt อยู่ในช่วง 7 วันล่าสุด; Staff recentActions ใช้ `performedBy.id` ของ session และ `actionAt` ในช่วงเดียวกัน
 - Action list routes รับ query `page` และ `pageSize` ตาม Pagination convention; ไม่รับค่า metric count จาก Client
 - Dashboard routes รับ `limit` เป็นจำนวนเต็ม 1–100; ค่าอื่นตอบ `400 VALIDATION_ERROR`
 - ช่วงวันที่ใช้ [start, end) และรับ ISO 8601

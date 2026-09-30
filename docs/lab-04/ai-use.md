@@ -7,7 +7,7 @@
 
 ## 1. ขอบเขตของบันทึกนี้
 
-เอกสารชุดนี้อยู่ในขั้นตอน Read-only audit และจัดทำ Engineering Contract/Test Plan เท่านั้น ยังไม่มี Lab 4 feature, test result, reviewer event หรือ final evidence ที่จะนำมาบันทึกเป็นผลสำเร็จ
+เอกสารชุดนี้อยู่ในขั้นตอน Read-only audit และจัดทำ Engineering Contract/Test Plan เท่านั้น ยังไม่มี Lab 4 feature, test result หรือ final evidence ที่จะนำมาบันทึกเป็นผลสำเร็จ; Review แบบ Request changes ของ PR #68 บันทึกแยกไว้ใน `reviewer.md`
 
 การใช้ AI ในช่วงนี้ใช้เพื่อช่วยอ่านข้อกำหนด, ตรวจความสอดคล้องกับ Lab 1–3 และจัดโครงร่างเอกสารเท่านั้น ผู้จัดทำยังเป็นผู้ตรวจ Source Code, Labsheet, Git status และตัดสินใจเรื่อง scope, authorization, migration และ security เอง
 
@@ -15,11 +15,15 @@ AI ไม่ใช่ผู้อนุมัติความถูกต้�
 
 ## 2. Selected Key Prompts
 
-Prompt excerpt ที่บันทึกใน revision นี้มาจากคำสั่งตรวจ PR #68 ที่ใช้จริงในรอบนี้เท่านั้น:
+Prompt excerpts ที่บันทึกใน revision นี้คัดจากคำสั่งที่ใช้จริงในการตรวจ PR #68 รอบนี้เท่านั้น:
 
 > “ช่วยตรวจและปรับปรุงเอกสารใน PR #68 ... ห้ามเชื่อ Reviewer feedback โดยอัตโนมัติ ... ห้ามแก้ Source Code, Prisma, Migration, Seed, API implementation หรือ UI implementation ... หยุดก่อน Commit และ Push”
 
 การใช้ Prompt นี้คือการ re-audit Labsheet/Issue/PR และตรวจ cross-file consistency ก่อนแก้เอกสาร โดยไม่สร้าง Prompt ย้อนหลังเพิ่มเติม Prompt อื่นและชื่อ model variant ที่ไม่มีหลักฐานใน Repository ยังไม่ถูกเติม
+
+> “ตอนนี้ถึงแลป4แล้ว ... Reviewer ขอแก้ 6 จุด ... อยากให้ช่วยตรวจสอบอันไหนควรแก้ก็แก้ อันไหนไม่ควรก็ต้องมีเหตุผล ... ไม่ทำเกินขอบเขตงานคือหมายถึงอย่าทำของงานอิชชูถัดไป”
+
+Prompt excerpt นี้ใช้กำหนดการตัดสิน Required/Clarification/Out of Scope และบังคับให้แก้เฉพาะเอกสารใน Issue #67; ไม่ใช่หลักฐานว่า implementation หรือ test ใดผ่านแล้ว
 
 ## 3. Reflection สถานะเริ่มต้น
 
