@@ -1,0 +1,140 @@
+# TokTickIT Lab 4 Test DD and Traceability
+
+สถานะ: Test Plan ก่อน implementation
+ทุกแถวเริ่มต้นเป็น Planned จนกว่าจะมี test file จริง, assertion ครบ และผลรันจาก main จริง
+
+## 1. Test Strategy
+
+ต้องครอบคลุม Unit, API/Integration, UI Component, UI Style, Authorization, Workflow, Migration/Recovery, Performance-Smoke, Responsive และ E2E รวมทั้ง regression ของ Lab 1–3
+
+## 2. Planned Test Matrix
+
+| Test ID | Type | Requirement/AC | What it tests | Expected Result | Planned test file | Final |
+|---|---|---|---|---|---|---|
+| UNIT-01 | unit | AC-01/05/08 | Action validation, follow-up state and version increment | invalid input rejected; an Action may require follow-up; valid update increments Action.version and resolution gate detects outstanding follow-up | server/tests/lab-04/actions-taken.unit.test.ts | Planned |
+| UNIT-02 | unit | AC-06/07 | Status transition and resolution gate pure rules | allowed transitions including `REOPENED → IN_PROGRESS` accepted; invalid/gate failures rejected | server/tests/lab-04/ticket-workflow.unit.test.ts | Planned |
+| API-01 | API | AC-01/02/03/04/16 | Action list/create/update and zero/one/many | correct envelope, performer, `actionAt ASC, id ASC` stable pagination across multiple pages, and no delete/reorder; Lab 3 Comments/Internal Notes remain append-only | server/tests/lab-04/actions-taken.api.test.ts | Planned |
+| API-02 | authorization | AC-02/03/15 | Requester/Staff/Admin Action access and ownership | role and ownership enforced by Backend; Requester is read-only; Staff/Admin may edit another performer’s Action without changing `performedBy`; baseline authentication error names remain unchanged | server/tests/lab-04/actions-taken.api.test.ts | Planned |
+| API-03 | API | AC-05/08 | Validation and stale update | 400/409 safe errors; no overwrite; CLOSED/CANCELLED Ticket or concurrent mutation returns `ACTION_STATE_CONFLICT`; RESOLVED follow-up edit remains allowed | server/tests/lab-04/actions-taken.api.test.ts | Planned |
+| API-04 | workflow | AC-06/07/08 | All Ticket status transitions and resolution gate | matrix and gate enforced including `REOPENED → IN_PROGRESS`; RESOLVED may retain an outstanding `followUpRequired=true`, but CLOSED blocks until the Action is updated to false; request `{ status, version }` uses `Ticket.version`; `REOPENED` requires non-empty `reopenReason`; stale version returns 409 with no write; assignment remains Lab 3-compatible, inactive assignee returns `404 USER_NOT_FOUND`, and CANCELLED/RESOLVED/CLOSED behavior is demonstrated | server/tests/lab-04/ticket-workflow.api.test.ts | Planned |
+| API-05 | API | AC-09/12 | Requester Dashboard metrics and ownership | zero-data fixtures return zero/empty values and valid empty link arrays; seeded fixtures return correct counts and owned lists; My Tickets link uses `currentStatus`, `sortDirection` and `pageSize=10` without changing Lab 3 response; `limit=5` still yields a valid My Tickets link | server/tests/lab-04/requester-dashboard.api.test.ts | Planned |
+| API-06 | API | AC-10/12 | Staff/Admin Dashboard metrics and drill-down | zero-data fixtures return empty lists and all byStatus/byPriority keys with 0; seeded fixtures return correct 7-day formulas, limit/sort/tie-breaker, `recentlyResolvedTickets` and current user’s `recentActions`; Staff Queue link uses `status`, `sortOrder`, `pageSize=10` independent of `limit`, including `limit=5` | server/tests/lab-04/staff-dashboard.api.test.ts | Planned |
+| API-07 | migration/regression | AC-11/15 | preserved IDs, FKs and legacy Ticket with zero Actions | old data remains valid and readable | server/tests/lab-04/migration-regression.api.test.ts | Planned |
+| API-08 | migration/regression | AC-11/09/10 | repeated seed and dashboard fixtures | seed creates zero/one/many Action cases plus zero/non-zero dashboard fixtures; second seed creates no duplicates and loses no data | server/tests/lab-04/migration-regression.api.test.ts | Planned |
+| MIG-01 | migration/recovery | AC-11 | migration precondition failure and recovery evidence | migration stops before writing when precondition fails; preserved rows remain unchanged; isolated backup/restore check can recover the verification database | server/tests/lab-04/migration-recovery.api.test.ts | Planned |
+| PERF-01 | performance-smoke | AC-09/10 | Dashboard queries on seeded data | bounded response time and no unbounded Ticket collection | server/tests/lab-04/performance-smoke.api.test.ts | Planned |
+| UI-01 | component | AC-01/04/05/16 | Actions list/create/edit and recoverable save | empty, populated, validation and saving guard; timeout preserves input and remains uncertain when an older Action has identical text, when a candidate appears after the original POST succeeds late, or when no candidate exists; paginate all pages and refresh metadata; no false success or automatic retry; GET failure keeps form and shows safe failure; user-initiated new submission warns about duplicate risk | client/tests/lab-04/ActionsTaken.test.tsx | Planned |
+| UI-02 | component | AC-03/08 | Requester read-only Action view | no create/edit/delete controls; safe failure shown | client/tests/lab-04/ActionsTaken.test.tsx | Planned |
+| UI-03 | component | AC-09/12 | Requester Dashboard | metrics, empty state, owned Detail links and My Tickets links use `currentStatus`/`sortDirection` with supported `pageSize=10`, including `limit=5`; opening a filtered link applies its status while ordinary My Tickets retains the Lab 3 All Statuses/NEW controls and default | client/tests/lab-04/RequesterDashboard.test.tsx | Planned |
+| UI-04 | component | AC-10/12 | Staff Dashboard | cards, current-user recent Actions, recently resolved list and Queue/Detail links use `status`/`sortOrder` with `pageSize=10` even when `limit=5`; all zero-valued byStatus/byPriority keys, loading, empty and failure correct | client/tests/lab-04/StaffDashboard.test.tsx | Planned |
+| UI-05 | component | AC-06/07/08 | Workflow controls and conflict feedback | permitted controls, gate, concurrent mutation and stale reload correct | client/tests/lab-04/TicketWorkflow.test.tsx | Planned |
+| STYLE-01 | UI style/accessibility | AC-13/14 | Zen Green, semantics, labels, focus and non-color cues | visual/accessibility assertions pass | client/tests/lab-04/AccessibilityStyle.test.tsx | Planned |
+| AUTH-01 | authorization | AC-02/03/09/10 | role navigation and direct API/UI access | forbidden roles cannot bypass Backend | client/tests/lab-04/AuthorizationStates.test.tsx | Planned |
+| API-09 | API/regression | AC-09/10/12/15 | Existing Lab 3 route and response-envelope compatibility | Requester `GET /api/tickets` keeps `currentStatus`/`sortDirection` and its unwrapped list response; Staff Queue keeps `status`/`sortOrder` and `{ data: ... }`; both accept `pageSize=10` even when Dashboard `limit=5`; auth, assignment and safe errors remain unchanged; regression assertions are updated for additive `Ticket.version`, Resolution Gate and `REOPENED → IN_PROGRESS` | exact file set below | Planned |
+| REG-01 | regression | AC-15 | Lab 1–3 auth, requester, queue, detail, admin and attachments | existing suites and API compatibility still pass | exact file set below | Planned |
+| RESP-01 | responsive | AC-13/14 | Dashboard, Actions Taken and Detail at desktop/tablet/mobile | no clipping, overlap or page overflow | e2e/lab-04/actions-taken-flow.spec.ts; e2e/lab-04/ticket-resolution.spec.ts; e2e/lab-04/dashboards.spec.ts | Planned |
+| E2E-01 | E2E | AC-01/02/03/04/05/16 | Action workflow for Requester, Staff and Admin | create/list/update/visibility works end to end; repeated click is guarded; timeout remains uncertain even if an old identical Action exists or the original POST succeeds late and appears on a later page; refresh/pagination shows candidates without false success or automatic second POST; GET failure preserves form; edit by another Staff/Admin preserves performer | e2e/lab-04/actions-taken-flow.spec.ts | Planned |
+| E2E-02 | E2E | AC-06/07/08 | Resolution workflow | RESOLVED can show outstanding follow-up; CLOSED blocks until cleared, concurrent Action/Status conflict has no partial write, `REOPENED → IN_PROGRESS` works with current version, CANCELLED is terminal, and Requester indication works | e2e/lab-04/ticket-resolution.spec.ts | Planned |
+| E2E-03 | E2E | AC-09/10/12/13/14 | Requester and Staff/Admin dashboards | dashboard metrics, 7-day recently resolved, current-user recent Actions and zero-valued byStatus/byPriority keys; Requester uses `currentStatus` and Staff uses `status`; `limit=5` still opens Queue with `pageSize=10`; role visibility, Detail links, sort and responsive states work | e2e/lab-04/dashboards.spec.ts | Planned |
+
+### REG-01/API-09 exact existing Lab 1–3 test files
+
+Server:
+
+- `server/tests/lab-02/my-tickets.api.test.ts`
+- `server/tests/lab-03/auth.api.test.ts`
+- `server/tests/lab-03/auth.unit.test.ts`
+- `server/tests/lab-03/authorization.api.test.ts`
+- `server/tests/lab-03/comments-notes.api.test.ts`
+- `server/tests/lab-03/migration-regression.api.test.ts`
+- `server/tests/lab-03/staff-queue.api.test.ts`
+- `server/tests/lab-03/staff-ticket-detail.api.test.ts`
+- `server/tests/lab-03/users-admin.api.test.ts`
+
+Client:
+
+- `client/tests/lab-03/AccessibilityStyle.test.tsx`
+- `client/tests/lab-03/AuthorizationStates.test.tsx`
+- `client/tests/lab-03/ChangePassword.test.tsx`
+- `client/tests/lab-03/Login.test.tsx`
+- `client/tests/lab-03/RequesterRegression.test.tsx`
+- `client/tests/lab-03/StaffTicketDetail.test.tsx`
+- `client/tests/lab-03/StaffTicketQueue.test.tsx`
+- `client/tests/lab-03/UserManagement.test.tsx`
+
+E2E:
+
+- `e2e/lab-03/authentication.spec.ts`
+- `e2e/lab-03/staff-ticket-flow.spec.ts`
+- `e2e/lab-03/user-administration.spec.ts`
+
+### Regression update plan (ยังไม่แก้ test code ใน PR นี้)
+
+- `server/tests/lab-02/my-tickets.api.test.ts` จะยืนยันว่า `currentStatus` หลายค่า, `sortDirection` และ `pageSize=10` ยังใช้ได้ โดย response list ยังไม่ถูกห่อ `data`
+- `client/tests/lab-03/RequesterRegression.test.tsx` จะยืนยันว่าหน้า My Tickets ปกติยังคง default/ตัวกรองเดิม และเมื่อเปิดจาก Dashboard link จะรับ `currentStatus` ที่ไม่ใช่ `NEW` ได้
+- `server/tests/lab-03/staff-ticket-detail.api.test.ts` และ `server/tests/lab-03/staff-queue.api.test.ts` จะเพิ่ม assertion ว่า response อ่าน `Ticket.version` ได้ และใช้ค่าดังกล่าวเมื่อทดสอบ Status update/STALE_UPDATE
+- `server/tests/lab-03/staff-ticket-detail.api.test.ts` จะเพิ่มกรณี Resolution Gate, `RESOLVED/CLOSED` ที่มี follow-up ค้าง และ `REOPENED → IN_PROGRESS` ตาม Contract Lab 4
+- `server/tests/lab-03/staff-queue.api.test.ts` จะคง assignment/status/priority regression เดิม และยืนยัน inactive assignee เป็น `404 USER_NOT_FOUND`
+- `e2e/lab-03/staff-ticket-flow.spec.ts` จะคง flow เดิม แล้วเพิ่มการตรวจ version/transition เฉพาะเมื่อ Lab 4 implementation เริ่มใน Issue ถัดไป
+- การปรับข้างต้นเป็นแผน traceability เท่านั้น; ไฟล์ทดสอบเดิมยังไม่ถูกแก้ใน PR #68
+
+## 3. Acceptance-Criterion Traceability
+
+| AC | Criterion | Planned evidence |
+|---|---|---|
+| AC-01 | Staff creates Action with server-derived performer | API-01, E2E-01 |
+| AC-02 | Admin can create/update but cannot impersonate performer | API-02, AUTH-01, E2E-01 |
+| AC-03 | Requester reads own Actions only | API-02, UI-02, E2E-01 |
+| AC-04 | zero/one/many and stable ordering | API-01, UI-01, E2E-01 |
+| AC-05 | follow-up validation | UNIT-01, API-03, UI-01 |
+| AC-06 | complete Status Matrix | UNIT-02, API-04, UI-05 |
+| AC-07 | resolution gate and indication | API-04, UI-05, E2E-02 |
+| AC-08 | stale update conflict for Action and Ticket workflow | API-03, API-04, UI-05, E2E-02 |
+| AC-09 | Requester Dashboard including Recently Resolved | API-05, UI-03, E2E-03 |
+| AC-10 | Staff/Admin Dashboard using one staff route | API-06, UI-04, E2E-03 |
+| AC-11 | migration, repeated seed and recovery safety | API-07, API-08, MIG-01 |
+| AC-12 | exact API and safe errors | API-01 through API-06 |
+| AC-13 | UI states | UI-01, UI-03, UI-04, UI-05 |
+| AC-14 | responsive/accessibility | STYLE-01, RESP-01 |
+| AC-15 | Lab 1–3 regression | REG-01 |
+| AC-16 | duplicate/recoverable Action submission | UI-01, E2E-01 |
+
+## 4. FR/BR Traceability
+
+| Requirement | Acceptance Criteria | Planned Test IDs |
+|---|---|---|
+| FR-01 | AC-01–AC-05 | UNIT-01, API-01, API-03, UI-01, UI-02, E2E-01 |
+| FR-02 | AC-02, AC-03, AC-15 | API-02, AUTH-01, API-09, E2E-01 |
+| FR-03 | AC-06, AC-07 | UNIT-02, API-04, UI-05, E2E-02 |
+| FR-04 | AC-08 | API-03, API-04, UI-05, E2E-02 |
+| FR-05 | AC-09, AC-10 | API-05, API-06, UI-03, UI-04, E2E-03 |
+| FR-06 | AC-11 | API-07, API-08, MIG-01 |
+| FR-07 | AC-13, AC-14, AC-16 | UI-01, UI-03, UI-04, UI-05, STYLE-01, RESP-01 |
+| FR-08 | AC-15 | API-09, REG-01 |
+| FR-09 | AC-16 | UI-01, E2E-01 |
+| BR-01 | AC-01, AC-02 | API-01, API-02, E2E-01 |
+| BR-02 | AC-01, AC-15 | API-02, API-09, REG-01 |
+| BR-03 | AC-05, AC-07 | UNIT-01, API-04, E2E-02 |
+| BR-04 | AC-06 | UNIT-02, API-04, E2E-02 |
+| BR-05 | AC-08 | API-03, API-04, E2E-02 |
+| BR-06 | AC-09, AC-10 | API-05, API-06, E2E-03 |
+| BR-07 | AC-04, AC-08, AC-15 | API-01, API-03, API-09, UI-01, UI-02 |
+| BR-08 | AC-16 | UI-01, E2E-01 |
+
+## 5. Planned Commands
+
+Commands are plans only and have not been run in this audit:
+
+- server: npm.cmd test
+- client: npm.cmd test
+- server: npm.cmd run build
+- client: npm.cmd run build
+- Prisma: npx.cmd prisma validate; npx.cmd prisma generate; npx.cmd prisma migrate deploy
+- seed: npm.cmd run prisma:seed twice on isolated E2E database
+- E2E: npm.cmd test from e2e with dedicated E2E_DATABASE_URL
+- responsive: npm.cmd run test:responsive
+
+## 6. Final Result
+
+Final-main result: Planned
+No Lab 4 test file or Lab 4 test output exists in the audited main commit. Do not mark any row Pass until the implementation, assertions and Final-main run exist.
