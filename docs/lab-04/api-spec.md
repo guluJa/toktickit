@@ -11,6 +11,7 @@ Baseline: ใช้ response envelope และ security conventions ของ d
 - Session: HttpOnly toktickit_session cookie
 - Timestamp: ISO 8601; เก็บใน UTC
 - Pagination: `{ page, pageSize, totalItems, totalPages }`; ค่าเริ่มต้น `page=1`, `pageSize=20`, สูงสุด `pageSize=100`
+- Action list ทั้ง Requester และ Staff เรียง `actionAt ASC, id ASC` ทุกหน้า; `pageSize` เป็นจำนวนเต็ม 1–100 เพื่อให้การอ่านหลายหน้ามีขอบเขตชัดเจน
 - Dashboard lists: ค่าเริ่มต้น `limit=20`, สูงสุด `limit=100`; `recentTickets`/`recentlyResolvedTickets` sort ด้วย `updatedAt DESC, id DESC` และ `recentActions` sort ด้วย `actionAt DESC, id DESC`
 - Backend เป็นผู้ตรวจ authentication, role, ownership, validation และ conflict
 - ห้ามคืน password, passwordHash, token, cookie, SQL, stack trace หรือ internal path
@@ -105,7 +106,7 @@ performedBy ต้องมาจาก session ของผู้เรีย�
 
 Contract นี้ไม่กำหนด `Idempotency-Key` หรือ server-side deduplication สำหรับคำขอ POST ที่ถูกส่งซ้ำจาก network retry. ระหว่างรอให้ UI แสดง saving guard; หาก timeout หรือไม่ทราบผลลัพธ์ ให้เข้าสู่ `submission-uncertain`, คงข้อมูลในฟอร์มและเรียก GET รายการ Actions ล่าสุดเพื่อ reconcile ก่อน ผู้ใช้จึงค่อยยืนยันการสร้างรายการใหม่อย่างชัดเจนได้ และ UI ห้าม retry POST อัตโนมัติ เพราะคำขอเดิมอาจบันทึกสำเร็จภายหลัง
 
-ผลการ reconcile ต้องแยกชัดเจน: (1) ถ้าพบ Action เดิมที่ตรงกับข้อมูลที่ส่ง ให้ถือว่าบันทึกสำเร็จ แสดงรายการนั้นและไม่ส่ง POST ซ้ำ; (2) ถ้ายังไม่พบ ให้คง `submission-uncertain`, เก็บข้อมูลไว้ และให้ผู้ใช้เลือกตรวจซ้ำหรือยืนยันการสร้างใหม่เอง; (3) ถ้า GET รายการล้มเหลว ให้แสดง safe failure พร้อมข้อมูลเดิมและห้ามส่ง POST ซ้ำอัตโนมัติ. Test ต้องครอบคลุมกรณี POST timeout แต่คำขอเดิมบันทึกสำเร็จภายหลังแล้ว GET พบ Action เดิม
+การ reconcile หลัง POST timeout ใช้ `GET /api/staff/tickets/:ticketId/actions?page=<n>&pageSize=100` อ่าน pagination และตรวจทุกหน้าจนถึง `totalPages` (รายการเรียง `actionAt ASC, id ASC`); เมื่อรอคำขอเดิมที่อาจบันทึกภายหลังให้ refresh รายการและ pagination อีกครั้ง ไม่สรุปจากหน้าแรกหรือหน้าเดียว. Action ที่ description/result/notes เหมือนกันเป็นเพียง candidate เพราะอาจเป็นรายการเก่า; GET ไม่มี request identifier ที่พิสูจน์ว่าเป็นผลของ POST ที่ timeout. จึงคง `submission-uncertain` แม้พบ candidate หรือยังไม่พบรายการ และไม่แสดงข้อความว่าสร้างสำเร็จ. ถ้า GET ล้มเหลว ให้แสดง safe failure และเก็บข้อมูลเดิม. UI ห้ามส่ง POST ซ้ำอัตโนมัติ; การสร้างใหม่ต้องเป็นการตัดสินใจของผู้ใช้หลังตรวจรายการล่าสุดและได้รับคำเตือนว่าอาจซ้ำ. ยืนยันสำเร็จโดยอัตโนมัติได้เฉพาะเมื่อได้รับ `201` พร้อม `action.id` จาก POST เดิมจริง ไม่ใช้การเทียบข้อความหรือเวลาแทน. Test ต้องครอบคลุมรายการเก่าที่ข้อความเหมือนกัน, คำขอเดิมที่บันทึกสำเร็จภายหลัง, หลายหน้า และ GET ล้มเหลว
 
 ### PATCH /api/staff/tickets/:ticketId/actions/:actionId
 
@@ -255,7 +256,9 @@ Metrics ต้องประกอบด้วย unassignedCount, mineCount, b
 
 `recentActions` คือ Actions ของผู้ใช้ที่ authenticate อยู่ (`performedBy.id` เท่ากับ session user) ในช่วง 7 วันล่าสุด แต่ละรายการมี `id`, `ticketId`, `actionAt`, `description`, `result`, `performedBy` และ `detailLink` โดย `performedBy` เป็น SafeUser และ `detailLink` เป็น Dashboard link ที่มี `target=staff-ticket-detail` กับ `ticketId`. `recentTickets` และ `recentlyResolvedTickets` เรียง `updatedAt DESC, id DESC`; `recentActions` เรียง `actionAt DESC, id DESC`; ทั้งหมดใช้ `limit` เดียวกันและคืน empty array ได้
 
-Query ของ metric link ใช้ API เดิม: Requester ใช้ `GET /api/tickets?status=<status>&page=1&pageSize=<queuePageSize>` และ Staff ใช้ `GET /api/staff/tickets?status=<status>&ownerId=<id|unassigned>&sortBy=updatedAt&sortOrder=desc&page=1&pageSize=<queuePageSize>`. `queuePageSize` ต้องเลือกจากค่าที่ Lab 3 รองรับ (10, 20 หรือ 50) และไม่เกิน limit ของ Dashboard; ค่าเริ่มต้นคือ 20. สำหรับ Recently Resolved ให้สร้าง link แยกตาม `RESOLVED` และ `CLOSED`; สำหรับ Recent Actions ให้เปิด Staff Ticket Detail ด้วย `ticketId` เพราะเป็นรายการ Action ไม่ใช่ Queue filter
+Query ของ metric link คง API เดิมของ Lab 3: Requester ใช้ `GET /api/tickets?currentStatus=<status>&sortBy=updatedAt&sortDirection=desc&page=1&pageSize=10` และ Staff ใช้ `GET /api/staff/tickets?status=<status>&sortBy=updatedAt&sortOrder=desc&page=1&pageSize=10` โดยเพิ่ม `ownerId=<id|unassigned>` เฉพาะลิงก์ My Assigned/Unassigned. ไม่เปลี่ยนชื่อ query หรือ response ของ My Tickets เดิม; Client ของ Dashboard ต้องส่ง `currentStatus` และรองรับ status ที่ใช้ในลิงก์ โดยคงหน้าจอ My Tickets เดิม. `pageSize=10` เป็นค่าที่ Queue ทั้งสองรองรับและไม่ขึ้นกับ Dashboard `limit=1–100`: `limit` จำกัดเฉพาะรายการที่ฝังใน Dashboard ไม่ใช่จำนวนแถวใน Queue ปลายทาง. สำหรับ metric ที่รวมหลาย status ให้ทำลิงก์แยกตาม status ที่เกี่ยวข้อง (Recently Resolved แยก `RESOLVED`/`CLOSED`); Recent Actions และแถว Ticket เปิด Detail ด้วย `ticketId`. Queue เดิมไม่มีตัวกรองช่วง 7 วัน จึงเป็นหน้ารายการที่กว้างกว่า metric ล่าสุด ไม่อ้างว่าจำนวนแถวใน Queue เท่ากับ count ของ Dashboard; รายการ Dashboard เองยังต้องตรงกับช่วง 7 วัน
+
+Lab 3 Backend รองรับ `currentStatus` หลายค่าแล้ว แต่ Client `MyTicketsQuery` และตัวเลือกใน My Tickets ปัจจุบันจำกัดเพียง `NEW`; งาน Dashboard ใน Issue ถัดไปต้องขยาย Client ให้รับ status จาก link object และนำ query ไปใช้เมื่อเปิด My Tickets โดยยังคง default/filter เดิมไว้. นี่เป็นแผนความเข้ากันได้ ไม่ใช่การแก้ Client ใน PR #68
 
 - 200: success
 - 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID

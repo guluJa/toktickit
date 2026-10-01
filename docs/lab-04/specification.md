@@ -66,7 +66,7 @@ Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 
 | BR-05 | Action ใช้ `ActionTaken.version`; Status workflow ใช้ `Ticket.version`; Backend ต้องตรวจ conflict แบบ atomic และห้ามเกิด partial write โดยกลไกฐานข้อมูลจริงเป็น implementation decision | AC-08 |
 | BR-06 | Dashboard ใช้ UTC storage, Asia/Bangkok local boundary, 7-day window, fixed limit และ stable sort | AC-09, AC-10 |
 | BR-07 | Action ไม่มี Delete, ไม่มี separate completion state และไม่มี edit-history model เพิ่มใน Lab 4; ใช้ `updatedAt/version` เท่านั้น. Comments/Internal Notes ของ Lab 3 ยังคง append-only; การแก้ Action ไม่ลบหรือ reorder รายการ | AC-04, AC-08, AC-15 |
-| BR-08 | ระหว่างการบันทึกต้องมี saving guard; เมื่อผลของคำขอไม่ทราบแน่ชัดต้องเข้าสู่ submission-uncertain state, โหลดรายการล่าสุดเพื่อ reconcile และห้าม retry POST อัตโนมัติ โดยไม่รับรองการรวมคำขอซ้ำด้วย Idempotency-Key | AC-16 |
+| BR-08 | ระหว่างการบันทึกต้องมี saving guard; เมื่อผล POST ไม่ทราบแน่ชัดต้องคง submission-uncertain และอ่าน Action ทุกหน้าตาม pagination ก่อนให้ผู้ใช้ตัดสินใจ การพบข้อความเหมือนกันไม่พิสูจน์ว่าเป็นคำขอเดิม ห้ามแจ้งสำเร็จหรือ retry อัตโนมัติ และไม่รับรอง server-side deduplication | AC-16 |
 
 ## 4. Domain Terms and Data Contract
 
@@ -189,7 +189,7 @@ Client ต้องส่ง `ActionTaken.version` เมื่อ Update Action
 - recentlyResolvedCount: Ticket ที่ currentStatus เป็น RESOLVED หรือ CLOSED และ updatedAt อยู่ในช่วง 7 วันล่าสุด
 - recentlyResolvedTickets: รายการ Ticket ที่เข้าเงื่อนไข recentlyResolvedCount สำหรับ drill-down
 - recentlyUpdated ใช้ช่วงคงที่ `[asOf - 7 days, asOf)` ใน Asia/Bangkok; รายการ `recentTickets` และ `recentlyResolvedTickets` เรียง `updatedAt DESC, id DESC` จำกัดค่าเริ่มต้น 20 รายการ และไม่เกิน 100 รายการ
-- drillDown: ส่ง ticketId หรือ query ที่เปิด My Tickets/Detail ได้
+- drillDown: ส่ง ticketId ไป Detail หรือ query ของ My Tickets เดิม (`currentStatus`, `sortDirection`, `pageSize=10`) โดยไม่เปลี่ยน API/response เดิม; ลิงก์หลายสถานะแยกตามสถานะ
 
 ### 8.2 Staff metrics
 
@@ -206,7 +206,7 @@ Client ต้องส่ง `ActionTaken.version` เมื่อ Update Action
 - recentActions: Actions Taken ของผู้ใช้ที่ authenticate อยู่ (`performedById` เท่ากับ session user) และ `actionAt` อยู่ในช่วง 7 วันล่าสุด
 - recentTickets และ recentlyResolvedTickets เรียง `updatedAt DESC, id DESC` จำกัดค่าเริ่มต้น 20 รายการและไม่เกิน 100 รายการ; เมื่อไม่มีข้อมูลให้คืนรายการว่างและค่า metric เป็น 0
 - recentActions เรียง `actionAt DESC, id DESC` ใช้ limit เดียวกัน และคืนรายการว่างเมื่อไม่มีข้อมูล
-- drillDown: Dashboard link object ไปยัง Queue query สำหรับรายการคิว และไปยัง Staff Ticket Detail ด้วย `ticketId` สำหรับ Ticket/Action ทุกแถว
+- drillDown: Dashboard link object ไปยัง Queue query เดิม (`status`, `sortOrder`, `pageSize=10`) สำหรับรายการคิว และไปยัง Staff Ticket Detail ด้วย `ticketId` สำหรับ Ticket/Action ทุกแถว; Queue `pageSize` ไม่ขึ้นกับ Dashboard `limit` และ Queue ที่ไม่มีตัวกรองเวลาอาจแสดงรายการกว้างกว่า metric 7 วัน
 
 ### 8.3 Administrator metrics
 
@@ -244,7 +244,7 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - AC-13: UI ครบ loading, empty, forbidden, validation, conflict และ safe failure
 - AC-14: UI ผ่าน responsive, keyboard focus, labels, semantics และ non-color cues
 - AC-15: Regression ของ Lab 1–3 ผ่านและไม่มี feature เดิมเสีย
-- AC-16: การกดบันทึกซ้ำหรือ recoverable network failure ไม่ทำให้ผู้ใช้สูญเสียข้อมูลที่กรอก; เมื่อผล POST ไม่ทราบแน่ชัด UI ต้องคงฟอร์ม, เข้าสู่ submission-uncertain state, โหลด Actions ล่าสุดเพื่อ reconcile และห้าม retry POST อัตโนมัติ โดย Contract นี้ไม่รับรอง Idempotency-Key หรือการรวมคำขอซ้ำใน Backend
+- AC-16: การกดบันทึกซ้ำหรือ recoverable network failure ไม่ทำให้ผู้ใช้สูญเสียข้อมูลที่กรอก; เมื่อผล POST ไม่ทราบแน่ชัด UI ต้องคงฟอร์มและ submission-uncertain, ตรวจ Actions ครบทุกหน้ารวมการ refresh เมื่อคำขอเดิมอาจบันทึกภายหลัง, ไม่ถือว่าข้อความเหมือนกันเป็นหลักฐานยืนยัน, ไม่แจ้งสำเร็จหรือ retry อัตโนมัติ และเตือนความเสี่ยงรายการซ้ำก่อนผู้ใช้เลือกสร้างใหม่; Contract นี้ไม่รับรอง Idempotency-Key หรือการรวมคำขอซ้ำใน Backend
 
 สถานะปัจจุบันของ AC-01 ถึง AC-16: Planned; ยังไม่มี Lab 4 implementation หรือผลรันจริง
 
@@ -272,4 +272,4 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - Decision D-03 (resolved): RESOLVED ต้องมี Action ที่มี description/result ครบและยังแสดง follow-up ได้; CLOSED ต้องรอให้ทุก follow-up ถูกเคลียร์
 - Decision D-04 (resolved): Dashboard ใช้ Asia/Bangkok, ช่วง 7 วันล่าสุด และช่วงเวลาแบบ [start, end)
 - Decision D-05 (resolved): ใช้ `updatedAt` และ `version` สำหรับการแก้ไข/ตรวจ stale update; ไม่เพิ่ม edit-history model ใน Lab 4 นี้
-- Decision D-06: ใช้ saving guard และ submission-uncertain/reconciliation flow; ไม่ retry POST อัตโนมัติเมื่อไม่ทราบผลลัพธ์ และไม่กำหนด Idempotency-Key หรือ server-side deduplication เพราะ Labsheet กำหนด safe handling แต่ไม่กำหนดกลไกเฉพาะ
+- Decision D-06: ใช้ saving guard และ submission-uncertain/reconciliation flow; การเทียบเนื้อหา Action เป็นเพียง candidate ไม่ใช่หลักฐานของ POST เดิม จึงไม่แจ้งสำเร็จหรือ retry อัตโนมัติเมื่อไม่ทราบผลลัพธ์ และไม่กำหนด Idempotency-Key หรือ server-side deduplication เพราะ Labsheet กำหนด safe handling แต่ไม่กำหนดกลไกเฉพาะ

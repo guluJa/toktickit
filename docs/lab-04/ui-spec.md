@@ -33,7 +33,7 @@ Controls:
 - Filter/drill-down links ไป Queue และ Detail
 - Recently Resolved ใช้ช่วง 7 วันล่าสุดตาม `updatedAt`; Recent Actions แสดงเฉพาะ Action ของผู้ใช้ที่ authenticate อยู่และใช้ช่วง 7 วันล่าสุดตาม `actionAt`
 - รายการ Dashboard ใช้ limit เดียวกับ API, เรียง `updatedAt DESC, id DESC` หรือ `actionAt DESC, id DESC` ตามรายการ และแสดง empty state เมื่อไม่มีรายการ
-- ลิงก์ใช้ Dashboard link object เดียวกับ API: Ticket/Action เปิด Staff Ticket Detail ด้วย `ticketId`; metric card เปิด Queue ด้วย `status`, `ownerId`, `sortBy`, `sortOrder`, `page=1` และ `pageSize` ที่ Lab 3 รองรับ (10/20/50)
+- ลิงก์ใช้ Dashboard link object เดียวกับ API: Ticket/Action เปิด Staff Ticket Detail ด้วย `ticketId`; metric card เปิด Queue ด้วย `status`, `sortBy=updatedAt`, `sortOrder=desc`, `page=1`, `pageSize=10` และเพิ่ม `ownerId` เฉพาะ card ที่กรอง Owner; `pageSize` ของ Queue ไม่ขึ้นกับ Dashboard `limit`
 - เมื่อ `byStatus` หรือ `byPriority` ไม่มีข้อมูล ให้แสดงทุก label พร้อมค่า 0 ไม่ซ่อน card และแสดง empty state ของรายการ
 - Keyboard accessible controls
 
@@ -48,6 +48,10 @@ Controls:
 
 ต้องแสดงเฉพาะข้อมูลของ authenticated Requester และ drill-down ด้วย `ticketId` ไปยัง My Tickets/Detail เดิมของตนเอง
 
+Metric link ไป My Tickets ใช้ `currentStatus` (ไม่ใช่ `status`), `sortBy=updatedAt`, `sortDirection=desc`, `page=1`, `pageSize=10`; Client ของ Dashboard ต้องรองรับ status ที่ใช้ในลิงก์โดยไม่เปลี่ยนพฤติกรรมหน้ารายการเดิม. เมตริกที่รวมหลายสถานะมีลิงก์แยกตามสถานะ และรายการช่วง 7 วันใน Dashboard อาจมีจำนวนน้อยกว่า My Tickets ที่เปิดจากลิงก์ เพราะ API เดิมไม่มีตัวกรองวันที่
+
+My Tickets ของ Lab 3 ยังเลือกได้เฉพาะ `NEW` ใน UI; งาน Dashboard ต้องส่ง query ของ link object เข้าหน้าเดิมและขยายตัวเลือกสถานะที่จำเป็นโดยไม่ลบ All Statuses/NEW หรือเปลี่ยนค่าเริ่มต้นของผู้ที่เปิด My Tickets ตามปกติ
+
 Metric ขั้นต่ำต้องมี Open Tickets, Waiting for Requester, Recently Updated และ Recently Resolved โดย Recently Resolved แสดงจำนวนและรายการ Ticket ที่เป็น RESOLVED/CLOSED และ updatedAt อยู่ในช่วงเวลาที่ Contract กำหนด
 
 ### 2.3 Actions Taken ใน Staff Ticket Detail
@@ -59,7 +63,7 @@ Metric ขั้นต่ำต้องมี Open Tickets, Waiting for Request
 - Create form
 - Edit form
 - Saving/success/failure
-- Submission-uncertain เมื่อ timeout หรือไม่ทราบผล POST: คงข้อมูลและโหลดรายการ Actions ล่าสุดเพื่อ reconcile. ถ้าพบรายการเดิมให้แสดงเป็นสำเร็จโดยไม่ส่งซ้ำ; ถ้าไม่พบให้คงสถานะ uncertain และรอการยืนยันจากผู้ใช้; ถ้าโหลดไม่สำเร็จให้แสดง safe failure และเก็บข้อมูลเดิม. ห้าม retry POST อัตโนมัติ
+- Submission-uncertain เมื่อ timeout หรือไม่ทราบผล POST: คงข้อมูลและโหลด Actions ทุกหน้าตาม pagination (`actionAt ASC, id ASC`), จากนั้นให้ผู้ใช้ refresh ตรวจซ้ำได้เมื่อคำขอเดิมอาจบันทึกภายหลัง. รายการที่ข้อความเหมือนกันเป็นเพียง candidate แม้พบภายหลัง; ทั้งกรณีพบและไม่พบต้องคง uncertain ไม่แจ้งว่าสำเร็จ เพราะไม่มีตัวระบุที่ผูกกับ POST เดิม. ถ้าโหลดไม่สำเร็จให้แสดง safe failure และเก็บข้อมูลเดิม. ห้าม retry POST อัตโนมัติ; หากผู้ใช้เลือกสร้างใหม่ต้องเตือนว่าอาจเกิดรายการซ้ำ
 - Validation ของ description, result และ follow-up
 - Conflict state เมื่อ version เก่า
 - Performer read-only จาก session
@@ -97,7 +101,7 @@ Frontend restrictions ต้องมี Backend authorization รองรั�
 - safe failure
 - success feedback ผ่าน aria-live หรือ role=status
 - saving guard ป้องกัน double submit
-- หากคำขอหมดเวลา/ตอบกลับไม่ชัดเจน ต้องคงข้อมูลในฟอร์มและเข้าสู่ submission-uncertain; UI ต้อง reload รายการก่อนให้ผู้ใช้ยืนยันการส่งใหม่. กรณีคำขอเดิมบันทึกสำเร็จภายหลังต้องแสดง Action เดิมหลัง reconcile และไม่สร้างรายการซ้ำจากการ retry อัตโนมัติ
+- หากคำขอหมดเวลา/ตอบกลับไม่ชัดเจน ต้องคงข้อมูลในฟอร์มและเข้าสู่ submission-uncertain; UI ต้องอ่านรายการครบทุกหน้าและ refresh ก่อนให้ผู้ใช้ตัดสินใจสร้างใหม่. กรณีคำขอเดิมบันทึกสำเร็จภายหลัง ให้แสดง Action ที่โหลดพบเป็น candidate แต่ไม่ยืนยันว่าเป็นผลของคำขอเดิมหรือแจ้ง success โดยอัตโนมัติ; ห้าม retry อัตโนมัติและเตือนความเสี่ยงรายการซ้ำ
 
 ## 5. Responsive Rules
 
