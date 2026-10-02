@@ -51,6 +51,7 @@ import {
   StaffQueueQueryValidationError,
 } from "./staff-queue-query.js";
 import { requireStaffQueueAccess } from "./staff-access.js";
+import { registerActionTakenRoutes } from "./actions-taken.js";
 import { requireAdministratorAccess } from "./admin-access.js";
 import {
   isAllowedStatusTransition,
@@ -87,6 +88,7 @@ app.use(
   }),
 ); // lets the Vite client read the original Attachment filename safely
 app.use(express.json());
+registerActionTakenRoutes(app);
 
 function validationResponse(
   res: Response,

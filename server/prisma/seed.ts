@@ -68,6 +68,12 @@ const users = [
     isActive: true,
   },
   {
+    name: "Lab 4 Empty Dashboard Requester",
+    email: "lab4-empty-requester@toktickit.test",
+    role: "REQUESTER" as const,
+    isActive: true,
+  },
+  {
     name: "Inactive Development Requester",
     email: "inactive-requester@toktickit.test",
     role: "REQUESTER" as const,
@@ -283,9 +289,63 @@ export async function runSeed(): Promise<void> {
         });
       }
     }
+
+    // Keep Lab 3 Ticket data intact; only add stable Lab 4 demonstration Actions.
+    const actionDefinitions = definition.number === "TKT-LAB3-0001"
+      ? [{ description: "Seeded Lab 4 network diagnosis", result: "Connection tested successfully.", followUpRequired: false, followUpNote: null }]
+      : definition.number === "TKT-LAB3-0003"
+        ? [
+            { description: "Seeded Lab 4 account review", result: "Account permissions reviewed.", followUpRequired: false, followUpNote: null },
+            { description: "Seeded Lab 4 follow-up", result: "Awaiting confirmation from the requester.", followUpRequired: true, followUpNote: "Confirm access on the next working day." },
+          ]
+        : [];
+    for (const action of actionDefinitions) {
+      if (!ownerId) throw new Error("Lab 4 Action fixture requires a Staff owner.");
+      const exists = await prisma.actionTaken.findFirst({
+        where: { ticketId: ticket.id, description: action.description }, select: { id: true },
+      });
+      if (!exists) {
+        await prisma.actionTaken.create({
+          data: { ticketId: ticket.id, performedById: ownerId, attachmentNotes: null, ...action },
+        });
+      }
+    }
   }
 
-  console.log("Seeded Lab 3 local users, reference data and tickets successfully.");
+  // New fixture only: leave every Lab 1–3 Ticket status and ownership unchanged.
+  const dashboardRequesterId = userIds.get("requester1@toktickit.test");
+  const dashboardStaffId = userIds.get("staff1@toktickit.test");
+  const dashboardCategoryId = categoryIds.get("Network");
+  const dashboardSystemId = systemIds.get("Campus Wi-Fi");
+  if (!dashboardRequesterId || !dashboardStaffId || !dashboardCategoryId || !dashboardSystemId) {
+    throw new Error("Unable to resolve Lab 4 Dashboard seed references.");
+  }
+  const resolvedTicket = await prisma.ticket.upsert({
+    where: { ticketNumber: "TKT-LAB4-DASH-RESOLVED" },
+    update: {},
+    create: {
+      ticketNumber: "TKT-LAB4-DASH-RESOLVED", submissionKey: randomUUID(),
+      requesterId: dashboardRequesterId, ownerId: dashboardStaffId,
+      categoryId: dashboardCategoryId, relatedSystemId: dashboardSystemId,
+      summary: "Lab 4 resolved Dashboard example", requestedPriority: "MEDIUM", itPriority: "MEDIUM",
+      description: "A resolved Ticket for non-empty Dashboard metrics.", currentStatus: "RESOLVED",
+    },
+  });
+  const dashboardActionDescription = "Seeded Lab 4 resolved diagnosis";
+  const dashboardAction = await prisma.actionTaken.findFirst({
+    where: { ticketId: resolvedTicket.id, description: dashboardActionDescription }, select: { id: true },
+  });
+  if (!dashboardAction) {
+    await prisma.actionTaken.create({
+      data: {
+        ticketId: resolvedTicket.id, performedById: dashboardStaffId,
+        description: dashboardActionDescription, result: "Service restored.",
+        followUpRequired: false, followUpNote: null, attachmentNotes: null,
+      },
+    });
+  }
+
+  console.log("Seeded Lab 3 data and Lab 4 zero/one/many Action and Dashboard fixtures successfully.");
 }
 
 const executedFile = process.argv[1] ? path.resolve(process.argv[1]) : "";
