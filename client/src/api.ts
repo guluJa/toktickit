@@ -430,6 +430,94 @@ export interface StaffTicketDetailResponse {
   internalNotes: InternalNote[];
 }
 
+export interface ActionTaken {
+  id: number;
+  ticketId: number;
+  actionAt: string;
+  description: string;
+  result: string;
+  performedBy: AuthUser;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+  ticketOwner: AuthUser | null;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export interface ActionFields {
+  description: string;
+  result: string;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+}
+
+export interface ActionPage {
+  items: ActionTaken[];
+  pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
+async function actionRequest<T>(url: string, init: RequestInit, fallback: string): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...init,
+        signal: controller.signal,
+        credentials: "include",
+        headers: { ...(init.body ? { "Content-Type": "application/json" } : {}), ...(init.headers ?? {}) },
+      });
+    } catch {
+      throw new TicketApiError(fallback, 0, "NETWORK_RESULT_UNKNOWN");
+    }
+    const body = await response.json().catch(() => ({})) as {
+      data?: T;
+      error?: { code?: string; message?: string; fields?: Record<string, string> };
+    };
+    if (!response.ok) {
+      throw new TicketApiError(
+        body.error?.message ?? fallback,
+        response.status,
+        body.error?.code ?? "ACTION_REQUEST_FAILED",
+        body.error?.fields,
+      );
+    }
+    if (!body.data) throw new TicketApiError(fallback, 0, "NETWORK_RESULT_UNKNOWN");
+    return body.data;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function getActionPage(ticketId: number, audience: "staff" | "requester", page: number): Promise<ActionPage> {
+  const prefix = audience === "staff" ? "/api/staff/tickets" : "/api/tickets";
+  return actionRequest<ActionPage>(
+    `${API_URL}${prefix}/${ticketId}/actions?page=${page}&pageSize=100`,
+    { method: "GET" },
+    "Unable to load Actions Taken.",
+  );
+}
+
+export function createAction(ticketId: number, fields: ActionFields): Promise<{ action: ActionTaken }> {
+  return actionRequest<{ action: ActionTaken }>(
+    `${API_URL}/api/staff/tickets/${ticketId}/actions`,
+    { method: "POST", body: JSON.stringify(fields) },
+    "Unable to confirm whether the Action was saved.",
+  );
+}
+
+export function updateAction(ticketId: number, actionId: number, fields: ActionFields, version: number): Promise<{ action: ActionTaken }> {
+  return actionRequest<{ action: ActionTaken }>(
+    `${API_URL}/api/staff/tickets/${ticketId}/actions/${actionId}`,
+    { method: "PATCH", body: JSON.stringify({ ...fields, version }) },
+    "Unable to update Action Taken.",
+  );
+}
+
 async function staffMutation<T>(url: string, init: RequestInit, fallback: string): Promise<T> {
   let response: Response;
   try {

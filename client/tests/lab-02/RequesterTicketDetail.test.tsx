@@ -15,6 +15,7 @@ import {
 import RequesterTicketDetail from "../../src/RequesterTicketDetail.js";
 import {
   createTicketComment,
+  getActionPage,
   getTicketComments,
   getTicketDetail,
   markTicketResolved,
@@ -29,6 +30,7 @@ vi.mock(
       typeof import("../../src/api.js")
     >()),
     getTicketDetail: vi.fn(),
+    getActionPage: vi.fn(),
     getTicketComments: vi.fn(),
     createTicketComment: vi.fn(),
     markTicketResolved: vi.fn(),
@@ -97,6 +99,7 @@ const ticket: TicketDetail = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(getActionPage).mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 100, totalItems: 0, totalPages: 0 } });
   mockedGetTicketDetail.mockResolvedValue(
     ticket,
   );

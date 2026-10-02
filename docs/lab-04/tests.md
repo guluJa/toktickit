@@ -1,7 +1,7 @@
 # TokTickIT Lab 4 Test DD and Traceability
 
-สถานะ: Test Plan ก่อน implementation
-ทุกแถวเริ่มต้นเป็น Planned จนกว่าจะมี test file จริง, assertion ครบ และผลรันจาก main จริง
+สถานะ: Test Plan พร้อมผลตรวจ UI ของ Issue #70 บน feature branch
+คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจบน feature branch บันทึกแยกในข้อ 7
 
 ## 1. Test Strategy
 
@@ -137,4 +137,23 @@ Commands are plans only and have not been run in this audit:
 ## 6. Final Result
 
 Final-main result: Planned
-No Lab 4 test file or Lab 4 test output exists in the audited main commit. Do not mark any row Pass until the implementation, assertions and Final-main run exist.
+ยังไม่มีผล Final-main ของ Lab 4 ในการตรวจรอบนี้ ผลตรวจบน feature branch ไม่ได้เปลี่ยนสถานะ Final ของ Test Matrix
+
+## 7. ผลตรวจ Issue #70 บน Feature Branch
+
+วันที่ตรวจ: 3 ตุลาคม 2026 (Asia/Bangkok)
+Branch: `feature/03-lab4-actions-taken-ui` จาก baseline `af255b1` ที่รวม PR #75 แล้ว ผลด้านล่างเป็นการตรวจไฟล์ที่แก้ใน working tree ก่อน Commit
+
+| คำสั่ง (รันจาก client/) | ผลที่รันจริง | ขอบเขต |
+|---|---|---|
+| `npm.cmd test -- --run tests/lab-04 --silent` | 2 files / 16 tests passed; exit 0 | UI-01/UI-02: 13 component tests และ 3 tests ของ client API helper |
+| `npm.cmd test -- --silent` | 18 files / 87 tests passed; exit 0 | Client tests ทั้งชุด รวม regression ของ Lab 1–3 และ Actions Taken |
+| `npm.cmd run build` | TypeScript และ Vite build สำเร็จ; exit 0 | Client production build |
+
+ไฟล์ทดสอบของ UI-01/UI-02 คือ `client/tests/lab-04/ActionsTaken.test.tsx` และไฟล์เพิ่มเติม `client/tests/lab-04/ActionsTakenApi.test.tsx` ตรวจ route, credentials, request fields, Action version และ timeout 30 วินาทีของ Client
+
+กรณีที่ตรวจแล้วครอบคลุมรายการ 0/1/หลาย Actions, ลำดับ actionAt/id, Staff create/edit, Administrator ใช้ Action UI ตามสิทธิ์เดิม, Requester read-only, follow-up validation, saving guard, field labels/keyboard, การคงข้อมูลเมื่อเกิด safe failure และ 409 conflict พร้อมให้ผู้ใช้ตรวจ version ล่าสุดก่อนส่งใหม่
+
+กรณี POST ไม่ทราบผลคง draft และสถานะ submission-uncertain โหลดรายการครบทุกหน้า และยังไม่แจ้ง success แม้พบข้อความเหมือนรายการเก่าหรือรายการที่ปรากฏภายหลัง ไม่มีการ retry POST อัตโนมัติ การส่งใหม่ต้องตรวจรายการอีกครั้งและยืนยันคำเตือนเรื่องรายการซ้ำ หาก GET ล้มเหลวจะคงข้อมูลฟอร์มไว้
+
+การตรวจ responsive รอบนี้ตรวจโครงสร้างและ classes ใน component test ยังไม่ได้ตรวจภาพบน browser ที่ขนาด desktop/tablet/mobile หรือรัน Full E2E; STYLE-01, RESP-01 และ E2E-01 ยังคง Planned สำหรับงาน hardening ไม่มีการอ้างผล Backend authorization ใหม่จาก component tests ที่ใช้ mock
