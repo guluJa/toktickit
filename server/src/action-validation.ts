@@ -15,6 +15,7 @@ export class ActionValidationError extends Error {
 const editableFields = new Set([
   "description", "result", "followUpRequired", "followUpNote", "attachmentNotes",
 ]);
+export const MAX_DATABASE_INTEGER = 2_147_483_647;
 
 export function parseActionFields(
   body: unknown,
@@ -64,8 +65,9 @@ export function parseActionFields(
     if (typeof rawAttachmentNotes !== "string") fields.attachmentNotes = "A string or null is required.";
     else attachmentNotes = rawAttachmentNotes.trim() || null;
   }
-  if (current && (!Number.isSafeInteger(input.version) || (input.version as number) < 1)) {
-    fields.version = "The current positive Action version is required.";
+  if (current && (!Number.isInteger(input.version) || (input.version as number) < 1 ||
+      (input.version as number) > MAX_DATABASE_INTEGER)) {
+    fields.version = `Action version must be an integer from 1 to ${MAX_DATABASE_INTEGER}.`;
   }
   if (Object.keys(fields).length) throw new ActionValidationError(fields);
   return {

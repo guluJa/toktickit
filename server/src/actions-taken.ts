@@ -4,7 +4,7 @@ import { toSafeUser } from "./auth.js";
 import { requireRequesterAccess } from "./requester-access.js";
 import { requireStaffQueueAccess } from "./staff-access.js";
 import { getPrisma } from "./prisma.js";
-import { ActionValidationError, parseActionFields } from "./action-validation.js";
+import { ActionValidationError, MAX_DATABASE_INTEGER, parseActionFields } from "./action-validation.js";
 
 const actionInclude = {
   performedBy: true,
@@ -32,7 +32,7 @@ function errorResponse(res: Response, status: number, code: string, message: str
 function positiveInteger(value: unknown): number | null {
   if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
   const number = Number(value);
-  return Number.isSafeInteger(number) ? number : null;
+  return Number.isInteger(number) && number <= MAX_DATABASE_INTEGER ? number : null;
 }
 
 function ticketId(req: Request, res: Response): number | null {

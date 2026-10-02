@@ -26,6 +26,7 @@ describe("API-01/02/03 Actions Taken routes", () => {
   let ticketId = 0;
   let otherTicketId = 0;
   let staffId = 0;
+  let adminId = 0;
   let ownerId = 0;
   let staff: ReturnType<typeof request.agent>;
   let admin: ReturnType<typeof request.agent>;
@@ -48,6 +49,7 @@ describe("API-01/02/03 Actions Taken routes", () => {
       ids.set(roleName, user.id);
     }
     staffId = ids.get("staff")!;
+    adminId = ids.get("admin")!;
     ownerId = ids.get("owner")!;
     const makeTicket = async (requesterId: number) => prisma.ticket.create({
       data: {
@@ -110,6 +112,9 @@ describe("API-01/02/03 Actions Taken routes", () => {
     expect(firstPage.body.data.items.map((item: { id: number }) => item.id))
       .toEqual([...firstPage.body.data.items.map((item: { id: number }) => item.id)].sort((a, b) => a - b));
     expect((await staff.get(`${path}?pageSize=101`)).body.error.code).toBe("VALIDATION_ERROR");
+    const oversizedTicket = await staff.get("/api/staff/tickets/2147483648/actions");
+    expect(oversizedTicket.status).toBe(400);
+    expect(oversizedTicket.body.error.code).toBe("VALIDATION_ERROR");
   });
 
   it("enforces requester ownership/read-only access and Staff/Admin permissions", async () => {
@@ -124,6 +129,12 @@ describe("API-01/02/03 Actions Taken routes", () => {
       .toBe("SESSION_INVALID");
     const adminRead = await admin.get(`/api/staff/tickets/${otherTicketId}/actions`);
     expect(adminRead.status).toBe(200);
+    const adminCreated = await admin.post(`/api/staff/tickets/${otherTicketId}/actions`).send({
+      description: "Administrator diagnosis", result: "Checked", followUpRequired: false, followUpNote: null,
+    });
+    expect(adminCreated.status).toBe(201);
+    expect(adminCreated.body.data.action.performedBy.id).toBe(adminId);
+    expect(adminCreated.body.data.action.performedBy.id).not.toBe(staffId);
   });
 
   it("rejects managed fields, validates follow-up and preserves stale edits", async () => {
@@ -139,6 +150,12 @@ describe("API-01/02/03 Actions Taken routes", () => {
     });
     expect(impersonation.status).toBe(400);
     const item = (await staff.get(path)).body.data.items[0];
+    const oversizedAction = await staff.patch(`${path}/2147483648`).send({ result: "No write", version: item.version });
+    expect(oversizedAction.status).toBe(400);
+    expect(oversizedAction.body.error.code).toBe("VALIDATION_ERROR");
+    const oversizedVersion = await staff.patch(`${path}/${item.id}`).send({ result: "No write", version: 2_147_483_648 });
+    expect(oversizedVersion.status).toBe(400);
+    expect(oversizedVersion.body.error.code).toBe("VALIDATION_ERROR");
     const edited = await admin.patch(`${path}/${item.id}`).send({ result: "Admin edited", version: item.version });
     expect(edited.status).toBe(200);
     expect(edited.body.data.action.version).toBe(item.version + 1);
@@ -166,5 +183,21 @@ describe("API-01/02/03 Actions Taken routes", () => {
     expect(allowed.status).toBe(200);
     expect(allowed.body.data.action.followUpRequired).toBe(false);
     await prisma.ticket.update({ where: { id: ticketId }, data: { currentStatus: "NEW" } });
+  });
+
+  it("allows only one of two simultaneous PATCHes with the same Action version", async () => {
+    const path = `/api/staff/tickets/${ticketId}/actions`;
+    const item = (await staff.get(path)).body.data.items[0];
+    const responses = await Promise.all([
+      staff.patch(`${path}/${item.id}`).send({ result: "Concurrent staff result", version: item.version }),
+      admin.patch(`${path}/${item.id}`).send({ result: "Concurrent admin result", version: item.version }),
+    ]);
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+    const winner = responses.find((response) => response.status === 200)!;
+    const loser = responses.find((response) => response.status === 409)!;
+    expect(loser.body.error.code).toMatch(/^(STALE_UPDATE|ACTION_STATE_CONFLICT)$/);
+    const persisted = await prisma.actionTaken.findUniqueOrThrow({ where: { id: item.id } });
+    expect(persisted.result).toBe(winner.body.data.action.result);
+    expect(persisted.version).toBe(item.version + 1);
   });
 });

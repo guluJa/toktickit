@@ -28,6 +28,7 @@ describe("UNIT-01 Actions Taken validation", () => {
     const current = { ...base, description: "Original", result: "Result" };
     expect(parseActionFields({ result: "Updated", version: 1 }, current)).toEqual({ ...current, result: "Updated", version: 1 });
     expect(() => parseActionFields({ result: "Updated", version: 0 }, current)).toThrow(ActionValidationError);
+    expect(() => parseActionFields({ result: "Updated", version: 2_147_483_648 }, current)).toThrow(ActionValidationError);
     expect(() => parseActionFields({ version: 1 }, current)).toThrow(ActionValidationError);
   });
 });
