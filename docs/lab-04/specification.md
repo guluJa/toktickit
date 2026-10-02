@@ -1,16 +1,16 @@
-# TokTickIT Lab 4 Sprint 4 Engineering Contract
+# TokTickIT Lab 4: ข้อกำหนดระบบและเกณฑ์รับงาน
 
-สถานะ: Draft ก่อนเริ่ม implementation
+สถานะ: Contract ผ่าน review และ merge ใน PR #68; กำลังพัฒนาตาม Issues #69–#74
 แหล่งอ้างอิง: SE Lab 4 Labsheet และผลตรวจ Lab 3 main
 Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 3 verification commit 8755d21
 
-เอกสารนี้เป็น Contract สำหรับ Lab 4 เท่านั้น จึงยังไม่มีการประกาศว่า Feature ใดผ่านหรือเสร็จแล้ว สิ่งที่ยังไม่มีใน Repository จะระบุเป็น Planned หรือ Assumption อย่างชัดเจน
+เอกสารนี้กำหนดพฤติกรรมที่ต้องส่งใน Lab 4 ผลตรวจระหว่างพัฒนาบันทึกแยกใน `tests.md` และสถานะรีวิวบันทึกใน `reviewer.md` การ merge งานบางส่วนยังไม่ถือว่า Product Definition of Done หรือ Final-main ผ่านแล้ว
 
-## 1. Sprint Goal
+## 1. เป้าหมายของ Lab 4
 
 ต่อยอด TokTickIT ให้รองรับการบันทึก Actions Taken ใต้ Ticket, Dashboard ตาม Role และ Ticket workflow ที่ตรวจสอบได้ โดยไม่ทำลาย Authentication, Authorization, Ticket, Attachment, Comment, Internal Note และ Regression behavior จาก Lab 1–3
 
-## 2. Stakeholder Request
+## 2. ความต้องการของผู้ใช้
 
 - IT Staff และ Administrator ที่มีสิทธิ์สามารถสร้างและแก้ไข Actions Taken ของ Ticket ได้
 - Ticket หนึ่งรายการมี Actions Taken ได้ศูนย์ หนึ่ง หรือหลายรายการ
@@ -20,9 +20,9 @@ Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 
 - ต้องมี Dashboard สำหรับ Requester และ IT Staff/Administrator
 - Dashboard ต้องสรุปข้อมูลจาก Backend และเชื่อมไปยังหน้ารายละเอียดได้
 
-## 3. Scope
+## 3. ขอบเขตงาน
 
-### Included
+### งานที่รวมใน Lab 4
 
 - ActionTaken model, additive migration, seed และ regression
 - Action list/create/update พร้อม validation, authorization และ conflict handling
@@ -33,7 +33,7 @@ Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 
 - Unit, API, UI, workflow, migration, performance-smoke, responsive และ E2E tests
 - Lab 1–3 regression และ Final-main evidence
 
-### Explicitly Excluded
+### งานที่ไม่รวมใน Lab 4
 
 - SLA clock, escalation engine และ on-call scheduling
 - Email, SMS, LINE, push notification, MFA, SSO และ self-registration
@@ -41,7 +41,7 @@ Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 
 - User deletion, bulk import/export และ cloud deployment
 - Feature ที่ไม่อยู่ใน Contract หรือ Issue ที่ได้รับอนุมัติ
 
-### 3.1 Functional Requirements
+### 3.1 ข้อกำหนดการทำงาน (FR)
 
 | ID | Requirement | Trace to AC |
 |---|---|---|
@@ -55,24 +55,24 @@ Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 
 | FR-08 | Regression ของ Lab 1–3 ไม่ถูกทำลาย | AC-15 |
 | FR-09 | การส่ง Action ซ้ำจากการกดซ้ำหรือ recoverable network failure ต้องถูกป้องกันหรือจัดการอย่างปลอดภัย | AC-16 |
 
-### 3.2 Business Rules
+### 3.2 กฎการทำงาน (BR)
 
 | ID | Rule | Trace to AC |
 |---|---|---|
-| BR-01 | `performedById` ต้องมาจาก authenticated session และห้ามรับจาก Client | AC-01, AC-02 |
+| BR-01 | Action แต่ละรายการอยู่ใต้ Ticket เดียวผ่าน `ticketId`; `performedById` มาจาก session ของผู้สร้างและห้ามรับจาก Client | AC-01, AC-02 |
 | BR-02 | `Ticket.ownerId` เป็น Primary Owner เดียวของ Ticket; Assignment/reassignment ยังคงใช้กติกา Lab 3 และไม่สร้าง Owner ซ้ำใน Action | AC-01, AC-15 |
 | BR-03 | Action ที่ `followUpRequired=true` ถือว่ายังมีงานค้าง; ไม่ขวาง RESOLVED แต่ขวาง CLOSED จนกว่าจะเคลียร์ follow-up และยังแก้ Action บน RESOLVED ได้ | AC-05, AC-07 |
 | BR-04 | `RESOLVED/CLOSED → REOPENED` ต้องมี `reopenReason` ที่ trim แล้วไม่ว่าง | AC-06 |
 | BR-05 | Action ใช้ `ActionTaken.version`; Status workflow ใช้ `Ticket.version`; Backend ต้องตรวจ conflict แบบ atomic และห้ามเกิด partial write โดยกลไกฐานข้อมูลจริงเป็น implementation decision | AC-08 |
-| BR-06 | Dashboard ใช้ UTC storage, Asia/Bangkok local boundary, 7-day window, fixed limit และ stable sort | AC-09, AC-10 |
+| BR-06 | Dashboard เก็บเวลาเป็น UTC, ใช้ Asia/Bangkok กับช่วง 7 วัน, จำกัด limit 1–100 และเรียงรายการด้วย tie-breaker ที่กำหนด | AC-09, AC-10 |
 | BR-07 | Action ไม่มี Delete, ไม่มี separate completion state และไม่มี edit-history model เพิ่มใน Lab 4; ใช้ `updatedAt/version` เท่านั้น. Comments/Internal Notes ของ Lab 3 ยังคง append-only; การแก้ Action ไม่ลบหรือ reorder รายการ | AC-04, AC-08, AC-15 |
 | BR-08 | ระหว่างการบันทึกต้องมี saving guard; เมื่อผล POST ไม่ทราบแน่ชัดต้องคง submission-uncertain และอ่าน Action ทุกหน้าตาม pagination ก่อนให้ผู้ใช้ตัดสินใจ การพบข้อความเหมือนกันไม่พิสูจน์ว่าเป็นคำขอเดิม ห้ามแจ้งสำเร็จหรือ retry อัตโนมัติ และไม่รับรอง server-side deduplication | AC-16 |
 
-## 4. Domain Terms and Data Contract
+## 4. ข้อมูลและความสัมพันธ์
 
-### 4.1 Proposed ActionTaken fields
+### 4.1 Fields ของ ActionTaken
 
-ชื่อ Model ที่เสนอ: ActionTaken
+ชื่อ Prisma model: `ActionTaken`; ผู้ปฏิบัติงานอ้างถึง `RequesterUser` ตาม model เดิม
 
 | Field | Rule |
 |---|---|
@@ -91,7 +91,13 @@ Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 
 
 Primary Ticket Owner ใช้ Ticket.ownerId เดิมและไม่ทำซ้ำใน ActionTaken เพื่อไม่ให้ข้อมูล Owner สองชุดขัดกัน การตอบกลับ API แสดง ticketOwner เป็นข้อมูลอ่านอย่างเดียว และแสดง performedBy จาก ActionTaken
 
-ชนิดข้อมูลและความสัมพันธ์ที่เสนอ: `ActionTaken.id`, `ticketId`, `performedById` และ `Ticket.version` เป็น integer; `actionAt`, `createdAt` และ `updatedAt` เป็น `DateTime(3)` ที่เก็บ UTC; `description`, `result`, `followUpNote` และ `attachmentNotes` เป็น text โดย note เป็น nullable; `followUpRequired` เป็น Boolean. `ticketId` อ้างถึง `Ticket.id` และ `performedById` อ้างถึง Prisma model `RequesterUser.id` โดยห้าม cascade delete ที่ทำให้หลักฐาน Action หาย. Index ขั้นต่ำคือ `(ticketId, actionAt, id)` สำหรับหน้า Detail, `(performedById, actionAt, id)` สำหรับ Actions ของผู้ใช้ปัจจุบัน และ index ของ Ticket ที่ใช้ owner/status/updatedAt สำหรับ Dashboard; เหตุผลคือรองรับ query ตาม Ticket, ผู้ปฏิบัติงาน และช่วงเวลาโดยไม่เปลี่ยนข้อมูลเดิม
+`id`, `ticketId`, `performedById` และ `version` ใช้ Prisma `Int` ซึ่งตรงกับ PostgreSQL `INTEGER`; ค่าที่ Client ส่งต้องอยู่ในช่วง 1–2147483647 เวลาของ Action ใช้ Prisma `DateTime @db.Timestamp(3)` และเก็บเป็น UTC ส่วนข้อความใช้ `String @db.Text` โดย notes เป็น nullable และ `followUpRequired` เป็น Boolean
+
+เหตุผลการออกแบบฐานข้อมูล:
+
+1. เก็บ Primary Owner ที่ `Ticket.ownerId` เพียงจุดเดียว และเก็บผู้สร้าง Action ที่ `performedById` ซึ่งอาจเป็นคนละคนกัน วิธีนี้ลดข้อมูล Owner ซ้ำและรักษาความสัมพันธ์เดิม
+2. ใช้ foreign key ไปยัง `Ticket.id` และ `RequesterUser.id` พร้อม `onDelete: Restrict` เพื่อไม่ให้การลบ parent ทำให้หลักฐาน Actions หาย ส่วน `version` ใช้ตรวจการแก้ข้อมูลเก่าโดยไม่ใช้เวลาจาก Client
+3. ใช้ index `(ticketId, actionAt, id)` สำหรับรายการใต้ Ticket และ `(performedById, actionAt, id)` สำหรับรายการของผู้ปฏิบัติงาน ส่วน Dashboard ใช้ index ของ Ticket เดิมตาม owner/status/updatedAt แล้วตรวจ performance ใน Issue #72
 
 ### 4.2 Zero/one/many behavior
 
@@ -99,7 +105,7 @@ Primary Ticket Owner ใช้ Ticket.ownerId เดิมและไม่ท�
 - Ticket ที่มีหนึ่ง Action แสดงรายการเดียวพร้อมรายละเอียดครบ
 - Ticket ที่มีหลาย Action เรียงตาม actionAt จากเก่าไปใหม่ โดยใช้ id เป็น tie-breaker
 - ห้ามลบ Action หรือจัดลำดับใหม่จาก Client
-- การ Update เป็นการแก้ข้อมูลที่อนุญาตและไม่ลบประวัติรายการเดิม
+- การ Update แก้ fields ที่อนุญาตโดยคง ID, ผู้สร้าง และเวลา Action เดิม; ระบบไม่ได้เก็บข้อความก่อนแก้เป็น edit history
 
 การแก้ Action ไม่ใช่การทำเครื่องหมาย completion แยกต่างหาก; สถานะการติดตามงานใช้ `followUpRequired` และ `followUpNote` เท่านั้น
 
@@ -172,7 +178,7 @@ Client ต้องส่ง `ActionTaken.version` เมื่อ Update Action
 
 - ตอบ 409 STALE_UPDATE
 - ไม่เขียนทับข้อมูลใหม่
-- ส่ง current version และ safe summary ที่จำเป็นต่อการ refresh
+- ให้ Client โหลด version และข้อมูลล่าสุดจาก GET รายการ Actions หรือ Ticket Detail ตาม resource ที่เกิด conflict; ไม่ต้องคาดเดา version จากเวลา `updatedAt`
 - Client ต้องแสดง conflict state และให้ผู้ใช้โหลดข้อมูลใหม่
 
 ## 8. Dashboard Contract
@@ -223,6 +229,7 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - เพิ่ม index สำหรับ ticketId, actionAt, performedById และ dashboard query ที่จำเป็นตามชนิดข้อมูลในข้อ 4.1
 - Seed ต้อง idempotent และสร้าง Action fixtures แบบ 0/1/many
 - Seed ต้องมี Ticket หลาย Status, Priority, owner/unassigned และ Dashboard metric ที่ทั้งศูนย์และไม่ศูนย์
+- Migration preservation และ repeated seed เป็นคนละการตรวจ Seed ปัจจุบันสืบทอดการอัปเดต named fixtures ของ Lab 3 ซึ่งอาจคืน name/role/owner/priority และข้อความให้เป็นค่าตัวอย่าง จึงไม่ใช้ผล seed ซ้ำเป็นหลักฐานว่าค่าที่ผู้ใช้แก้ใน Development จะไม่เปลี่ยน การขยาย fixtures ใน Issues #71–#72 ต้องแยกข้อมูลตัวอย่างใหม่และตรวจผลกระทบต่อข้อมูลเดิม
 - Migration test ต้องตรวจ preserved IDs, row counts, foreign keys, Action references, `Ticket.version` และ repeated seed
 - Recovery plan ต้อง backup ฐานข้อมูล E2E ก่อน migration, ตรวจ precondition และหยุดก่อนเขียนเมื่อไม่ผ่าน; หาก verification ล้มเหลวให้ restore backup, ตรวจ row count/foreign key/version และบันทึกผลก่อน retry. ห้ามใช้ Development database เป็นพื้นที่ recovery
 - Backup/restore เป็นหลักฐานและขั้นตอนตรวจสอบฐานข้อมูล E2E แบบแยก ไม่ใช่ Product API หรือการอนุญาตให้ใช้ `prisma migrate reset` กับ Development database
@@ -246,7 +253,7 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - AC-15: Regression ของ Lab 1–3 ผ่านและไม่มี feature เดิมเสีย
 - AC-16: การกดบันทึกซ้ำหรือ recoverable network failure ไม่ทำให้ผู้ใช้สูญเสียข้อมูลที่กรอก; เมื่อผล POST ไม่ทราบแน่ชัด UI ต้องคงฟอร์มและ submission-uncertain, ตรวจ Actions ครบทุกหน้ารวมการ refresh เมื่อคำขอเดิมอาจบันทึกภายหลัง, ไม่ถือว่าข้อความเหมือนกันเป็นหลักฐานยืนยัน, ไม่แจ้งสำเร็จหรือ retry อัตโนมัติ และเตือนความเสี่ยงรายการซ้ำก่อนผู้ใช้เลือกสร้างใหม่; Contract นี้ไม่รับรอง Idempotency-Key หรือการรวมคำขอซ้ำใน Backend
 
-สถานะปัจจุบันของ AC-01 ถึง AC-16: Planned; ยังไม่มี Lab 4 implementation หรือผลรันจริง
+คอลัมน์ Final ของ AC-01 ถึง AC-16 ยังเป็น Planned ผลตรวจ Foundation และ Actions UI ระหว่างพัฒนามีบันทึกใน `tests.md`; Workflow, Dashboard และการตรวจรวมยังอยู่ใน Issues #71–#74
 
 ## 11. Product Definition of Done
 
@@ -263,6 +270,10 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 สถานะ DoD ปัจจุบัน: Planned; ยังไม่มี Final Result
 
 ## 12. Assumptions and Open Decisions
+
+ค่าช่วงเวลา 7 วัน, timezone `Asia/Bangkok`, limit และ Resolution Gate เป็นการตัดสินใจของ Contract ที่ผ่าน peer review ไม่ใช่ค่าที่ Labsheet กำหนดตายตัว
+
+Labsheet ข้อ 8.3 กำหนด Action fields และ create/view/edit ชัดเจน แต่ rubric Answer Part 6 ใช้คำว่า assign/complete/cancel และ inactive-assignee rejection ส่วน Part 7 ใช้ append-only โดยไม่ได้แจกแจง Action lifecycle เพิ่ม Contract นี้ผูก assign/inactive-assignee กับ Ticket Owner ของ Lab 3, complete/cancel กับ Ticket Status ของ Issue #71 และคง Comments/Internal Notes แบบ append-only; Actions แก้ fields ได้แต่ลบหรือเปลี่ยนผู้สร้างไม่ได้ตามข้อ 4.1–4.2 นี่เป็นการตีความที่ผ่าน peer review ใน PR #68 ไม่ใช่ข้อยืนยันจากอาจารย์/TA หรือคำรับรองคะแนน ให้สาธิตแต่ละรายการตามการจับคู่นี้ใน Issue #73 และอธิบายตรงกันในรายงาน
 
 - Assumption A-01: ActionTaken ไม่มี ownerId ซ้ำกับ Ticket; owner ใช้ Ticket.ownerId และ performer ใช้ performedById
 - Assumption A-02: Update Action อนุญาตให้แก้ข้อมูล แต่ห้ามลบและห้าม reorder

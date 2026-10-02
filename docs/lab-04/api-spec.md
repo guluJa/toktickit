@@ -1,6 +1,6 @@
-# TokTickIT Lab 4 REST API Contract
+# TokTickIT Lab 4: ข้อกำหนด REST API
 
-สถานะ: Draft / Planned; ยังไม่มี Lab 4 route ใน Source Code
+สถานะ: Action API พัฒนาและ merge แล้วใน PR #75; Workflow และ Dashboard ยัง Planned ใน Issues #71–#72
 Baseline: ใช้ response envelope และ security conventions ของ docs/lab-03/api-spec.md
 
 ## 1. Conventions
@@ -14,6 +14,7 @@ Baseline: ใช้ response envelope และ security conventions ของ d
 - Action list ทั้ง Requester และ Staff เรียง `actionAt ASC, id ASC` ทุกหน้า; `pageSize` เป็นจำนวนเต็ม 1–100 เพื่อให้การอ่านหลายหน้ามีขอบเขตชัดเจน
 - Dashboard lists: ค่าเริ่มต้น `limit=20`, สูงสุด `limit=100`; `recentTickets`/`recentlyResolvedTickets` sort ด้วย `updatedAt DESC, id DESC` และ `recentActions` sort ด้วย `actionAt DESC, id DESC`
 - Backend เป็นผู้ตรวจ authentication, role, ownership, validation และ conflict
+- Protected routes คง first-login gate ของ Lab 3: ผู้ใช้ที่ยังต้องเปลี่ยนรหัสผ่านได้รับ `403 PASSWORD_CHANGE_REQUIRED` ก่อนใช้งานฟีเจอร์
 - ห้ามคืน password, passwordHash, token, cookie, SQL, stack trace หรือ internal path
 
 Dashboard link shape: `{ "rel": "recentTickets|recentlyResolved|recentActions|ticketDetail", "target": "requester-tickets|staff-queue|requester-ticket-detail|staff-ticket-detail", "ticketId": integer?, "query": object? }`. `ticketDetail` ใช้ `ticketId`; metric link ใช้ `query` ที่นำไปยังรายการเดิมของ Lab 3 และไม่สร้าง route ใหม่
@@ -134,7 +135,7 @@ Request body:
 
 ### DELETE /api/staff/tickets/:ticketId/actions/:actionId
 
-ไม่เปิดใช้งานใน Contract นี้ การเรียกต้องตอบ `405 METHOD_NOT_ALLOWED` เสมอ
+ไม่อนุญาตให้ลบ Action ผู้ใช้ Staff/Admin ที่ผ่าน authentication และ first-login gate แล้วได้รับ `405 METHOD_NOT_ALLOWED` หากยังไม่ผ่าน middleware ให้คง `401/403` ของ Lab 3 ไม่มีการลบข้อมูลในทุกกรณี
 
 ## 6. Ticket Workflow Routes
 
@@ -149,7 +150,7 @@ Request body:
       "version": 3
     }
 
-`version` ต้องเป็นค่า `Ticket.version` ล่าสุดที่อ่านจาก Backend จาก `GET /api/staff/tickets/:ticketId` หรือ `GET /api/tickets/:ticketId` response (`ticket.version`) ไม่ใช่ `ActionTaken.version` และไม่ใช่ `updatedAt` ที่ Client สร้างเอง เมื่อสำเร็จ Backend เปลี่ยน Status และเพิ่ม `Ticket.version` ใน transaction เดียวกัน
+`version` ต้องเป็นค่า `Ticket.version` ล่าสุดจาก Backend โดย Staff Detail อ่าน `data.ticket.version` ส่วน Requester Detail อ่าน `version` ของ Ticket object ที่ไม่ห่อ envelope ตาม Lab 3 ทั้งสองจุดเป็นแผนเพิ่ม field ใน Issue #71 ไม่ใช่ field ที่ foundation ส่งแล้ว ห้ามใช้ `ActionTaken.version` หรือเวลาที่ Client สร้างแทน เมื่อสำเร็จ Backend เปลี่ยน Status และเพิ่ม `Ticket.version` ใน transaction เดียวกัน
 
 เมื่อ `status` เป็น `REOPENED` ต้องส่ง `reopenReason` ที่ trim แล้วไม่ว่างเพิ่มใน body; Status อื่นต้องไม่ส่ง `reopenReason` หรือส่งเป็น `null`. หลังจาก Ticket อยู่ `REOPENED` แล้ว IT Staff ใช้ route เดิมเปลี่ยนเป็น `IN_PROGRESS` ได้ตาม Matrix และต้องใช้ `Ticket.version` ล่าสุด
 
@@ -299,4 +300,4 @@ Administrator ใช้ GET /api/staff/dashboard ตาม role policy เดี
 - server/tests/lab-04/requester-dashboard.api.test.ts
 - server/tests/lab-04/staff-dashboard.api.test.ts
 
-สถานะทุก route และ response ในเอกสารนี้: Planned; ยังไม่มี implementation หรือผลรันจริง
+Action routes ในข้อ 4–5 มี implementation และ tests แล้วใน PR #75; ข้อ 6–7 เป็น Contract สำหรับ Issues #71–#72 ผล Final-main ของ Lab 4 ยัง Planned และผลตรวจระหว่างพัฒนาดูได้จาก `tests.md`

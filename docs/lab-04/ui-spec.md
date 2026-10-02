@@ -1,6 +1,6 @@
-# TokTickIT Lab 4 UI Specification
+# TokTickIT Lab 4: ข้อกำหนดหน้าจอ
 
-สถานะ: Draft / Planned; ยังไม่มี Lab 4 UI ใน Source Code
+สถานะ: Actions Taken UI อยู่ใน PR #76 ซึ่งยังรอ review; Workflow และ Dashboard ยัง Planned ใน Issues #71–#72
 Baseline: Zen Green, role navigation, accessibility และ responsive conventions จาก docs/lab-03/ui-spec.md
 
 ## 1. Application Shell
@@ -70,7 +70,7 @@ Metric ขั้นต่ำต้องมี Open Tickets, Waiting for Request
 - Ticket Owner read-only จาก Ticket
 - Follow-Up Note
 - Attachment Notes
-- Status controls for complete (`RESOLVED`/`CLOSED`) and cancel (`CANCELLED`) follow the Matrix and show gate/conflict errors
+- ปุ่มเปลี่ยน Ticket เป็น `RESOLVED`/`CLOSED` หรือ `CANCELLED` ใช้ Matrix และแสดง gate/conflict errors ใน Issue #71; ปุ่มเหล่านี้ไม่ได้เป็นสถานะ completion แยกของ Action
 - ห้ามมี Delete action
 
 ### 2.4 Requester Ticket Detail
@@ -83,7 +83,7 @@ Requester อ่าน Actions ของ Ticket ตนเองได้ตา�
 |---|---|
 | Requester | Requester Dashboard, Create Ticket, My Tickets, own Detail และ read-only Actions |
 | IT Staff | Staff Dashboard, Staff Queue, Staff Detail และ Action create/edit |
-| Administrator | Staff Dashboard เดียวกับ IT Staff, User Management, Staff Detail read-only ตาม Lab 3 และ Action create/edit ตาม Lab 4 policy; เปลี่ยน Ticket status ไม่ได้ |
+| Administrator | Staff Dashboard เดียวกับ IT Staff, User Management, อ่าน Staff Detail และแก้ IT Priority ตาม Lab 3; สร้าง/แก้ Action ตาม Lab 4 แต่เปลี่ยน Ticket status, assignment, Public Comment หรือ Internal Note ไม่ได้ |
 
 บน Ticket ที่อยู่ RESOLVED ผู้มีสิทธิ์ยังแก้ follow-up เพื่อเตรียม CLOSED ได้; Ticket ที่ CLOSED หรือ CANCELLED เป็น read-only สำหรับ Action. หลัง CLOSED/RESOLVED ถูกเปิดกลับเป็น REOPENED แล้ว IT Staff เปลี่ยนต่อเป็น IN_PROGRESS ได้ตาม Status Matrix
 
@@ -143,4 +143,4 @@ Frontend restrictions ต้องมี Backend authorization รองรั�
 - artifacts/lab-04/screenshots/requester-dashboard/
 - artifacts/lab-04/screenshots/actions-taken/
 
-ยังไม่มีภาพหรือผล visual inspection ของ Lab 4 จึงห้ามเปลี่ยน checklist เป็น Pass ก่อน Final-main run
+ยังไม่มีภาพหรือผล visual inspection ของ Lab 4 ในรอบนี้ การตรวจจริงบน desktop/tablet/mobile อยู่ใน Issue #73 ให้บันทึกผลพร้อม revision ที่ตรวจ และตรวจซ้ำบน final main ใน Issue #74 โดยไม่ใช้ component tests แทนหลักฐานภาพ
