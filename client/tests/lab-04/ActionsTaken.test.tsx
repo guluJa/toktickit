@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ActionsTaken from "../../src/ActionsTaken.js";
@@ -6,13 +6,14 @@ import StaffTicketDetail from "../../src/StaffTicketDetail.js";
 import RequesterTicketDetail from "../../src/RequesterTicketDetail.js";
 import {
   ActionTaken as ActionRecord, createAction, getActionPage, getStaffTicketDetail,
-  getTicketComments, getTicketDetail, TicketApiError, updateAction,
+  getTicketComments, getTicketDetail, TicketApiError, updateAction, updateStaffAssignment,
 } from "../../src/api.js";
 
 vi.mock("../../src/api.js", async (original) => ({
   ...(await original<typeof import("../../src/api.js")>()),
   createAction: vi.fn(), getActionPage: vi.fn(), updateAction: vi.fn(),
   getStaffTicketDetail: vi.fn(), getTicketDetail: vi.fn(), getTicketComments: vi.fn(),
+  updateStaffAssignment: vi.fn(),
 }));
 
 const list = vi.mocked(getActionPage);
@@ -54,6 +55,64 @@ beforeEach(() => {
 });
 
 describe("UI-01 Actions Taken Staff UI", () => {
+  it.each([false, true])("preserves a confirmed create when an older GET arrives later (snapshot includes new Action: %s)", async (includesNew) => {
+    const user = userEvent.setup();
+    const newAction = { ...oldAction, id: 12, actionAt: "2026-09-02T00:00:00Z", description: "New diagnosis" };
+    let finishList!: (value: ReturnType<typeof page>) => void;
+    list.mockImplementationOnce(() => new Promise((resolve) => { finishList = resolve; }));
+    create.mockResolvedValueOnce({ action: newAction });
+    render(<ActionsTaken ticketId={501} audience="staff" ticketStatus="OPEN" />);
+    expect(screen.getByText("Loading Actions Taken...")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Action description"), "New diagnosis");
+    await user.type(screen.getByLabelText("Result"), "Connected");
+    await user.click(screen.getByRole("button", { name: "Create Action" }));
+    await screen.findByText("Action created successfully.");
+    await act(async () => finishList(page(includesNew ? [newAction, oldAction] : [oldAction])));
+    expect(await screen.findByText("Action #12")).toBeInTheDocument();
+    expect(screen.getByText("Action #11")).toBeInTheDocument();
+    expect(screen.getAllByText("Action #12")).toHaveLength(1);
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      expect.stringContaining("Action #11"), expect.stringContaining("Action #12"),
+    ]);
+    expect(screen.getByText("Action created successfully.")).toBeInTheDocument();
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
+  it("updates Action Ticket Owner after Claim, Reassign and Unassign without changing performer or edit draft", async () => {
+    const user = userEvent.setup();
+    list.mockResolvedValue(page([oldAction]));
+    const assigned = { id: 42, name: "Staff Forty Two", role: "IT_STAFF" as const };
+    vi.mocked(updateStaffAssignment)
+      .mockResolvedValueOnce({ ticket: { ...ticket, owner: actor } })
+      .mockResolvedValueOnce({ ticket: { ...ticket, owner: assigned } })
+      .mockResolvedValueOnce({ ticket: { ...ticket, owner: null } });
+    render(<StaffTicketDetail ticketId={501} currentUserId={7} role="IT_STAFF" onBack={vi.fn()} />);
+    await user.click(await screen.findByRole("button", { name: "Edit Action #11" }));
+    await user.clear(screen.getByLabelText("Result"));
+    await user.type(screen.getByLabelText("Result"), "Preserved correction");
+    const action = within(screen.getByRole("region", { name: "Actions Taken" })).getByRole("listitem");
+    const ownerCell = () => within(action).getByText("Ticket owner").nextElementSibling;
+    const performerCell = () => within(action).getByText("Performed by").nextElementSibling;
+    for (const [button, ownerName, inputValue] of [
+      ["Claim", "Staff Seven", "Staff Seven (7)"],
+      ["Assign/Reassign", "Staff Forty Two", "Staff Forty Two (42)"],
+      ["Unassign", "Unassigned", "Unassigned"],
+    ]) {
+      if (button === "Assign/Reassign") {
+        await user.clear(screen.getByLabelText("Owner ID for assignment"));
+        await user.type(screen.getByLabelText("Owner ID for assignment"), "42");
+      }
+      await user.click(screen.getByRole("button", { name: button }));
+      await waitFor(() => expect(screen.getByLabelText("Owner", { exact: true })).toHaveValue(inputValue));
+      expect(ownerCell()).toHaveTextContent(ownerName);
+      expect(performerCell()).toHaveTextContent("Staff Seven");
+      expect(screen.getByLabelText("Result")).toHaveValue("Preserved correction");
+      expect(screen.getByText("Edit Action #11", { selector: "h4" })).toBeInTheDocument();
+    }
+    expect(list).toHaveBeenCalledTimes(1);
+    expect(update).not.toHaveBeenCalled();
+  });
+
   it("shows multiple Actions in actionAt/id order with read-only owner, performer and date", async () => {
     const later = { ...oldAction, id: 12, actionAt: "2026-09-02T00:00:00Z", description: "Rechecked" };
     list.mockResolvedValueOnce(page([later, oldAction]));

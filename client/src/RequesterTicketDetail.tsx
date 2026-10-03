@@ -435,7 +435,7 @@ export default function RequesterTicketDetail({
             }
           />
         </div>
-        <div className="col-12"><ActionsTaken key={ticket.id} ticketId={ticket.id} audience="requester" /></div>
+        <div className="col-12"><ActionsTaken key={ticket.id} ticketId={ticket.id} audience="requester" ticketOwner={ticket.owner} /></div>
       </div>
     </section>
   );

@@ -123,7 +123,7 @@ E2E:
 
 ## 5. Planned Commands
 
-รายการนี้เป็นคำสั่งสำหรับตรวจงานทั้ง Lab 4 ผลที่รันแล้วระหว่างพัฒนาแยกในข้อ 7–8 ส่วนคำสั่งของฟีเจอร์ที่ยังไม่พัฒนาและ Final-main ยังคง Planned:
+รายการนี้เป็นคำสั่งสำหรับตรวจงานทั้ง Lab 4 ผลที่รันแล้วระหว่างพัฒนาแยกในข้อ 7–9 ส่วนคำสั่งของฟีเจอร์ที่ยังไม่พัฒนาและ Final-main ยังคง Planned:
 
 - server: npm.cmd test
 - client: npm.cmd test
@@ -181,3 +181,23 @@ Recovery evidence เดิมของ Issue #69 อยู่ใน `artifacts/
 - Issue #74: Final-main results, README ของ Lab 4 และรายงาน Answer Part 1–9 ยังต้องตรวจจาก main หลัง release
 
 ชื่อและขอบเขต Issues #67, #69–#74 และ PR #68/#75/#76 สอดคล้องกับการแบ่งงานตัวอย่างใน Labsheet ข้อ 11 ไม่จำเป็นต้องเปลี่ยนเลข Issue, ชื่อ branch, model หรือ route เพื่อความสวยงาม
+
+## 9. ผลตรวจการแก้ข้อเสนอแนะของ PR #76 / Issue #70
+
+ตรวจวันที่ 3 ตุลาคม 2026 (Asia/Bangkok) บน branch `feature/03-lab4-actions-taken-ui` จาก HEAD `30dad19` พร้อมการแก้ใน working tree ก่อน Commit ไม่ใช่ผล Final-main
+
+เพิ่มกรณีทดสอบใน `client/tests/lab-04/ActionsTaken.test.tsx` สำหรับ UI-01/UI-02 ดังนี้:
+
+- เมื่อ GET เริ่มก่อน POST แล้วตอบกลับหลังสร้าง Action สำเร็จ รายการยังมี Action ที่ Backend ยืนยันแล้ว เรียงตาม `actionAt/id` และไม่เพิ่มรายการซ้ำ ไม่ว่า GET จะมี Action ใหม่นั้นหรือไม่
+- เมื่อ Claim, Assign/Reassign หรือ Unassign สำเร็จ Ticket Owner ใน Actions Taken เปลี่ยนตาม Owner ปัจจุบันของ Ticket โดยไม่เปลี่ยน performer ไม่ล้างข้อมูลฟอร์มแก้ไข และไม่ส่ง PATCH Action โดยไม่จำเป็น
+
+ก่อนแก้โค้ด ทดสอบใหม่ยืนยันปัญหาทั้งสองได้ โดยชุด component มี 2 failed / 14 passed จากนั้นแก้การรวมข้อมูลโหลดกับผลบันทึกที่ยืนยันแล้ว และส่ง Owner ปัจจุบันจาก Ticket Detail โดยไม่ remount ฟอร์ม
+
+| คำสั่ง | ผลรันจริง | ขอบเขต |
+|---|---|---|
+| `npm.cmd test -- --run tests/lab-04 --silent` ใน client/ | 2 files / 19 tests passed; exit 0 | 16 component tests และ 3 client API helper tests |
+| `npm.cmd test -- --run --silent` ใน client/ | 18 files / 90 tests passed; exit 0; ไม่มี skip | Client ทั้งชุด รวม regression ของ Lab 1–3 |
+| `npm.cmd run build` ใน client/ | TypeScript และ Vite build ผ่าน; exit 0 | พบและแก้ตัวเลือก query ใน test ที่ TypeScript ไม่รองรับก่อน build ผ่าน |
+| `git diff --check` จาก repository root | ผ่าน; exit 0 | ตรวจ whitespace ของการแก้รอบนี้ |
+
+ผลนี้มาจาก component tests ที่ mock API และ client build ไม่ใช่หลักฐาน Full E2E หรือภาพ responsive บน browser; งานเหล่านั้นยัง Planned ใน Issue #73 ไม่มีการเปลี่ยน API, Model, Migration, Seed, Workflow หรือ Dashboard ในการแก้รอบนี้ และไม่ใช้ผลนี้ประกาศ Final-main Pass

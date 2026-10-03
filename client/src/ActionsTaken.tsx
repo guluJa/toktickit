@@ -38,10 +38,17 @@ function matchesDraft(action: ActionRecord, fields: ActionFields): boolean {
     action.attachmentNotes === (fields.attachmentNotes?.trim() || null);
 }
 
-export default function ActionsTaken({ ticketId, audience, ticketStatus }: {
+function mergeActions(items: ActionRecord[], confirmed: ActionRecord[]): ActionRecord[] {
+  const byId = new Map(items.map((action) => [action.id, action]));
+  for (const action of confirmed) byId.set(action.id, action);
+  return [...byId.values()].sort((a, b) => a.actionAt.localeCompare(b.actionAt) || a.id - b.id);
+}
+
+export default function ActionsTaken({ ticketId, audience, ticketStatus, ticketOwner }: {
   ticketId: number;
   audience: Audience;
   ticketStatus?: string;
+  ticketOwner?: Pick<NonNullable<ActionRecord["ticketOwner"]>, "id" | "name"> | null;
 }) {
   const [items, setItems] = useState<ActionRecord[]>([]);
   const [listState, setListState] = useState<ListState>("loading");
@@ -56,11 +63,14 @@ export default function ActionsTaken({ ticketId, audience, ticketStatus }: {
   const [conflict, setConflict] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: "success" | "danger" | "warning"; text: string } | null>(null);
   const sequence = useRef(0);
+  const writeRevision = useRef(0);
+  const confirmedWrites = useRef(new Map<number, { revision: number; action: ActionRecord }>());
   const savingGuard = useRef(false);
   const canWrite = audience === "staff" && ticketStatus !== "CLOSED" && ticketStatus !== "CANCELLED";
 
   async function refresh(): Promise<ActionRecord[] | null> {
     const current = ++sequence.current;
+    const startedAtRevision = writeRevision.current;
     setListState("loading");
     try {
       const loaded: ActionRecord[] = [];
@@ -73,10 +83,15 @@ export default function ActionsTaken({ ticketId, audience, ticketStatus }: {
         page += 1;
       }
       if (current !== sequence.current) return null;
-      loaded.sort((a, b) => a.actionAt.localeCompare(b.actionAt) || a.id - b.id);
-      setItems(loaded);
+      // A GET that started before a successful write may contain an older snapshot.
+      // Keep confirmed responses from those writes, without duplicating their IDs.
+      const confirmed = [...confirmedWrites.current.values()]
+        .filter((write) => write.revision > startedAtRevision)
+        .map((write) => write.action);
+      const merged = mergeActions(loaded, confirmed);
+      setItems(merged);
       setListState("ready");
-      return loaded;
+      return merged;
     } catch {
       if (current === sequence.current) setListState("error");
       return null;
@@ -84,6 +99,8 @@ export default function ActionsTaken({ ticketId, audience, ticketStatus }: {
   }
 
   useEffect(() => {
+    writeRevision.current = 0;
+    confirmedWrites.current.clear();
     setItems([]);
     setDraft(blank);
     setMode("create");
@@ -96,6 +113,11 @@ export default function ActionsTaken({ ticketId, audience, ticketStatus }: {
     void refresh();
     return () => { sequence.current += 1; };
   }, [ticketId, audience]);
+
+  function rememberConfirmedWrite(action: ActionRecord) {
+    confirmedWrites.current.set(action.id, { revision: ++writeRevision.current, action });
+    setItems((current) => mergeActions(current, [action]));
+  }
 
   function edit(action: ActionRecord) {
     setMode("edit");
@@ -142,16 +164,14 @@ export default function ActionsTaken({ ticketId, audience, ticketStatus }: {
     try {
       if (mode === "create") {
         const result = await createAction(ticketId, fields);
-        setItems((current) => [...current, result.action].sort(
-          (a, b) => a.actionAt.localeCompare(b.actionAt) || a.id - b.id,
-        ));
+        rememberConfirmedWrite(result.action);
         setDraft(blank);
         setUncertain(false);
         setReviewedSinceUncertain(false);
         setFeedback({ kind: "success", text: "Action created successfully." });
       } else if (editingId !== null && editingVersion !== null) {
         const result = await updateAction(ticketId, editingId, fields, editingVersion);
-        setItems((current) => current.map((item) => item.id === editingId ? result.action : item));
+        rememberConfirmedWrite(result.action);
         setEditingVersion(result.action.version);
         setConflict(false);
         setFeedback({ kind: "success", text: "Action updated successfully." });
@@ -218,7 +238,7 @@ export default function ActionsTaken({ ticketId, audience, ticketStatus }: {
                   <dt className="col-sm-4">Description</dt><dd className="col-sm-8 text-break">{action.description}</dd>
                   <dt className="col-sm-4">Result</dt><dd className="col-sm-8 text-break">{action.result}</dd>
                   <dt className="col-sm-4">Performed by</dt><dd className="col-sm-8">{action.performedBy.name}</dd>
-                  <dt className="col-sm-4">Ticket owner</dt><dd className="col-sm-8">{action.ticketOwner?.name ?? "Unassigned"}</dd>
+                  <dt className="col-sm-4">Ticket owner</dt><dd className="col-sm-8">{(ticketOwner === undefined ? action.ticketOwner : ticketOwner)?.name ?? "Unassigned"}</dd>
                   <dt className="col-sm-4">Follow-up required</dt><dd className="col-sm-8">{action.followUpRequired ? "Yes" : "No"}</dd>
                   <dt className="col-sm-4">Follow-up note</dt><dd className="col-sm-8 text-break">{action.followUpNote ?? "None"}</dd>
                   <dt className="col-sm-4">Attachment notes</dt><dd className="col-sm-8 text-break">{action.attachmentNotes ?? "None"}</dd>
