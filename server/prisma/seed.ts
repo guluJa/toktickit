@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { TicketStatus } from "@prisma/client";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { hashPassword } from "../src/auth.js";
@@ -345,7 +346,31 @@ export async function runSeed(): Promise<void> {
     });
   }
 
-  console.log("Seeded Lab 3 data and Lab 4 zero/one/many Action and Dashboard fixtures successfully.");
+  // Workflow fixtures are create-only: repeated seed never resets a user's
+  // status, version, owner or edited Action on an existing Lab 4 fixture.
+  for (const [index, status] of Object.values(TicketStatus).entries()) {
+    await prisma.$transaction(async (tx) => {
+      const ticketNumber = `TKT-LAB4-FLOW-${status}`;
+      if (await tx.ticket.findUnique({ where: { ticketNumber }, select: { id: true } })) return;
+      const needsAction = ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED", "REOPENED"].includes(status);
+      const fixture = await tx.ticket.create({ data: {
+        ticketNumber, submissionKey: randomUUID(), requesterId: dashboardRequesterId,
+        ownerId: needsAction ? dashboardStaffId : null,
+        categoryId: dashboardCategoryId, relatedSystemId: dashboardSystemId,
+        summary: `Lab 4 workflow: ${status}`, description: "Workflow demonstration fixture; existing records are preserved on repeated seed.",
+        requestedPriority: (["LOW", "MEDIUM", "HIGH"] as const)[index % 3],
+        itPriority: (["LOW", "MEDIUM", "HIGH"] as const)[index % 3], currentStatus: status,
+      } });
+      if (needsAction) await tx.actionTaken.create({ data: {
+        ticketId: fixture.id, performedById: dashboardStaffId,
+        description: `Workflow diagnosis for ${status}`, result: "Service checked and work recorded.",
+        followUpRequired: status === "WAITING_FOR_REQUESTER",
+        followUpNote: status === "WAITING_FOR_REQUESTER" ? "Confirm the result with the Requester." : null,
+      } });
+    });
+  }
+
+  console.log("Seeded Lab 3 data and Lab 4 Action, workflow and Dashboard fixtures successfully.");
 }
 
 const executedFile = process.argv[1] ? path.resolve(process.argv[1]) : "";

@@ -35,6 +35,7 @@ const page = (items: ActionRecord[], number = 1, totalPages = 1) => ({
   items, pagination: { page: number, pageSize: 100, totalItems: items.length, totalPages },
 });
 const ticket = {
+  version: 1,
   id: 501, ticketNumber: "TKT-501", summary: "Connection fails",
   requester: { id: 10, name: "Requester", email: "requester@test" },
   category: { id: 1, name: "Network" }, relatedSystem: { id: 2, name: "Wi-Fi" },
