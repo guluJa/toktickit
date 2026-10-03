@@ -52,6 +52,8 @@ import {
 } from "./staff-queue-query.js";
 import { requireStaffQueueAccess } from "./staff-access.js";
 import { registerActionTakenRoutes } from "./actions-taken.js";
+import { lockTicketMutation } from "./ticket-mutation.js";
+import { parseStatusChange, passesResolutionGate, WorkflowValidationError } from "./ticket-workflow.js";
 import { requireAdministratorAccess } from "./admin-access.js";
 import {
   isAllowedStatusTransition,
@@ -499,6 +501,7 @@ const ticketSummarySelect = {
   summary: true,
   requestedPriority: true,
   currentStatus: true,
+  version: true,
   createdAt: true,
   updatedAt: true,
   category: {
@@ -522,6 +525,7 @@ const staffTicketSummarySelect = {
   requestedPriority: true,
   itPriority: true,
   currentStatus: true,
+  version: true,
   createdAt: true,
   updatedAt: true,
   category: { select: { id: true, name: true } },
@@ -962,7 +966,7 @@ function requireItStaffRole(req: Request, res: Response): boolean {
 
 function parseStaffTicketId(req: Request, res: Response): number | null {
   const ticketId = parsePositiveInteger(req.params.ticketId);
-  if (ticketId !== null) return ticketId;
+  if (ticketId !== null && ticketId <= 2147483647) return ticketId;
   res.status(400).json({ error: { code: "INVALID_ID", message: "ticketId must be a positive integer." } });
   return null;
 }
@@ -1029,16 +1033,34 @@ app.patch("/api/staff/tickets/:ticketId/status", requireStaffQueueAccess, async 
   if (!requireItStaffRole(req, res)) return;
   const ticketId = parseStaffTicketId(req, res);
   if (ticketId === null) return;
-  const nextStatus = req.body?.status;
-  const validStatuses = ["NEW", "OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED", "REOPENED", "CANCELLED"];
-  if (!validStatuses.includes(nextStatus)) { validationResponse(res, { status: "status is invalid." }); return; }
   try {
-    const current = await getPrisma().ticket.findUnique({ where: { id: ticketId }, select: { currentStatus: true } });
-    if (!current) { res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } }); return; }
-    if (!isAllowedStatusTransition(current.currentStatus, nextStatus)) { res.status(409).json({ error: { code: "STATUS_TRANSITION_NOT_ALLOWED", message: "The requested status transition is not allowed." } }); return; }
-    const updated = await getPrisma().ticket.update({ where: { id: ticketId }, data: { currentStatus: nextStatus }, select: staffTicketDetailSelect });
-    res.status(200).json({ data: { ticket: toStaffTicketDetail(updated) } });
+    const input = parseStatusChange(req.body);
+    const result = await getPrisma().$transaction(async (tx) => {
+      await lockTicketMutation(tx, ticketId);
+      const current = await tx.ticket.findUnique({ where: { id: ticketId }, include: {
+        owner: { select: { isActive: true, role: true } },
+        actions: { select: { description: true, result: true, followUpRequired: true } },
+      } });
+      if (!current) return { kind: "missing" as const };
+      if (input.version !== current.version) return { kind: "stale" as const, actualVersion: current.version };
+      if (!isAllowedStatusTransition(current.currentStatus, input.status)) return { kind: "transition" as const };
+      if (!passesResolutionGate(input.status, current.owner, current.actions)) return { kind: "gate" as const };
+      if (current.version === 2147483647) return { kind: "stale" as const, actualVersion: current.version };
+      const updated = await tx.ticket.update({
+        where: { id: ticketId }, data: { currentStatus: input.status, version: { increment: 1 } }, select: staffTicketDetailSelect,
+      });
+      return { kind: "updated" as const, ticket: updated };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+    if (result.kind === "missing") res.status(404).json({ error: { code: "TICKET_NOT_FOUND", message: "Ticket not found." } });
+    else if (result.kind === "stale") res.status(409).json({ error: { code: "STALE_UPDATE", message: "Ticket has changed. Refresh before saving.", fields: { expectedVersion: input.version, actualVersion: result.actualVersion } } });
+    else if (result.kind === "transition") res.status(409).json({ error: { code: "STATUS_TRANSITION_NOT_ALLOWED", message: "The requested status transition is not allowed." } });
+    else if (result.kind === "gate") res.status(409).json({ error: { code: "RESOLUTION_GATE_FAILED", message: "Resolving requires an active eligible owner and a valid Action. Closing requires all follow-up to be cleared." } });
+    else res.status(200).json({ data: { ticket: toStaffTicketDetail(result.ticket) } });
   } catch (error) {
+    if (error instanceof WorkflowValidationError) { validationResponse(res, error.fields); return; }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2028"].includes(error.code)) {
+      res.status(409).json({ error: { code: "STALE_UPDATE", message: "Ticket changed while saving. Refresh before retrying." } }); return;
+    }
     console.error("Unable to update Ticket status:", error);
     res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unable to update Ticket status." } });
   }
@@ -1566,6 +1588,7 @@ app.get(
             itPriority: true,
             description: true,
             currentStatus: true,
+            version: true,
             requesterResolvedAt: true,
             createdAt: true,
             updatedAt: true,

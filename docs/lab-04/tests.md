@@ -1,7 +1,7 @@
 # TokTickIT Lab 4: แผนทดสอบและการเชื่อมโยงข้อกำหนด
 
-สถานะ: แผนทดสอบพร้อมผลตรวจ Foundation และ Actions UI ระหว่างพัฒนา
-คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจระหว่างพัฒนาบันทึกแยกในข้อ 7–8
+สถานะ: แผนทดสอบพร้อมผลตรวจ Foundation, Actions UI และ Workflow ระหว่างพัฒนา
+คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจระหว่างพัฒนาบันทึกแยกในข้อ 7–11
 
 ## 1. Test Strategy
 
@@ -123,7 +123,7 @@ E2E:
 
 ## 5. Planned Commands
 
-รายการนี้เป็นคำสั่งสำหรับตรวจงานทั้ง Lab 4 ผลที่รันแล้วระหว่างพัฒนาแยกในข้อ 7–10 ส่วนคำสั่งของฟีเจอร์ที่ยังไม่พัฒนาและ Final-main ยังคง Planned:
+รายการนี้เป็นคำสั่งสำหรับตรวจงานทั้ง Lab 4 ผลที่รันแล้วระหว่างพัฒนาแยกในข้อ 7–11 ส่วนคำสั่งของฟีเจอร์ที่ยังไม่พัฒนาและ Final-main ยังคง Planned:
 
 - server: npm.cmd test
 - client: npm.cmd test
@@ -218,3 +218,61 @@ Recovery evidence เดิมของ Issue #69 อยู่ใน `artifacts/
 | `git diff --check` จาก repository root | ผ่าน; exit 0 |
 
 การแก้รอบนี้จำกัดที่การรวมรายการ UI และ regression test ไม่เปลี่ยน API หรือ scope ของ Issue #70 ผลเป็น component tests ที่ mock API ไม่ใช่ Full E2E และสถานะ Final-main ยังคง Planned
+
+## 11. ผลตรวจ Issue #71: Ticket Workflow และ Resolution Gate
+
+ตรวจวันที่ 3 ตุลาคม 2026 (Asia/Bangkok) บน `feature/04-lab4-ticket-workflow` จาก `lab4-staging` commit `284c7cb` พร้อมไฟล์แก้ใน working tree ก่อน Stage/Commit ผลในข้อ 7–10 เป็นประวัติการตรวจรอบก่อน ไม่ใช่สถานะ Workflow ปัจจุบัน
+
+### ขอบเขตที่พัฒนาและตรวจแล้ว
+
+- UNIT-02: `server/tests/lab-04/ticket-workflow.unit.test.ts` ตรวจทุกคู่สถานะ 64 คู่, ชนิด/ช่วง Ticket.version, reopenReason และกฎ gate
+- API-04: `server/tests/lab-04/ticket-workflow.api.test.ts` ตรวจ Matrix จริงผ่าน HTTP, roles, validation, version, gate, indication, response compatibility, inactive assignee และ concurrency
+- UI-05: `client/tests/lab-04/TicketWorkflow.test.tsx` ตรวจตัวเลือกทุกสถานะ, Administrator read-only, reopenReason/labels, saving guard, safe failure, gate/conflict, การ refresh แล้วลองใหม่อย่างชัดเจน และการรักษาข้อมูลฟอร์ม
+- คง route/envelope เดิม เพิ่ม `version` ใน Ticket Detail/รายการ Ticket และให้ status request ส่ง Ticket.version ตาม Contract Lab 4; ไม่ใช้ ActionTaken.version แทน ไม่เปลี่ยน assignment permission หรือ `404 USER_NOT_FOUND`
+- Requester indication ยังคงไม่เปลี่ยน currentStatus หรือ Ticket.version และ Backend คง ownership protection
+- ใช้ `Ticket.version` ที่มีอยู่จาก foundation ไม่สร้าง migration ซ้ำ เพิ่ม seed fixtures ใหม่ครบ 8 สถานะ โดยสร้างครั้งแรกเท่านั้นและตรวจว่ารันซ้ำยังรักษา ID, fields, owner, version และ Action ที่ผู้ใช้แก้ใน workflow fixtures เหล่านี้ ส่วนข้อจำกัดของ named seed fixtures เดิมจาก Lab 3 ยังเป็นไปตามข้อ 8
+
+### กลไก concurrency และหลักฐาน
+
+Action POST/PATCH และ Status PATCH ใช้ `lockTicketMutation` ร่วมกันภายใน transaction โดยล็อกแถว Ticket ด้วย `SELECT ... FOR UPDATE` ก่อนอ่าน status/version/Actions ใช้ isolation `READ COMMITTED` เพื่อให้คำขอที่รอ lock อ่านข้อมูลหลัง commit ของคำขอก่อนหน้า แล้วตรวจและเขียนภายใน transaction เดียวกัน จึงไม่มีช่องว่างระหว่างตรวจ gate กับเขียน Status หรือระหว่างตรวจ state กับเขียน Action ไม่เพิ่ม Ticket.version จากการแก้ Action
+
+API tests ถือ lock จริงของคำขอแรกไว้ชั่วคราวและตรวจ `pg_stat_activity`/`pg_blocking_pids` ว่าคำขอที่สองรอ backend PID ของ transaction แรก ก่อนปล่อยให้ commit ครอบคลุม:
+
+- Action create สำเร็จก่อน RESOLVED: gate เห็น Action ใหม่
+- Action create/PATCH เพิ่ม follow-up ก่อน CLOSED: ปฏิเสธ gate โดยไม่เปลี่ยน Ticket status/version
+- PATCH เคลียร์ follow-up ก่อน CLOSED: ปิดได้จากข้อมูลล่าสุด
+- CLOSED/CANCELLED สำเร็จก่อน Action create: ตอบ `ACTION_STATE_CONFLICT` โดยไม่เพิ่ม Action
+- CLOSED สำเร็จก่อน Action PATCH: ไม่เปลี่ยน Action fields/version
+- Status สองคำขอใช้ Ticket.version เดียวกัน: สำเร็จหนึ่งคำขอ อีกคำขอได้ `STALE_UPDATE` พร้อม expectedVersion/actualVersion และเพิ่ม Ticket.version ครั้งเดียว
+
+### ผลคำสั่งที่รันจริง
+
+Server integration/seed/recovery-precondition tests ใช้ฐาน local `toktickit_e2e` เท่านั้น ไม่ reset หรือเขียนข้อมูลใน Development ไม่แสดง credential หรือ database URL
+
+| คำสั่ง | ผลจริง |
+|---|---|
+| `npm.cmd test -- --run tests/lab-04/ticket-workflow.unit.test.ts tests/lab-04/ticket-workflow.api.test.ts tests/lab-04/actions-taken.api.test.ts tests/lab-03/staff-ticket-detail.api.test.ts --silent` ใน server/ | 4 files / 100 tests passed; exit 0; ไม่มี skip |
+| `npm.cmd test -- --run tests/lab-04 tests/lab-03/StaffTicketDetail.test.tsx --silent` ใน client/ | 4 files / 45 tests passed; exit 0; ไม่มี skip |
+| `npm.cmd test -- --run --silent` ใน server/ | 24 files passed / 1 file failed; 250 tests passed / 1 failed; exit 1; ไม่มี skip |
+| `npm.cmd test -- --run --silent` ใน client/ | 19 files / 108 tests passed; exit 0; ไม่มี skip |
+| `npm.cmd run build` ใน server/ และ client/ | ผ่านทั้งสองคำสั่ง; exit 0 |
+| `npx.cmd prisma validate` และ `npx.cmd prisma generate` ใน server/ | ผ่านทั้งสองคำสั่ง; exit 0; ไม่ apply migration กับ Development |
+| `git diff --check` จาก repository root และตรวจ whitespace ของไฟล์ใหม่แยก | ไม่พบ whitespace errors |
+
+### ข้อจำกัดที่ยังเหลือ
+
+Full Server ยังไม่ผ่านทั้งหมด: test `preserves exact Lab 3 rows and relationships across the real Lab 4 migration` ใน `server/tests/lab-04/migration-regression.api.test.ts` เรียก `psql.exe` ไม่สำเร็จ (`spawnSync ... UNKNOWN`) ตรวจเรียก `psql.exe --version` แยกแล้ว Windows ระบุว่า Application Control policy บล็อก executable นี้ จึงไม่ได้ยืนยัน migration-preservation รอบใหม่ ห้ามใช้ผลเดิมแทนผลรอบนี้ ไม่ข้าม test และไม่ได้เปลี่ยนนโยบายความปลอดภัยของเครื่อง ต้องให้เครื่องอนุญาต PostgreSQL client ตามนโยบายที่ถูกต้อง แล้วรัน Full Server ใหม่ก่อนอ้างว่าผ่านทั้งชุด ส่วน repeated seed และการรักษา edits ของ workflow fixtures ผ่านในรอบนี้
+
+ปรับเฉพาะ direct status requests เดิมใน `e2e/lab-03/staff-ticket-flow.spec.ts` ให้อ่าน Ticket.version ก่อนส่ง เพื่อรักษา regression flow ไม่มีการรันหรือประกาศ Full E2E/visual/responsive ผ่านใน Issue นี้; E2E-02 และหลักฐานภาพยังอยู่ใน Issue #73 Dashboard ยังอยู่ใน Issue #72 และ Final-main ยังคง Planned ไม่มีการแก้ `reviewer.md`/`ai-use.md` หรือสร้าง Review/Prompt evidence ย้อนหลัง
+
+## 12. เตรียม CI สำหรับตรวจ Issue #71 บน GitHub
+
+วันที่ 4 ตุลาคม 2026 ผู้จัดทำเลือกคง Smart App Control ไว้และอนุญาตให้เพิ่ม `.github/workflows/lab4-tests.yml` เพื่อรันการตรวจบน GitHub-hosted Linux แทนการลดการป้องกันของเครื่อง Local ไม่แก้หรือข้าม migration-regression test เดิม
+
+- Workflow รันเมื่อ Push เข้า `feature/04-lab4-ticket-workflow`/`lab4-staging` หรือเมื่อเปิด/อัปเดต PR เข้า `lab4-staging`/`main`
+- Server job ใช้ PostgreSQL 17 service ชั่วคราวและฐาน `toktickit_e2e` บน runner เท่านั้น ติดตั้ง `psql`, `createdb`, `dropdb` สำหรับ scratch database ที่ test สร้างเอง ไม่ใช้ Development credentials หรือฐานในเครื่องผู้จัดทำ
+- รัน `npm ci`, Prisma validate/generate/migrate deploy, seed สองรอบ, Full Server tests, Server build และตรวจ whitespace ของ commit ที่ทดสอบ
+- CI ให้ test/hook timeout 60 วินาทีสำหรับงาน migration บน runner ใหม่ โดยไม่กรองหรือ skip test; Client job รัน `npm ci`, Full Client tests และ build แยกจาก Server
+- ไม่รัน Full E2E/visual/responsive ของ Issue #73 และไม่อ้างว่า precondition test เท่ากับ backup/restore verification
+
+สถานะ CI: **Pending** ยังไม่มีผล GitHub Actions เพราะยังไม่ได้ Commit/Push ในรอบนี้ การตรวจรูปแบบและคำสั่งของ workflow ไม่ใช่หลักฐานว่า tests ผ่าน ต้องแนบ Run URL และผลจริงหลัง Push ก่อนยืนยัน Full Server ผ่านทั้งชุด ส่วนผล Local ในข้อ 11 และ Final-main Planned ยังคงเดิม

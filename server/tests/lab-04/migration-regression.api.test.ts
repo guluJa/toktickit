@@ -110,6 +110,23 @@ describe("API-07/08 additive migration and repeated seed", () => {
     }
   });
 
+  it("preserves user edits on existing workflow seed fixtures", async () => {
+    requireIsolatedDatabase();
+    await runSeed();
+    const before = await prisma.ticket.findUniqueOrThrow({ where: { ticketNumber: "TKT-LAB4-FLOW-IN_PROGRESS" } });
+    const action = await prisma.actionTaken.findFirstOrThrow({ where: { ticketId: before.id } });
+    try {
+      const editedTicket = await prisma.ticket.update({ where: { id: before.id }, data: { summary: "User-edited workflow", currentStatus: "WAITING_FOR_REQUESTER", ownerId: null, version: before.version + 1 } });
+      const editedAction = await prisma.actionTaken.update({ where: { id: action.id }, data: { description: "User-edited diagnosis", result: "User-edited result", version: action.version + 1 } });
+      await runSeed();
+      expect(await prisma.ticket.findUniqueOrThrow({ where: { id: before.id } })).toEqual(editedTicket);
+      expect(await prisma.actionTaken.findMany({ where: { ticketId: before.id } })).toEqual([editedAction]);
+    } finally {
+      await prisma.actionTaken.update({ where: { id: action.id }, data: { description: action.description, result: action.result, version: action.version, updatedAt: action.updatedAt } });
+      await prisma.ticket.update({ where: { id: before.id }, data: { summary: before.summary, currentStatus: before.currentStatus, ownerId: before.ownerId, version: before.version, updatedAt: before.updatedAt } });
+    }
+  });
+
   it("preserves existing Ticket IDs/owners and defaults every Ticket version to at least one", async () => {
     requireIsolatedDatabase();
     const tickets = await prisma.ticket.findMany({ select: { id: true, requesterId: true, ownerId: true, version: true } });
@@ -134,6 +151,9 @@ describe("API-07/08 additive migration and repeated seed", () => {
     }
     await runSeed();
     const numbers = ["TKT-LAB3-0001", "TKT-LAB3-0002", "TKT-LAB3-0003"];
+    const workflowBefore = await prisma.ticket.findMany({ where: { ticketNumber: { startsWith: "TKT-LAB4-FLOW-" } }, include: { actions: { orderBy: { id: "asc" } } }, orderBy: { ticketNumber: "asc" } });
+    expect(workflowBefore).toHaveLength(8);
+    expect(new Set(workflowBefore.map((ticket) => ticket.currentStatus))).toEqual(new Set(["NEW", "OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED", "REOPENED", "CANCELLED"]));
     const before = await prisma.ticket.findMany({
       where: { ticketNumber: { in: numbers } },
       select: { id: true, ticketNumber: true, requesterId: true, ownerId: true, version: true },
@@ -157,6 +177,7 @@ describe("API-07/08 additive migration and repeated seed", () => {
       orderBy: { id: "asc" },
     });
     await runSeed();
+    expect(await prisma.ticket.findMany({ where: { ticketNumber: { startsWith: "TKT-LAB4-FLOW-" } }, include: { actions: { orderBy: { id: "asc" } } }, orderBy: { ticketNumber: "asc" } })).toEqual(workflowBefore);
     const after = await prisma.ticket.findMany({
       where: { ticketNumber: { in: numbers } },
       select: { id: true, ticketNumber: true, requesterId: true, ownerId: true, version: true },
