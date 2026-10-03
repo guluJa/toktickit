@@ -39,8 +39,12 @@ function matchesDraft(action: ActionRecord, fields: ActionFields): boolean {
 }
 
 function mergeActions(items: ActionRecord[], confirmed: ActionRecord[]): ActionRecord[] {
-  const byId = new Map(items.map((action) => [action.id, action]));
-  for (const action of confirmed) byId.set(action.id, action);
+  const byId = new Map<number, ActionRecord>();
+  for (const action of [...items, ...confirmed]) {
+    const existing = byId.get(action.id);
+    // Arrival order must not let an older version replace a newer record.
+    if (!existing || action.version >= existing.version) byId.set(action.id, action);
+  }
   return [...byId.values()].sort((a, b) => a.actionAt.localeCompare(b.actionAt) || a.id - b.id);
 }
 

@@ -123,7 +123,7 @@ E2E:
 
 ## 5. Planned Commands
 
-รายการนี้เป็นคำสั่งสำหรับตรวจงานทั้ง Lab 4 ผลที่รันแล้วระหว่างพัฒนาแยกในข้อ 7–9 ส่วนคำสั่งของฟีเจอร์ที่ยังไม่พัฒนาและ Final-main ยังคง Planned:
+รายการนี้เป็นคำสั่งสำหรับตรวจงานทั้ง Lab 4 ผลที่รันแล้วระหว่างพัฒนาแยกในข้อ 7–10 ส่วนคำสั่งของฟีเจอร์ที่ยังไม่พัฒนาและ Final-main ยังคง Planned:
 
 - server: npm.cmd test
 - client: npm.cmd test
@@ -201,3 +201,20 @@ Recovery evidence เดิมของ Issue #69 อยู่ใน `artifacts/
 | `git diff --check` จาก repository root | ผ่าน; exit 0 | ตรวจ whitespace ของการแก้รอบนี้ |
 
 ผลนี้มาจาก component tests ที่ mock API และ client build ไม่ใช่หลักฐาน Full E2E หรือภาพ responsive บน browser; งานเหล่านั้นยัง Planned ใน Issue #73 ไม่มีการเปลี่ยน API, Model, Migration, Seed, Workflow หรือ Dashboard ในการแก้รอบนี้ และไม่ใช้ผลนี้ประกาศ Final-main Pass
+
+## 10. ผลตรวจการรวม Action ตาม version ใน PR #76
+
+ตรวจวันที่ 3 ตุลาคม 2026 (Asia/Bangkok) บน branch `feature/03-lab4-actions-taken-ui` จาก HEAD `fbf4279` พร้อมการแก้ใน working tree ก่อน Commit
+
+เพิ่ม regression test ใน `client/tests/lab-04/ActionsTaken.test.tsx` สำหรับ UI-01: POST ยืนยัน Action version 1 แต่ GET ที่ตอบภายหลังคืน ID เดียวกันเป็น version 2 ต้องแสดงข้อมูล version 2 เพียงรายการเดียว เรียงตาม `actionAt/id` และใช้ version 2 เมื่อส่ง PATCH ครั้งถัดไป ก่อนแก้ test นี้ล้มเหลวจริง (คำสั่งเลือกเฉพาะกรณีนี้จึงข้ามอีก 16 กรณี)
+
+`mergeActions` เลือก version สูงสุดของแต่ละ ID ทั้งข้อมูลที่โหลดและผลบันทึกที่ยืนยันแล้ว เมื่อ version เท่ากันให้ผลบันทึกที่ยืนยันแล้วแทนข้อมูลที่โหลดตามลำดับการรวมเดิม การป้องกัน Action ใหม่หายและรายการซ้ำยังผ่าน tests เดิม
+
+| คำสั่ง | ผลรันจริง |
+|---|---|
+| `npm.cmd test -- --run tests/lab-04 --silent` ใน client/ | 2 files / 20 tests passed; exit 0; ไม่มี skip |
+| `npm.cmd test -- --run --silent` ใน client/ | 18 files / 91 tests passed; exit 0; ไม่มี skip |
+| `npm.cmd run build` ใน client/ | TypeScript และ Vite build ผ่าน; exit 0 |
+| `git diff --check` จาก repository root | ผ่าน; exit 0 |
+
+การแก้รอบนี้จำกัดที่การรวมรายการ UI และ regression test ไม่เปลี่ยน API หรือ scope ของ Issue #70 ผลเป็น component tests ที่ mock API ไม่ใช่ Full E2E และสถานะ Final-main ยังคง Planned

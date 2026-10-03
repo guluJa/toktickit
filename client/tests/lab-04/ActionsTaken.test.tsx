@@ -78,6 +78,33 @@ describe("UI-01 Actions Taken Staff UI", () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps a newer GET version instead of overwriting it with a confirmed create", async () => {
+    const user = userEvent.setup();
+    const created = { ...oldAction, id: 12, actionAt: "2026-09-02T00:00:00Z", description: "New diagnosis" };
+    const latest = { ...created, result: "Updated by another Staff member", version: 2, updatedAt: "2026-09-02T01:00:00Z" };
+    let finishList!: (value: ReturnType<typeof page>) => void;
+    list.mockImplementationOnce(() => new Promise((resolve) => { finishList = resolve; }));
+    create.mockResolvedValueOnce({ action: created });
+    update.mockResolvedValueOnce({ action: { ...latest, version: 3 } });
+    render(<ActionsTaken ticketId={501} audience="staff" ticketStatus="OPEN" />);
+    await user.type(screen.getByLabelText("Action description"), "New diagnosis");
+    await user.type(screen.getByLabelText("Result"), "Connected");
+    await user.click(screen.getByRole("button", { name: "Create Action" }));
+    await screen.findByText("Action created successfully.");
+    await act(async () => finishList(page([latest, oldAction])));
+    expect(await screen.findByText("Updated by another Staff member")).toBeInTheDocument();
+    expect(screen.getAllByText("Action #12")).toHaveLength(1);
+    expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      expect.stringContaining("Action #11"), expect.stringContaining("Action #12"),
+    ]);
+    await user.click(screen.getByRole("button", { name: "Edit Action #12" }));
+    expect(screen.getByLabelText("Result")).toHaveValue(latest.result);
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+    await screen.findByText("Action updated successfully.");
+    expect(update).toHaveBeenCalledWith(501, 12, expect.objectContaining({ result: latest.result }), 2);
+    expect(create).toHaveBeenCalledTimes(1);
+  });
+
   it("updates Action Ticket Owner after Claim, Reassign and Unassign without changing performer or edit draft", async () => {
     const user = userEvent.setup();
     list.mockResolvedValue(page([oldAction]));
