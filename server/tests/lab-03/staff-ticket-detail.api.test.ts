@@ -25,6 +25,7 @@ describe("Lab 3 Staff Ticket Detail and operations", () => {
     if (previousUserIds.length) {
       const previousTickets = await prisma.ticket.findMany({ where: { requesterId: { in: previousUserIds } }, select: { id: true } });
       const previousTicketIds = previousTickets.map((ticket) => ticket.id);
+      await prisma.actionTaken.deleteMany({ where: { ticketId: { in: previousTicketIds } } });
       await prisma.internalNote.deleteMany({ where: { ticketId: { in: previousTicketIds } } });
       await prisma.comment.deleteMany({ where: { ticketId: { in: previousTicketIds } } });
       await prisma.attachment.deleteMany({ where: { ticketId: { in: previousTicketIds } } });
@@ -63,6 +64,7 @@ describe("Lab 3 Staff Ticket Detail and operations", () => {
   });
 
   afterAll(async () => {
+    await prisma.actionTaken.deleteMany({ where: { ticketId } });
     await prisma.internalNote.deleteMany({ where: { ticketId } });
     await prisma.comment.deleteMany({ where: { ticketId } });
     await prisma.attachment.deleteMany({ where: { ticketId } });
@@ -133,11 +135,12 @@ describe("Lab 3 Staff Ticket Detail and operations", () => {
     expect(adminAssignment.status).toBe(403);
     const adminStatus = await admin.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: "OPEN" });
     expect(adminStatus.status).toBe(403);
-    expect((await staff.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: "OPEN" })).status).toBe(200);
-    const invalid = await staff.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: "RESOLVED" });
+    const version = (await staff.get(`/api/staff/tickets/${ticketId}`)).body.data.ticket.version;
+    expect((await staff.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: "OPEN", version })).status).toBe(200);
+    const invalid = await staff.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: "RESOLVED", version: version + 1 });
     expect(invalid.status).toBe(409);
     expect(invalid.body.error.code).toBe("STATUS_TRANSITION_NOT_ALLOWED");
-    expect((await staff.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: "IN_PROGRESS" })).status).toBe(200);
+    expect((await staff.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: "IN_PROGRESS", version: version + 1 })).status).toBe(200);
     const requester = await signedIn(requesterEmail);
     const forbidden = await requester.patch(`/api/staff/tickets/${ticketId}/priority`).send({ itPriority: "HIGH" });
     expect(forbidden.status).toBe(403);
@@ -146,6 +149,8 @@ describe("Lab 3 Staff Ticket Detail and operations", () => {
 
   it("accepts every contract transition and rejects every other transition with 409", async () => {
     const staff = await signedIn(staffEmail);
+    await prisma.ticket.update({ where: { id: ticketId }, data: { ownerId: staffId } });
+    await prisma.actionTaken.create({ data: { ticketId, performedById: staffId, description: "Regression diagnosis", result: "Restored", followUpRequired: false } });
     const transitions: Record<string, readonly string[]> = {
       NEW: ["OPEN"],
       OPEN: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "CANCELLED"],
@@ -153,16 +158,17 @@ describe("Lab 3 Staff Ticket Detail and operations", () => {
       WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
       RESOLVED: ["CLOSED", "REOPENED"],
       CLOSED: ["REOPENED"],
-      REOPENED: [],
+      REOPENED: ["IN_PROGRESS"],
       CANCELLED: [],
     };
     const statuses = Object.keys(transitions);
     for (const [from, allowed] of Object.entries(transitions)) {
       for (const to of statuses) {
-        await prisma.ticket.update({ where: { id: ticketId }, data: { currentStatus: from as TicketStatus } });
-        const response = await staff.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: to });
+        const current = await prisma.ticket.update({ where: { id: ticketId }, data: { currentStatus: from as TicketStatus } });
+        const response = await staff.patch(`/api/staff/tickets/${ticketId}/status`).send({ status: to, version: current.version, ...(to === "REOPENED" ? { reopenReason: "Regression reopen" } : {}) });
         if (allowed.includes(to)) {
           expect(response.status, `${from}->${to}`).toBe(200);
+          expect(response.body.data.ticket.version).toBe(current.version + 1);
         } else {
           expect(response.status, `${from}->${to}`).toBe(409);
           expect(response.body.error.code).toBe("STATUS_TRANSITION_NOT_ALLOWED");

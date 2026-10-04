@@ -45,6 +45,7 @@ const mockedMarkTicketResolved = vi.mocked(markTicketResolved);
 
 const ticket: TicketDetail = {
   id: 101,
+  version: 1,
   ticketNumber: "TKT-20990201-D00001",
   requester: {
     id: 1,

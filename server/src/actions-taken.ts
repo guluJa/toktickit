@@ -5,6 +5,7 @@ import { requireRequesterAccess } from "./requester-access.js";
 import { requireStaffQueueAccess } from "./staff-access.js";
 import { getPrisma } from "./prisma.js";
 import { ActionValidationError, MAX_DATABASE_INTEGER, parseActionFields } from "./action-validation.js";
+import { lockTicketMutation } from "./ticket-mutation.js";
 
 const actionInclude = {
   performedBy: true,
@@ -91,7 +92,7 @@ function handleMutationError(error: unknown, res: Response): void {
     res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "Request data is invalid.", fields: error.fields } });
     return;
   }
-  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034") {
+  if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2028"].includes(error.code)) {
     errorResponse(res, 409, "ACTION_STATE_CONFLICT", "The Ticket changed while saving. Refresh and retry.");
     return;
   }
@@ -117,6 +118,7 @@ export function registerActionTakenRoutes(app: Express): void {
         return;
       }
       const result = await getPrisma().$transaction(async (tx) => {
+        await lockTicketMutation(tx, id);
         const ticket = await tx.ticket.findUnique({ where: { id }, select: { currentStatus: true } });
         if (!ticket) return { kind: "missing" as const };
         if (ticket.currentStatus === "CLOSED" || ticket.currentStatus === "CANCELLED") {
@@ -127,7 +129,7 @@ export function registerActionTakenRoutes(app: Express): void {
           include: actionInclude,
         });
         return { kind: "created" as const, action };
-      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
       if (result.kind === "missing") errorResponse(res, 404, "TICKET_NOT_FOUND", "Ticket not found.");
       else if (result.kind === "state") errorResponse(res, 409, "ACTION_STATE_CONFLICT", "Actions cannot be changed in this Ticket state.");
       else res.status(201).json({ data: { action: toActionResponse(result.action) } });
@@ -143,6 +145,7 @@ export function registerActionTakenRoutes(app: Express): void {
     }
     try {
       const result = await getPrisma().$transaction(async (tx) => {
+        await lockTicketMutation(tx, id);
         const ticket = await tx.ticket.findUnique({ where: { id }, select: { currentStatus: true } });
         if (!ticket) return { kind: "missingTicket" as const };
         const current = await tx.actionTaken.findFirst({ where: { id: actionId, ticketId: id } });
@@ -162,7 +165,7 @@ export function registerActionTakenRoutes(app: Express): void {
         if (!updated.count) return { kind: "stale" as const };
         const action = await tx.actionTaken.findUniqueOrThrow({ where: { id: actionId }, include: actionInclude });
         return { kind: "updated" as const, action };
-      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
       if (result.kind === "missingTicket") errorResponse(res, 404, "TICKET_NOT_FOUND", "Ticket not found.");
       else if (result.kind === "missingAction") errorResponse(res, 404, "ACTION_NOT_FOUND", "Action not found.");
       else if (result.kind === "state") errorResponse(res, 409, "ACTION_STATE_CONFLICT", "Actions cannot be changed in this Ticket state.");

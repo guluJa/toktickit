@@ -219,6 +219,7 @@ export interface AttachmentMetadata {
 
 export interface TicketDetail {
   id: number;
+  version: number;
   ticketNumber: string;
   requester: RequesterSummary;
   category: Category;
@@ -309,6 +310,7 @@ export interface CreateTicketResponse {
 
 export interface TicketSummary {
   id: number;
+  version: number;
   ticketNumber: string;
   summary: string;
   category: Category;
@@ -546,8 +548,8 @@ export async function updateStaffPriority(ticketId: number, itPriority: Requeste
   return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/priority`, { method: "PATCH", body: JSON.stringify({ itPriority }) }, "Unable to update IT Priority.");
 }
 
-export async function updateStaffStatus(ticketId: number, status: TicketStatus): Promise<{ ticket: TicketDetail }> {
-  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/status`, { method: "PATCH", body: JSON.stringify({ status }) }, "Unable to update Ticket status.");
+export async function updateStaffStatus(ticketId: number, status: TicketStatus, version: number, reopenReason?: string): Promise<{ ticket: TicketDetail }> {
+  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/status`, { method: "PATCH", body: JSON.stringify({ status, version, ...(status === "REOPENED" ? { reopenReason: reopenReason?.trim() } : {}) }) }, "Unable to update Ticket status.");
 }
 
 export async function getStaffComments(ticketId: number): Promise<PublicComment[]> {
