@@ -357,7 +357,7 @@ export interface MyTicketsQuery {
   categoryId?: number;
   relatedSystemId?: number;
   requestedPriority?: RequestedPriority;
-  currentStatus?: "NEW";
+  currentStatus?: TicketStatus;
   sortBy: MyTicketsSortField;
   sortDirection: MyTicketsSortDirection;
   page: number;
@@ -372,6 +372,52 @@ export interface MyTicketsResponse {
   totalItems: number;
   totalPages: number;
 }
+
+export interface DashboardLink {
+  rel: "recentTickets" | "recentlyResolved" | "recentActions" | "ticketDetail";
+  target: "requester-tickets" | "staff-queue" | "requester-ticket-detail" | "staff-ticket-detail";
+  ticketId?: number;
+  query?: MyTicketsQuery | StaffQueueQuery;
+}
+export interface DashboardTicket {
+  id: number; ticketNumber: string; summary: string; currentStatus: TicketStatus;
+  requestedPriority: RequestedPriority; itPriority: RequestedPriority;
+  owner?: AuthUser | null; updatedAt: string; detailLink: DashboardLink;
+}
+export interface RequesterDashboardData {
+  timezone: "Asia/Bangkok"; asOf: string;
+  metrics: { openCount: number; waitingForRequesterCount: number; resolvedCount: number; recentlyUpdatedCount: number; recentlyResolvedCount: number };
+  recentTickets: DashboardTicket[]; recentlyResolvedTickets: DashboardTicket[]; links: DashboardLink[];
+}
+export interface StaffDashboardData {
+  timezone: "Asia/Bangkok"; asOf: string;
+  metrics: { unassignedCount: number; mineCount: number; highPriorityCount: number; recentlyUpdatedCount: number; recentlyResolvedCount: number };
+  byStatus: Record<TicketStatus, number>; byPriority: Record<RequestedPriority, number>;
+  recentTickets: DashboardTicket[]; recentlyResolvedTickets: DashboardTicket[];
+  recentActions: { id: number; ticketId: number; actionAt: string; description: string; result: string; performedBy: AuthUser; detailLink: DashboardLink }[];
+  links: DashboardLink[];
+}
+async function dashboardRequest<T>(route: string, limit: number): Promise<T> {
+  const fallback = "Unable to load the dashboard. Please try again.";
+  try {
+    const response = await fetch(`${API_URL}${route}?limit=${encodeURIComponent(limit)}`, { credentials: "include" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new TicketApiError(fallback, response.status, body.error?.code ?? "DASHBOARD_REQUEST_FAILED");
+    const data = body.data;
+    const counts = (value: unknown) => value !== null && typeof value === "object" && Object.values(value).every(v => Number.isInteger(v) && Number(v) >= 0);
+    const validDate = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value));
+    const ticketRows = (value: unknown) => Array.isArray(value) && value.every(row => validDate(row.updatedAt) && row.detailLink?.target && Number.isInteger(row.id));
+    const metricNames = route === "/api/staff/dashboard" ? ["unassignedCount", "mineCount", "highPriorityCount", "recentlyUpdatedCount", "recentlyResolvedCount"] : ["openCount", "waitingForRequesterCount", "resolvedCount", "recentlyUpdatedCount", "recentlyResolvedCount"];
+    if (!data || data.timezone !== "Asia/Bangkok" || !validDate(data.asOf) || !counts(data.metrics) || metricNames.some(key => !Number.isInteger(data.metrics[key])) || !ticketRows(data.recentTickets) || !ticketRows(data.recentlyResolvedTickets) || !Array.isArray(data.links)) throw new Error("Invalid dashboard response");
+    if (route === "/api/staff/dashboard" && (!counts(data.byStatus) || !counts(data.byPriority) || !Array.isArray(data.recentActions) || data.recentActions.some((a: StaffDashboardData["recentActions"][number]) => !validDate(a.actionAt) || !a.performedBy?.name || !a.detailLink?.target))) throw new Error("Invalid Staff Dashboard response");
+    return body.data as T;
+  } catch (error) {
+    if (error instanceof TicketApiError) throw error;
+    throw new TicketApiError(fallback, 0, "DASHBOARD_REQUEST_FAILED");
+  }
+}
+export const getRequesterDashboard = (limit = 20) => dashboardRequest<RequesterDashboardData>("/api/requester/dashboard", limit);
+export const getStaffDashboard = (limit = 20) => dashboardRequest<StaffDashboardData>("/api/staff/dashboard", limit);
 
 interface TicketApiErrorResponse {
   error?: {

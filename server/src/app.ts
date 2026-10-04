@@ -52,6 +52,7 @@ import {
 } from "./staff-queue-query.js";
 import { requireStaffQueueAccess } from "./staff-access.js";
 import { registerActionTakenRoutes } from "./actions-taken.js";
+import { registerDashboardRoutes } from "./dashboards.js";
 import { lockTicketMutation } from "./ticket-mutation.js";
 import { parseStatusChange, passesResolutionGate, WorkflowValidationError } from "./ticket-workflow.js";
 import { requireAdministratorAccess } from "./admin-access.js";
@@ -91,6 +92,7 @@ app.use(
 ); // lets the Vite client read the original Attachment filename safely
 app.use(express.json());
 registerActionTakenRoutes(app);
+registerDashboardRoutes(app);
 
 function validationResponse(
   res: Response,

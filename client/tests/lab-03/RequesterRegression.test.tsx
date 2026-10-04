@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../../src/App";
+import MyTickets from "../../src/MyTickets";
 
 describe("Lab 3 Requester regression", () => {
   const fetchCalls: Array<[RequestInfo | URL, RequestInit | undefined]> = [];
@@ -36,5 +37,16 @@ describe("Lab 3 Requester regression", () => {
     const ticketCall = fetchCalls.find(([input]) => String(input).includes("/api/tickets?"));
     expect(ticketCall?.[1]).toMatchObject({ credentials: "include" });
     expect(screen.queryByText(/Requester Two|other requester/i)).not.toBeInTheDocument();
+  });
+  it("retains default filters and applies a Dashboard currentStatus without changing the list envelope", async () => {
+    const view = render(<MyTickets requesterId={1} requesterName="Requester One" onCreateTicket={vi.fn()} />);
+    await waitFor(() => expect(fetchCalls.some(([input]) => String(input).includes("/api/tickets?"))).toBe(true));
+    expect(screen.getByRole("option", { name: "All Statuses" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "New" })).toBeInTheDocument();
+    const normal = new URL(String(fetchCalls.find(([input]) => String(input).includes("/api/tickets?"))![0]));
+    expect(normal.searchParams.has("currentStatus")).toBe(false);
+    view.rerender(<MyTickets requesterId={1} requesterName="Requester One" onCreateTicket={vi.fn()} initialQuery={{ currentStatus: "CLOSED", sortBy: "updatedAt", sortDirection: "desc", page: 1, pageSize: 10 }} />);
+    await waitFor(() => expect(fetchCalls.some(([input]) => String(input).includes("currentStatus=CLOSED"))).toBe(true));
+    expect(screen.getByRole("option", { name: "CLOSED" }).parentElement).toHaveValue("CLOSED");
   });
 });

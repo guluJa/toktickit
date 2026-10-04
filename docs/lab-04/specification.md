@@ -253,7 +253,7 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - AC-15: Regression ของ Lab 1–3 ผ่านและไม่มี feature เดิมเสีย
 - AC-16: การกดบันทึกซ้ำหรือ recoverable network failure ไม่ทำให้ผู้ใช้สูญเสียข้อมูลที่กรอก; เมื่อผล POST ไม่ทราบแน่ชัด UI ต้องคงฟอร์มและ submission-uncertain, ตรวจ Actions ครบทุกหน้ารวมการ refresh เมื่อคำขอเดิมอาจบันทึกภายหลัง, ไม่ถือว่าข้อความเหมือนกันเป็นหลักฐานยืนยัน, ไม่แจ้งสำเร็จหรือ retry อัตโนมัติ และเตือนความเสี่ยงรายการซ้ำก่อนผู้ใช้เลือกสร้างใหม่; Contract นี้ไม่รับรอง Idempotency-Key หรือการรวมคำขอซ้ำใน Backend
 
-คอลัมน์ Final ของ AC-01 ถึง AC-16 ยังเป็น Planned ผลตรวจ Foundation และ Actions UI ระหว่างพัฒนามีบันทึกใน `tests.md`; Workflow, Dashboard และการตรวจรวมยังอยู่ใน Issues #71–#74
+คอลัมน์ Final ของ AC-01 ถึง AC-16 ยังเป็น Planned ผลตรวจ Foundation, Actions UI และ Workflow ที่ merge แล้ว รวมถึง Dashboard บน feature branch มีบันทึกใน `tests.md`; Full E2E/visual และการตรวจ Final-main ยังอยู่ใน Issues #73–#74
 
 ## 11. Product Definition of Done
 

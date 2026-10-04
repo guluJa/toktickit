@@ -1,7 +1,7 @@
 # TokTickIT Lab 4: แผนทดสอบและการเชื่อมโยงข้อกำหนด
 
-สถานะ: แผนทดสอบพร้อมผลตรวจ Foundation, Actions UI และ Workflow ระหว่างพัฒนา
-คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจระหว่างพัฒนาบันทึกแยกในข้อ 7–11
+สถานะ: แผนทดสอบพร้อมผลตรวจ Foundation, Actions UI, Workflow และ Dashboard ระหว่างพัฒนา
+คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจระหว่างพัฒนาและ CI ที่เกิดขึ้นจริงบันทึกแยกในข้อ 7–14
 
 ## 1. Test Strategy
 
@@ -17,7 +17,7 @@
 | API-02 | authorization | AC-02/03/15 | Requester/Staff/Admin Action access and ownership | role and ownership enforced by Backend; Requester is read-only; Staff/Admin may edit another performer’s Action without changing `performedBy`; baseline authentication error names remain unchanged | server/tests/lab-04/actions-taken.api.test.ts | Planned |
 | API-03 | API | AC-05/08 | Validation and stale update | 400/409 safe errors; no overwrite; CLOSED/CANCELLED Ticket or concurrent mutation returns `ACTION_STATE_CONFLICT`; RESOLVED follow-up edit remains allowed | server/tests/lab-04/actions-taken.api.test.ts | Planned |
 | API-04 | workflow | AC-06/07/08 | All Ticket status transitions and resolution gate | matrix and gate enforced including `REOPENED → IN_PROGRESS`; RESOLVED may retain an outstanding `followUpRequired=true`, but CLOSED blocks until the Action is updated to false; request `{ status, version }` uses `Ticket.version`; `REOPENED` requires non-empty `reopenReason`; stale version returns 409 with no write; assignment remains Lab 3-compatible, inactive assignee returns `404 USER_NOT_FOUND`, and CANCELLED/RESOLVED/CLOSED behavior is demonstrated | server/tests/lab-04/ticket-workflow.api.test.ts | Planned |
-| API-05 | API | AC-09/12 | Requester Dashboard metrics and ownership | zero-data fixtures return zero/empty values and valid empty link arrays; seeded fixtures return correct counts and owned lists; My Tickets link uses `currentStatus`, `sortDirection` and `pageSize=10` without changing Lab 3 response; `limit=5` still yields a valid My Tickets link | server/tests/lab-04/requester-dashboard.api.test.ts | Planned |
+| API-05 | API | AC-09/12 | Requester Dashboard metrics and ownership | zero-data fixtures return zero metrics/empty Ticket lists with valid drill-down links; seeded fixtures return correct counts and owned lists; My Tickets link uses `currentStatus`, `sortDirection` and `pageSize=10` without changing Lab 3 response; `limit=5` still yields a valid My Tickets link | server/tests/lab-04/requester-dashboard.api.test.ts | Planned |
 | API-06 | API | AC-10/12 | Staff/Admin Dashboard metrics and drill-down | zero-data fixtures return empty lists and all byStatus/byPriority keys with 0; seeded fixtures return correct 7-day formulas, limit/sort/tie-breaker, `recentlyResolvedTickets` and current user’s `recentActions`; Staff Queue link uses `status`, `sortOrder`, `pageSize=10` independent of `limit`, including `limit=5` | server/tests/lab-04/staff-dashboard.api.test.ts | Planned |
 | API-07 | migration/regression | AC-11/15 | preserved IDs, FKs and legacy Ticket with zero Actions | old data remains valid and readable | server/tests/lab-04/migration-regression.api.test.ts | Planned |
 | API-08 | migration/regression | AC-11/09/10 | repeated seed and dashboard fixtures | seed creates zero/one/many Action cases plus zero/non-zero dashboard fixtures; second seed creates no duplicates and loses no data | server/tests/lab-04/migration-regression.api.test.ts | Planned |
@@ -275,4 +275,50 @@ Full Server ยังไม่ผ่านทั้งหมด: test `preserves
 - CI ให้ test/hook timeout 60 วินาทีสำหรับงาน migration บน runner ใหม่ โดยไม่กรองหรือ skip test; Client job รัน `npm ci`, Full Client tests และ build แยกจาก Server
 - ไม่รัน Full E2E/visual/responsive ของ Issue #73 และไม่อ้างว่า precondition test เท่ากับ backup/restore verification
 
-สถานะ CI: **Pending** ยังไม่มีผล GitHub Actions เพราะยังไม่ได้ Commit/Push ในรอบนี้ การตรวจรูปแบบและคำสั่งของ workflow ไม่ใช่หลักฐานว่า tests ผ่าน ต้องแนบ Run URL และผลจริงหลัง Push ก่อนยืนยัน Full Server ผ่านทั้งชุด ส่วนผล Local ในข้อ 11 และ Final-main Planned ยังคงเดิม
+สถานะขณะจัดเตรียม CI: **Pending** ข้อ 12 เป็นบันทึกก่อน Commit/Push ผล GitHub Actions ที่เกิดขึ้นภายหลังอยู่ในข้อ 13 โดยไม่แทนผล Local ในข้อ 11 หรือผล Dashboard รอบใหม่
+
+## 13. Historical CI: PR #77
+
+ตรวจ Run และ log จาก GitHub วันที่ 4 ตุลาคม 2026: [Lab 4 tests — run 37141299140](https://github.com/guluJa/toktickit/actions/runs/37141299140) เป็น `pull_request` run ของ revision `de4dcb6c6be6f33aaa1339b976dee44bb5c69a98` ใน PR #77 (runner checkout merge ref `6dd9dcb28c415eea0724bb8736f234a1811803e1`) ทั้งสอง jobs มี conclusion `success`
+
+| Job | ผลจาก log |
+|---|---|
+| Server tests and migration regression | 25 files / 251 tests passed; รวม real migration-preservation test, Prisma validate/generate, migrate deploy, seed สองรอบ และ Server build |
+| Client tests and build | 19 files / 108 tests passed; Client build ผ่าน |
+
+ผลนี้ยืนยัน revision ของ PR #77 บน GitHub-hosted Linux ไม่ใช่ผลของ Issue #72 หรือ Final-main และไม่ใช้แทนผล migration test ที่ Local Windows ยังเรียก `psql.exe` ไม่ได้
+
+## 14. Issue #72: Requester และ Staff Dashboards
+
+ตรวจวันที่ 4 ตุลาคม 2026 (Asia/Bangkok) บน `feature/05-lab4-role-dashboards` จาก HEAD `bb6049b` ซึ่งรวม PR #77 พร้อมการแก้ใน working tree ก่อน Stage/Commit
+
+### ขอบเขตและ Acceptance Criteria
+
+- AC-09 / API-05 / UI-03: Requester metrics และ recent/recently resolved lists กรองด้วย session requesterId; Backend ปฏิเสธ role อื่นและ identity header; My Tickets links คง `currentStatus`, `sortDirection` และ response เดิม
+- AC-10 / API-06 / UI-04: IT Staff และ Administrator ใช้ `/api/staff/dashboard`; counts/groupBy ครอบคลุมข้อมูลจริงทั้งหมด; recent Actions เป็นของ session user; byStatus/byPriority คืนครบทุก key รวมค่า 0
+- AC-12/13: `{ data: ... }`, `limit` ค่าเริ่มต้น 20/ช่วง 1–100, links, loading/zero/empty/forbidden/safe failure/retry และ keyboard/semantic/responsive classes ตรง Contract ผลตอบกลับเก่าไม่ทับข้อมูลหลังเปลี่ยนผู้ใช้
+- AC-15 / API-09: ทดสอบ Lab 2 My Tickets และ Lab 3 Queue พร้อม request/response เดิม เพิ่ม Requester regression สำหรับ query จาก Dashboard โดยคงค่าเริ่มต้น All Statuses/NEW; Actions และ Workflow เดิมผ่านใน Full suites ยกเว้นข้อจำกัด migration test ด้านล่าง
+- วันที่จัดเก็บเป็น UTC, แสดง Asia/Bangkok; ช่วง 7 วันเป็น `[asOf - 7 × 24 hours, asOf)` ตรวจ lower/upper boundary และ tie-breaker `updatedAt DESC, id DESC`/`actionAt DESC, id DESC` รวม limit=1/5/100 และ counts ที่มากกว่า list limit
+- PERF-01: HTTP smoke บนฐานทดสอบที่มี seed และ fixtures; แต่ละ route ตอบภายใน 2 วินาที, response ต่ำกว่า 100 KB และ embedded lists ไม่เกิน limit การตรวจนี้ไม่ใช่ production load test หรือ SLA
+
+### ผลคำสั่งจริง
+
+Server tests ใช้ `toktickit_e2e` ที่แยกจาก Development; fixtures ใช้บัญชี/ID เฉพาะและ cleanup หลังทดสอบ กรณี zero-data Staff ใช้ transaction snapshot ที่ rollback การลบทั้งหมด ไม่มี reset หรือเขียนข้อมูล Development/Production และไม่ได้แก้ schema, migration หรือ seed
+
+| คำสั่ง | ผลจริง |
+|---|---|
+| Server: `npm.cmd test -- tests/lab-04/requester-dashboard.api.test.ts tests/lab-04/staff-dashboard.api.test.ts tests/lab-04/performance-smoke.api.test.ts tests/lab-02/my-tickets.api.test.ts tests/lab-03/staff-queue.api.test.ts` | 5 files / 42 tests passed; exit 0; ไม่มี skip |
+| Client: `npm.cmd test -- tests/lab-04/RequesterDashboard.test.tsx tests/lab-04/StaffDashboard.test.tsx tests/lab-03/RequesterRegression.test.tsx` | 3 files / 20 tests passed; exit 0; ไม่มี skip |
+| Server: `npm.cmd test -- --silent` | 27 files passed / 1 failed; 271 tests passed / 1 failed; exit 1; ไม่มี skip |
+| Client: `npm.cmd test -- --silent` | 21 files / 126 tests passed; exit 0; ไม่มี skip |
+| Server/Client: `npm.cmd run build` | ผ่านทั้งสองคำสั่ง; exit 0 |
+| Server: `npx.cmd --no-install prisma validate` / `prisma generate` | ผ่านทั้งสองคำสั่ง; exit 0 |
+| Repository: `git diff --check` และตรวจไฟล์ใหม่แยกโดยไม่ Stage | ไม่พบ whitespace errors; LF/CRLF warnings ไม่ใช่ test failure |
+
+Dashboard API tests ใช้ PostgreSQL จริง; UI tests mock HTTP responses และตรวจ navigation/query ที่ App ส่ง จึงไม่ใช่หลักฐาน Full E2E/ภาพ responsive ผลเป็น feature-branch verification ไม่ใช่ Final-main
+
+### ข้อจำกัดและงานที่ยัง Planned
+
+Full Server ล้มเหลวเฉพาะ `preserves exact Lab 3 rows and relationships across the real Lab 4 migration` ใน `server/tests/lab-04/migration-regression.api.test.ts`: `spawnSync ... psql.exe UNKNOWN` ตามข้อจำกัด Application Control เดิม ไม่เปลี่ยนหรือ skip test และไม่ปิด Smart App Control ผล PR #77 ในข้อ 13 เป็นประวัติคนละ revision; CI ของ Issue #72 ยัง Pending จนกว่าจะเปิด/อัปเดต PR เข้า `lab4-staging` และตรวจผลจริงจาก workflow เดิม
+
+E2E-03, STYLE-01/AUTH-01 แบบรวมฟีเจอร์, browser responsive/visual evidence อยู่ใน Issue #73; release/Final-main อยู่ใน Issue #74 คอลัมน์ Final ใน Test Matrix และ AC ยัง Planned ไม่มีการสร้าง Review/Approval หรือ Merge evidence ในรอบนี้
