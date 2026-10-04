@@ -1,6 +1,6 @@
 # TokTickIT Lab 4: ข้อกำหนด REST API
 
-สถานะ: Action API พัฒนาและ merge แล้วใน PR #75; Workflow และ Dashboard ยัง Planned ใน Issues #71–#72
+สถานะ: Action API และ Workflow merge แล้วใน PR #75/#77; Dashboard พัฒนาและตรวจบน feature branch ของ Issue #72 ยังไม่ใช่ผล Final-main
 Baseline: ใช้ response envelope และ security conventions ของ docs/lab-03/api-spec.md
 
 ## 1. Conventions
@@ -150,7 +150,7 @@ Request body:
       "version": 3
     }
 
-`version` ต้องเป็นค่า `Ticket.version` ล่าสุดจาก Backend โดย Staff Detail อ่าน `data.ticket.version` ส่วน Requester Detail อ่าน `version` ของ Ticket object ที่ไม่ห่อ envelope ตาม Lab 3 ทั้งสองจุดเป็นแผนเพิ่ม field ใน Issue #71 ไม่ใช่ field ที่ foundation ส่งแล้ว ห้ามใช้ `ActionTaken.version` หรือเวลาที่ Client สร้างแทน เมื่อสำเร็จ Backend เปลี่ยน Status และเพิ่ม `Ticket.version` ใน transaction เดียวกัน
+`version` ต้องเป็นค่า `Ticket.version` ล่าสุดจาก Backend โดย Staff Detail อ่าน `data.ticket.version` ส่วน Requester Detail อ่าน `version` ของ Ticket object ที่ไม่ห่อ envelope ตาม Lab 3 ทั้งสองจุดเพิ่มแล้วใน Issue #71/PR #77 ห้ามใช้ `ActionTaken.version` หรือเวลาที่ Client สร้างแทน เมื่อสำเร็จ Backend เปลี่ยน Status และเพิ่ม `Ticket.version` ใน transaction เดียวกัน
 
 เมื่อ `status` เป็น `REOPENED` ต้องส่ง `reopenReason` ที่ trim แล้วไม่ว่างเพิ่มใน body; Status อื่นต้องไม่ส่ง `reopenReason` หรือส่งเป็น `null`. หลังจาก Ticket อยู่ `REOPENED` แล้ว IT Staff ใช้ route เดิมเปลี่ยนเป็น `IN_PROGRESS` ได้ตาม Matrix และต้องใช้ `Ticket.version` ล่าสุด
 
@@ -259,13 +259,17 @@ Metrics ต้องประกอบด้วย unassignedCount, mineCount, b
 
 Query ของ metric link คง API เดิมของ Lab 3: Requester ใช้ `GET /api/tickets?currentStatus=<status>&sortBy=updatedAt&sortDirection=desc&page=1&pageSize=10` และ Staff ใช้ `GET /api/staff/tickets?status=<status>&sortBy=updatedAt&sortOrder=desc&page=1&pageSize=10` โดยเพิ่ม `ownerId=<id|unassigned>` เฉพาะลิงก์ My Assigned/Unassigned. ไม่เปลี่ยนชื่อ query หรือ response ของ My Tickets เดิม; Client ของ Dashboard ต้องส่ง `currentStatus` และรองรับ status ที่ใช้ในลิงก์ โดยคงหน้าจอ My Tickets เดิม. `pageSize=10` เป็นค่าที่ Queue ทั้งสองรองรับและไม่ขึ้นกับ Dashboard `limit=1–100`: `limit` จำกัดเฉพาะรายการที่ฝังใน Dashboard ไม่ใช่จำนวนแถวใน Queue ปลายทาง. สำหรับ metric ที่รวมหลาย status ให้ทำลิงก์แยกตาม status ที่เกี่ยวข้อง (Recently Resolved แยก `RESOLVED`/`CLOSED`); Recent Actions และแถว Ticket เปิด Detail ด้วย `ticketId`. Queue เดิมไม่มีตัวกรองช่วง 7 วัน จึงเป็นหน้ารายการที่กว้างกว่า metric ล่าสุด ไม่อ้างว่าจำนวนแถวใน Queue เท่ากับ count ของ Dashboard; รายการ Dashboard เองยังต้องตรงกับช่วง 7 วัน
 
-Lab 3 Backend รองรับ `currentStatus` หลายค่าแล้ว แต่ Client `MyTicketsQuery` และตัวเลือกใน My Tickets ปัจจุบันจำกัดเพียง `NEW`; งาน Dashboard ใน Issue ถัดไปต้องขยาย Client ให้รับ status จาก link object และนำ query ไปใช้เมื่อเปิด My Tickets โดยยังคง default/filter เดิมไว้. นี่เป็นแผนความเข้ากันได้ ไม่ใช่การแก้ Client ใน PR #68
+Issue #72 ขยาย `MyTicketsQuery` และตัวเลือก My Tickets ให้รองรับทุก `TicketStatus` และนำ query จาก Dashboard link ไปใช้เมื่อเปิดหน้าเดิม ยังคง All Statuses/NEW, ค่าเริ่มต้น และ response ของ Lab 3; ไม่เปลี่ยน Backend list API เดิม
 
 - 200: success
 - 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
 - 403: ROLE_FORBIDDEN
 
 Administrator ใช้ GET /api/staff/dashboard ตาม role policy เดียวกัน ไม่สร้าง `/api/admin/dashboard` แยกใน Lab 4 เวอร์ชันนี้ เพื่อลด route ซ้ำและคงสิทธิ์ Dashboard ที่ตรวจสอบได้จาก Backend
+
+ทั้งสอง Dashboard routes ใช้ session จริง ไม่รับ development identity header และบังคับ password-change gate (`403 PASSWORD_CHANGE_REQUIRED`) รับเฉพาะ query `limit` ค่าเริ่มต้น 20; query อื่นหรือ limit ผิดตอบ `400 VALIDATION_ERROR` ความล้มเหลวภายในตอบ `500 INTERNAL_ERROR` โดยไม่เผย SQL หรือข้อมูลลับ
+
+Backend อ่าน counts, breakdowns และ limited lists ใน transaction แบบ consistent snapshot (`REPEATABLE READ`) พร้อม `asOf` เดียวกัน ยอดรวมคำนวณจาก count/groupBy ไม่ใช่จำนวนแถวใน recent lists และไม่มีการแก้ Ticket, Action หรือ version จากการอ่าน Dashboard
 
 ## 8. Validation and Safe Errors
 

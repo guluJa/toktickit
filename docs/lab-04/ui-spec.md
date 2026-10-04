@@ -1,12 +1,13 @@
 # TokTickIT Lab 4: ข้อกำหนดหน้าจอ
 
-สถานะ: Actions Taken UI อยู่ใน PR #76 ซึ่งยังรอ review; Workflow และ Dashboard ยัง Planned ใน Issues #71–#72
+สถานะ: Actions Taken UI และ Workflow merge แล้วใน PR #76/#77; Dashboard พัฒนาและตรวจบน feature branch ของ Issue #72 หลักฐาน Full E2E/visual ยัง Planned
 Baseline: Zen Green, role navigation, accessibility และ responsive conventions จาก docs/lab-03/ui-spec.md
 
 ## 1. Application Shell
 
 - แสดง authenticated user, role badge และ Logout
 - แสดง Dashboard ตาม Role
+- Requester เปิด Requester Dashboard จาก navigation; IT Staff และ Administrator เปิด Staff Dashboard route เดียวกัน คงหน้าตั้งต้น Create Ticket/Staff Queue/User Management ของ Lab 3
 - คง Staff Queue, Ticket Detail, My Tickets, User Management และ Create Ticket จาก Lab 3
 - ห้ามคืน Development Requester selector ใน production flow
 - Navigation active state ต้องสื่อสารด้วยข้อความ/โครงสร้าง ไม่พึ่งสีเพียงอย่างเดียว
@@ -50,9 +51,13 @@ Controls:
 
 Metric link ไป My Tickets ใช้ `currentStatus` (ไม่ใช่ `status`), `sortBy=updatedAt`, `sortDirection=desc`, `page=1`, `pageSize=10`; Client ของ Dashboard ต้องรองรับ status ที่ใช้ในลิงก์โดยไม่เปลี่ยนพฤติกรรมหน้ารายการเดิม. เมตริกที่รวมหลายสถานะมีลิงก์แยกตามสถานะ และรายการช่วง 7 วันใน Dashboard อาจมีจำนวนน้อยกว่า My Tickets ที่เปิดจากลิงก์ เพราะ API เดิมไม่มีตัวกรองวันที่
 
-My Tickets ของ Lab 3 ยังเลือกได้เฉพาะ `NEW` ใน UI; งาน Dashboard ต้องส่ง query ของ link object เข้าหน้าเดิมและขยายตัวเลือกสถานะที่จำเป็นโดยไม่ลบ All Statuses/NEW หรือเปลี่ยนค่าเริ่มต้นของผู้ที่เปิด My Tickets ตามปกติ
+My Tickets รับ query ของ Dashboard link และรองรับทุก TicketStatus โดยคง All Statuses/NEW และค่าเริ่มต้นของผู้ที่เปิด My Tickets ตามปกติ Staff Queue รับ query ของ link โดยแสดงค่าตัวกรองให้ตรงกัน เมื่อเปิดหน้ารายการจาก navigation ตามปกติจะกลับไปใช้ค่าเริ่มต้นเดิม
 
 Metric ขั้นต่ำต้องมี Open Tickets, Waiting for Requester, Recently Updated และ Recently Resolved โดย Recently Resolved แสดงจำนวนและรายการ Ticket ที่เป็น RESOLVED/CLOSED และ updatedAt อยู่ในช่วงเวลาที่ Contract กำหนด
+
+Dashboard แสดงเวลา Asia/Bangkok และอธิบายว่า Recently Resolved อ้าง `updatedAt` ของ Ticket ที่ปัจจุบัน RESOLVED/CLOSED ไม่ใช่เวลาที่ resolve จริง หน้าจอใช้ยอดรวมจาก Backend โดยไม่คำนวณจากรายการที่จำกัด limit; ปุ่ม drill-down ส่ง link object เดิมไปหน้าปลายทาง
+
+ระหว่างโหลดไม่แสดงข้อมูลของคำขอก่อนหน้า ปุ่ม Refresh ถูกปิดขณะโหลด และผลตอบกลับเก่าต้องไม่ทับข้อมูลหลังเปลี่ยนผู้ใช้/Role ข้อผิดพลาดใช้ข้อความปลอดภัยพร้อม Retry/Refresh; forbidden ไม่แสดง metrics หรือรายการ Metric cards ใช้หนึ่งคอลัมน์บนมือถือ สองคอลัมน์บน tablet และสามคอลัมน์บน desktop พร้อม semantic headings, status/alert และ keyboard controls การตรวจภาพบน browser อยู่ใน Issue #73
 
 ### 2.3 Actions Taken ใน Staff Ticket Detail
 
