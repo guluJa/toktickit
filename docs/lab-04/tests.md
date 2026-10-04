@@ -1,7 +1,7 @@
 # TokTickIT Lab 4: แผนทดสอบและการเชื่อมโยงข้อกำหนด
 
-สถานะ: แผนทดสอบพร้อมผลตรวจ Foundation, Actions UI, Workflow และ Dashboard ระหว่างพัฒนา
-คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจระหว่างพัฒนาและ CI ที่เกิดขึ้นจริงบันทึกแยกในข้อ 7–14
+สถานะ: แผนทดสอบพร้อมผลตรวจ Foundation, Actions UI, Workflow, Dashboard และ hardening ระหว่างพัฒนา
+คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจระหว่างพัฒนาและ CI ที่เกิดขึ้นจริงบันทึกแยกในข้อ 7–16
 
 ## 1. Test Strategy
 
@@ -41,6 +41,11 @@
 
 Server:
 
+- `server/tests/lab-01/health.test.ts`
+- `server/tests/lab-01/categories.test.ts`
+- `server/tests/lab-02/create-ticket.api.test.ts`
+- `server/tests/lab-02/attachments.api.test.ts`
+- `server/tests/lab-02/ticket-detail.api.test.ts`
 - `server/tests/lab-02/my-tickets.api.test.ts`
 - `server/tests/lab-03/auth.api.test.ts`
 - `server/tests/lab-03/auth.unit.test.ts`
@@ -322,3 +327,70 @@ Dashboard API tests ใช้ PostgreSQL จริง; UI tests mock HTTP respon
 Full Server ล้มเหลวเฉพาะ `preserves exact Lab 3 rows and relationships across the real Lab 4 migration` ใน `server/tests/lab-04/migration-regression.api.test.ts`: `spawnSync ... psql.exe UNKNOWN` ตามข้อจำกัด Application Control เดิม ไม่เปลี่ยนหรือ skip test และไม่ปิด Smart App Control ผล PR #77 ในข้อ 13 เป็นประวัติคนละ revision; CI ของ Issue #72 ยัง Pending จนกว่าจะเปิด/อัปเดต PR เข้า `lab4-staging` และตรวจผลจริงจาก workflow เดิม
 
 E2E-03, STYLE-01/AUTH-01 แบบรวมฟีเจอร์, browser responsive/visual evidence อยู่ใน Issue #73; release/Final-main อยู่ใน Issue #74 คอลัมน์ Final ใน Test Matrix และ AC ยัง Planned ไม่มีการสร้าง Review/Approval หรือ Merge evidence ในรอบนี้
+
+## 15. Historical CI: PR #78
+
+ตรวจ Run/log จริงจาก GitHub: [run 37206924423](https://github.com/guluJa/toktickit/actions/runs/37206924423) ของ PR #78 revision `bf04947d5ff3e372c546c5cdef511d2e7a28b7ea` ทั้งสอง jobs สำเร็จ: Server 28 files / 272 tests และ Client 21 files / 126 tests พร้อม builds ผ่าน PR #78 merge เข้า `lab4-staging` เป็น `51bcf9c86d89e2a1df0df86b9021d12d341f5bab`
+
+นี่คือ historical feature CI ไม่ใช่ผล hardening รอบนี้หรือ Final-main ข้อจำกัด Local ของรอบ #71/#72 ยังคงบันทึกตามเดิม ไม่เปลี่ยนผลเก่าย้อนหลัง
+
+## 16. Issue #73: Hardening และ integrated verification
+
+ตรวจวันที่ 4–5 ตุลาคม 2026 (Asia/Bangkok) บน `feature/06-lab4-final-hardening` จาก `lab4-staging` HEAD `51bcf9c` พร้อม working-tree changes ก่อน Stage/Commit ไม่ใช่ผล staging หลัง merge หรือ Final-main
+
+### Read-only audit ก่อนแก้
+
+- Branch/HEAD ถูกต้อง, working tree เริ่มต้นสะอาด และมี merge ของ PR #78; ตรวจ Issue #73, Labsheet และเอกสาร Lab 4 ทั้งหกไฟล์เทียบกับ implementation/tests จริง
+- AC-01–12 มี Model/API/UI/workflow/authorization และ integration tests แล้ว ไม่จำเป็นต้องเพิ่ม policy, model, migration หรือ API ใหม่
+- AC-13–16 ยังขาด browser integration ของ Lab 4, `AUTH-01`/`STYLE-01`, ภาพและ visual checklist ที่ตรวจจริง, selected metric evidence เทียบ PostgreSQL/API/UI และ README Lab 4
+- พบช่อง Owner ID ไม่มี visible label และ guard เดิมเทียบ database URL ทั้งเส้นซึ่งแยก credentials/query ไม่ใช่ฐานข้อมูลจริง จึงแก้เฉพาะ label กับ guard ไม่เปลี่ยนสิทธิ์หรือกติกาฟีเจอร์
+- Rubric assign/complete/cancel/append-only ใช้การจับคู่ตาม specification ข้อ 12 ไม่เพิ่ม Action lifecycle, deletion หรือ history model และไม่อ้างว่าได้รับคำยืนยันจาก TA
+
+### หลักฐานตาม Acceptance Criteria
+
+| AC | หลักฐานในรอบ hardening |
+|---|---|
+| AC-01/02/03 | API-01/02, AUTH-01 และ E2E-01: performer จาก session, Admin edit คง performer, Requester owned read-only และ direct API denial |
+| AC-04/05 | UNIT-01/API-01/03/UI-01; E2E-01 มี zero/one/many, 102 Actions/สองหน้า, follow-up validation และลำดับเดิม |
+| AC-06/07 | UNIT-02/API-04/UI-05 และ E2E-02; API ตรวจครบ 64 transition pairs, gate, indication; browser สาธิต RESOLVED พร้อม follow-up, CLOSED หลังเคลียร์, reopen reason, REOPENED → IN_PROGRESS และ CANCELLED terminal |
+| AC-08 | API-03/04 ทดสอบ atomic Action/Status ทั้งสองลำดับด้วย database lock จริง; E2E-02 ทดสอบ Action PATCH version เดียวกันสำเร็จหนึ่งคำขอและ stale Ticket UI คงฟอร์ม |
+| AC-09/10 | API-05/06/UI-03/04 และ E2E-03; `dashboard-metrics.json` บันทึก asOf, selected counts และ IDs ที่เทียบ PostgreSQL/API/UI; รวม current-user Actions และ recently resolved lists |
+| AC-11 | API-07/08/MIG-01 ผ่าน: snapshot ก่อน/หลัง migration, ID/FK/data เดิม, version=1 และ seed ซ้ำ; backup/restore รอบใหม่เปรียบเทียบ complete row snapshots ตรงกันบน scratch database แล้ว cleanup สำเร็จ |
+| AC-12/13 | Full API/UI suites และ E2E-01–03 ตรวจ error envelope, safe failure, loading/empty/forbidden/validation/conflict/retry; ไม่แสดง private error details |
+| AC-14 | STYLE-01/RESP-01, browser keyboard/focus/labels/error association/overflow/overlap และภาพ desktop/tablet/mobile; ผลตรวจภาพอยู่ใน ui-spec ข้อ 7–8 |
+| AC-15 | Full Server/Client ครอบคลุม Labs 1–3; authenticated Lab 3 E2E ครบทั้ง 6 กรณี มี attachments, comments, notes, assignment และ user management |
+| AC-16 | UI-01/E2E-01: double-click มี POST หนึ่งครั้ง; timeout/lost response คงฟอร์ม, identical old Action ไม่ใช่หลักฐาน success, อ่านครบทุกหน้า, original POST บันทึกภายหลัง, failed reconciliation และ explicit duplicate-risk confirmation |
+
+### คำสั่งและผลรอบล่าสุด
+
+ใช้ `artifacts/lab-04/run-verification.mjs` กำหนดฐาน `toktickit_e2e` ภายใน process, ไม่แก้ `.env`, ไม่ reset และไม่แตะฐาน Development/Production คำสั่ง/เวลา/exit code/stdout/stderr ที่กรองข้อมูลลับอยู่ใน `artifacts/lab-04/verification/commands.json` และไฟล์ `.txt` ตามชื่อคำสั่ง
+
+| ชุดตรวจ | ผลจริง | Log |
+|---|---|---|
+| Prisma validate/generate, migrate status/deploy | exit 0; migrations เดิมครบ ไม่สร้างหรือแก้ migration | `prisma-validate.txt`, `prisma-generate.txt`, `migration-status.txt`, `migration-deploy.txt` |
+| Seed สองรอบ | exit 0 ทั้งคู่; repeated-seed assertions ผ่านใน Server tests | `seed-first.txt`, `seed-second.txt` |
+| Focused Server Lab 4 | 9 files / 123 tests passed | `server-focused.txt` |
+| Full Server Labs 1–4 | 28 files / 272 tests passed รวม real migration-preservation และ PERF-01 | `server-full.txt` |
+| PERF-01 แบบมีผลวัด | Requester 30 ms / 4,353 UTF-8 bytes; Staff 24 ms / 9,171 bytes, limit=5; ผ่าน <2 วินาที/<100 KB เป็นผล smoke รอบนี้ ไม่ใช่ SLA | `performance-smoke.txt` |
+| Focused Client Lab 4 | 7 files / 59 tests passed | `client-focused.txt` |
+| Full Client Labs 1–4 | 23 files / 131 tests passed | `client-full.txt` |
+| Server/Client builds | exit 0 ทั้งสองคำสั่ง | `server-build.txt`, `client-build.txt` |
+| Focused Lab 4 E2E | 9 tests passed; exit 0 | `e2e-focused.txt` |
+| Full E2E และ responsive | 15 tests passed ต่อคำสั่ง; exit 0 ทั้งคู่; 6 authenticated Lab 3 regressions + 9 Lab 4/safety cases | `e2e-full.txt`, `responsive.txt` |
+| Backup/restore รอบใหม่ | exit 0 ด้วย PowerShell 7 ที่มี RemoteSigned อยู่แล้ว; `ROW_SNAPSHOT_MATCH=true`, scratch/drop และ temp-dump cleanup สำเร็จ ไม่เปลี่ยน policy | `recovery-restore.txt` |
+
+ไม่มี `skip` ใน suites ที่รัน รายการ `e2e/lab-02/` ถูก exclude ตาม config เดิมเพราะใช้ Development Requester selector ที่เลิกใช้งานแล้ว ไม่ได้นับเป็น Pass หรือเป็น authenticated browser coverage; พฤติกรรม Lab 2 ตรวจด้วย full API/component suites และ Lab 3 authenticated E2E
+
+### ขอบเขตการพิสูจน์
+
+- E2E ใช้ Chromium, desktop 1440×1000, tablet 820×1180 และ mobile 375×812 ไม่ใช่การรับรองทุก browser/device หรือ WCAG certification; ไม่ทำซ้ำทุก business case บนทุก viewport เพราะแยก flow assertions กับ responsive captures
+- Dashboard selected counts ใช้ query PostgreSQL ณ `asOf` ของ API และตรวจค่าที่ UI แสดง ขอบเขต `[asOf - 7 × 24h, asOf)`, timezone, tie-breaker และ limit=1/5/100 ตรวจใน API-05/06; browser ตรวจ recent/current-user lists, valid Queue `pageSize=10` กับ Dashboard `limit=5` และ Detail destinations
+- ภาพ Staff `empty-fixture-*` ใช้ controlled empty HTTP response เพื่อพิสูจน์ UI เท่านั้น ไม่อ้างว่า PostgreSQL ทั้งฐานว่าง; zero-data Backend ทดสอบด้วย transactional snapshot ที่ rollback ใน API-06 ส่วน Requester empty ใช้บัญชีที่ไม่มี Ticket จริง
+- กรณี late commit ถือ lock บน Ticket fixture ชั่วคราว ยืนยันคำขอเดิมรอด้วย `pg_blocking_pids` ก่อน browser ขาด response แล้วปล่อยให้คำขอเดิมบันทึกสำเร็จ ไม่ส่ง POST ใหม่แทน; กรณี timeout ใช้ browser clock เร่ง timer 30 วินาทีหลัง real server commit โดยหน่วง response ผลทั้งสองกรณียังคง submission-uncertain ไม่รับรอง Backend deduplication
+- Browser logs อยู่ใน `verification/browser/`: ไม่มี uncaught `pageerror`; 401 ของ unauthenticated `/api/auth/me` และ 403/409/503/network failures ที่จงใจสร้างเป็น expected checks ไม่อ้างว่า console ไม่มี HTTP errors เลย Normal Dashboard flow ตรวจว่าไม่มี unexpected API failure
+- PERF-01 เป็น HTTP smoke บน seed/fixtures: response แต่ละ route <2 วินาที, <100 KB และ lists ไม่เกิน limit ไม่ใช่ production benchmark หรือ SLA
+- Recovery ใช้ procedure `verify-recovery.ps1` เดิมโดยไม่แก้ script หรือ migration: backup ฐานทดสอบ → restore ไปยัง scratch ใหม่ → เปรียบเทียบ complete row snapshots → drop เฉพาะ scratch และลบ temporary dump รอบแรก Windows PowerShell 5 ปฏิเสธ script ด้วย Restricted (`recovery-restore-powershell5.txt`); ตรวจแล้ว PowerShell 7 ที่มีอยู่ใช้ RemoteSigned จึงรันได้ด้วย policy เดิมและได้ exit 0 (`recovery-restore.txt`) ไม่ลดการป้องกันหรือใช้ policy bypass หลักฐาน Foundation เดิมยังเก็บแยกใน `artifacts/lab-04/migration-recovery.txt`
+
+### สถานะก่อน Peer Review
+
+Test/evidence เป็นของ feature working tree นี้เท่านั้น Peer Review และ merge เข้า `lab4-staging` ยัง Pending ต้องตรวจผลอีกครั้งบน staging หลัง merge ก่อน Release งาน Issue #74 และคอลัมน์ Final/Product DoD ยังคง Planned ไม่ Stage/Commit/Push หรือสร้าง PR ในรอบนี้

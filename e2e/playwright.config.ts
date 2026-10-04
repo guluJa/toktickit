@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { assertDedicatedE2EDatabase } from "./database-guard.js";
 
 const e2eDirectory = path.dirname(fileURLToPath(import.meta.url));
+const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const developmentEnvPath = path.resolve(e2eDirectory, "../server/.env");
 const e2eDatabaseUrl = assertDedicatedE2EDatabase(
   process.env.E2E_DATABASE_URL,
@@ -22,9 +23,9 @@ export default defineConfig({
   expect: {
     timeout: 10_000,
   },
-  // Use a dedicated Lab 3 output directory so an open report from an earlier
+  // Use a dedicated Lab 4 output directory so an open report from an earlier
   // run cannot block the next verification run on Windows.
-  outputDir: path.resolve(e2eDirectory, "../test-results-lab3"),
+  outputDir: path.resolve(e2eDirectory, "../test-results-lab4"),
   use: {
     baseURL: "http://localhost:5173",
     screenshot: "only-on-failure",
@@ -33,11 +34,12 @@ export default defineConfig({
       width: 1440,
       height: 1000,
     },
+    timezoneId: "Asia/Bangkok",
   },
-  reporter: [["list"], ["html", { outputFolder: path.resolve(e2eDirectory, "../playwright-report-lab3"), open: "never" }]],
+  reporter: [["list"], ["html", { outputFolder: path.resolve(e2eDirectory, "../playwright-report-lab4"), open: "never" }], ["json", { outputFile: path.resolve(e2eDirectory, "../test-results-lab4/results.json") }]],
   webServer: [
     {
-      command: "npm.cmd run dev",
+      command: `${npm} run dev`,
       cwd: path.resolve(e2eDirectory, "../server"),
       env: { ...process.env, DATABASE_URL: e2eDatabaseUrl },
       url: "http://127.0.0.1:3000/api/health",
@@ -47,10 +49,10 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: "npm.cmd run dev -- --host 127.0.0.1",
+      command: `${npm} run dev -- --host 127.0.0.1`,
       cwd: path.resolve(e2eDirectory, "../client"),
       url: "http://localhost:5173",
-      reuseExistingServer: true,
+      reuseExistingServer: false,
       timeout: 120_000,
     },
   ],

@@ -130,22 +130,31 @@ Frontend restrictions ต้องมี Backend authorization รองรั�
 
 ## 7. Visual Checklist
 
-สถานะเริ่มต้นทุกข้อ: Planned
+ตรวจบน feature working tree ของ Issue #73 จาก baseline `51bcf9c` วันที่ 4–5 ตุลาคม 2026; ไม่ใช่ checklist ของ Final-main ใช้ browser assertions ร่วมกับการตรวจภาพตัวแทนของฟอร์ม create/edit, Dashboard cards/empty/failure และ workflow แต่ละขนาด ไม่อ้างว่าตรวจภาพทุกไฟล์ด้วยตา หรือทำ WCAG certification
 
-- [ ] Zen Green tokens และ component conventions ต่อเนื่อง
-- [ ] Dashboard navigation และ authenticated identity ถูกต้อง
-- [ ] Metric cards มี label/value และ drill-down
-- [ ] Actions Taken แยก owner, performer และ read-only fields ชัดเจน
-- [ ] Status/priority/follow-up ใช้ text และ non-color cues
-- [ ] Loading, empty, forbidden, validation, conflict และ failure อ่านง่าย
-- [ ] Desktop/tablet/mobile ไม่มี clipping หรือ overlap
-- [ ] ไม่มี page-level horizontal overflow
-- [ ] Keyboard focus, labels, semantics และ aria-live ผ่านการตรวจจริง
+- [x] Zen Green tokens และ component conventions ต่อเนื่อง: STYLE-01 และภาพ metric/action panels
+- [x] Dashboard navigation และ authenticated identity ถูกต้อง: E2E-03 ทั้ง Requester/IT Staff/Administrator รวมเมนูพับบน mobile
+- [x] Metric cards มี label/value และ drill-down: API-05/06, E2E-03 และ `verification/dashboard-metrics.json`
+- [x] Actions Taken แยก owner, performer และ read-only fields ชัดเจน: E2E-01, ภาพ `*-actions-panel.png`; Requester ไม่มี editor
+- [x] Status/priority/follow-up ใช้ text และ non-color cues: STYLE-01, ภาพ workflow และ Dashboard breakdowns
+- [x] Loading, empty, forbidden, validation, conflict และ failure อ่านง่าย: UI-01–05, AUTH-01 และ E2E-01–03; ภาพ Staff empty/failure เป็น controlled-response scenarios ตาม tests.md
+- [x] Desktop/tablet/mobile ไม่มี clipping หรือ overlap ในหน้าจอที่ตรวจ: 1440×1000, 820×1180, 375×812; visual inspection และ browser button bounds/overlap checks
+- [x] ไม่มี page-level horizontal overflow: browser assertions ทุก viewport ที่เก็บภาพ; container ที่ออกแบบให้ scroll แยกไม่ถือเป็น page overflow
+- [x] Keyboard focus, labels, semantics และ error associations ผ่านการตรวจจริง: STYLE-01, Action description → Result/checkbox, Queue Search → Status และ keyboard Retry; เพิ่ม visible label ให้ Owner ID โดยไม่เปลี่ยน assignment behavior
 
-## 8. Planned Evidence Paths
+Final-main visual checklist: Pending ต้องตรวจซ้ำหลัง Release ใน Issue #74
+
+## 8. Evidence Paths ของ Issue #73
 
 - artifacts/lab-04/screenshots/staff-dashboard/
 - artifacts/lab-04/screenshots/requester-dashboard/
 - artifacts/lab-04/screenshots/actions-taken/
 
-ยังไม่มีภาพหรือผล visual inspection ของ Lab 4 ในรอบนี้ การตรวจจริงบน desktop/tablet/mobile อยู่ใน Issue #73 ให้บันทึกผลพร้อม revision ที่ตรวจ และตรวจซ้ำบน final main ใน Issue #74 โดยไม่ใช้ component tests แทนหลักฐานภาพ
+ภาพเป็น native browser captures มีทั้งเต็มหน้าและภาพ panel/metrics ที่อ่านง่าย ไม่ใช้ภาพจากรุ่นเดิมอ้างแทนฟอร์มปัจจุบัน:
+
+- Staff Dashboard: `populated-{desktop,tablet,mobile}.png`, ภาพ `*-metrics.png` และ `*-my-actions.png`; `empty-fixture-*`, `forbidden-mobile.png`, `safe-failure-mobile.png`
+- Requester Dashboard: `populated-*`, `*-metrics.png` และ `empty-*` จาก Requester ที่ไม่มี Ticket จริง
+- Actions Taken: `create-validation-*`, `edit-*` และ `workflow-reopen-*` พร้อม `*-actions-panel.png`; editor captures เห็น labels/fields/controls ไม่ใช่เฉพาะรายการ
+- Regression รอบใหม่: `artifacts/lab-04/screenshots/regression-lab-03/` เก็บ authentication, queue/detail และ user management โดยไม่ทับภาพที่ส่งใน Lab 3
+
+รายละเอียด viewport, controlled fault injection, console/network และขอบเขตการตรวจอยู่ใน tests.md ข้อ 16 ผลเป็น feature-branch verification; staging หลัง merge และ Final-main ยัง Pending
