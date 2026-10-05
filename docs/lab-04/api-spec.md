@@ -1,6 +1,6 @@
 # TokTickIT Lab 4: ข้อกำหนด REST API
 
-สถานะ: Action API และ Workflow merge แล้วใน PR #75/#77; Dashboard พัฒนาและตรวจบน feature branch ของ Issue #72 ยังไม่ใช่ผล Final-main
+สถานะ: Action API, Workflow และ Dashboard merge แล้วใน PR #75/#77/#78; hardening merge ใน PR #79 และมีผล Release candidate ใน tests.md ข้อ 17 ยังไม่ใช่ผล Final-main
 Baseline: ใช้ response envelope และ security conventions ของ docs/lab-03/api-spec.md
 
 ## 1. Conventions
@@ -304,4 +304,4 @@ Backend อ่าน counts, breakdowns และ limited lists ใน transacti
 - server/tests/lab-04/requester-dashboard.api.test.ts
 - server/tests/lab-04/staff-dashboard.api.test.ts
 
-Action routes ในข้อ 4–5 มี implementation และ tests แล้วใน PR #75; ข้อ 6–7 เป็น Contract สำหรับ Issues #71–#72 ผล Final-main ของ Lab 4 ยัง Planned และผลตรวจระหว่างพัฒนาดูได้จาก `tests.md`
+Action routes ในข้อ 4–5 มี implementation และ tests ใน PR #75 ส่วน Workflow/Dashboard ในข้อ 6–7 มี implementation และ tests ใน PR #77/#78 แล้ว ผลระหว่างพัฒนาและ Release candidate อยู่ใน `tests.md`; ผล Final-main ของ Lab 4 ยัง Planned ไม่มีการเปลี่ยน route, response หรือ policy ในรอบ pre-release นี้

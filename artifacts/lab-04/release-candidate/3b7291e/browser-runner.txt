@@ -1,0 +1,4 @@
+e2e-full: npm.cmd test --
+e2e-full: exit 0
+responsive: npm.cmd run test:responsive
+responsive: exit 0

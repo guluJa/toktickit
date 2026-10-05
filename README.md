@@ -267,4 +267,16 @@ git diff --check
 
 คำว่า assign/complete/cancel ใน rubric จับคู่กับ Ticket assignment/Status ตาม `docs/lab-04/specification.md` ข้อ 12; append-only ใช้ Public Comments/Internal Notes ไม่ใช่ Action ที่ Contract อนุญาตให้แก้ นี่คือการตีความใน Contract ที่ผ่าน peer review ไม่ใช่คำยืนยันจาก TA
 
-ภาพ Lab 4 อยู่ใน `artifacts/lab-04/screenshots/` มีภาพเต็มหน้าและภาพ panel/metrics ที่อ่านได้ ภาพ regression รอบใหม่อยู่ใต้ `regression-lab-03/` โดยไม่ทับหลักฐาน Lab 3 เดิม ผลบน feature branch ยังไม่ใช่ผล `lab4-staging` หลัง merge หรือ Final-main; Release และ PDF Answer Part 1–9 เป็นงาน Issue #74
+ภาพ Lab 4 อยู่ใน `artifacts/lab-04/screenshots/` มีภาพเต็มหน้าและภาพ panel/metrics ที่อ่านได้ ภาพ regression รอบใหม่อยู่ใต้ `regression-lab-03/` โดยไม่ทับหลักฐาน Lab 3 เดิม ผล feature branch แยกจาก Release candidate และไม่ใช่ Final-main; Release และ PDF Answer Part 1–9 เป็นงาน Issue #74
+
+### Release candidate
+
+ผลตรวจ staging commit `3b7291e` อยู่ใน `artifacts/lab-04/release-candidate/3b7291e/` แยกจากหลักฐาน Issue #73 คำสั่งที่ใช้จริง:
+
+```powershell
+node artifacts/lab-04/run-release-candidate.mjs 3b7291e
+```
+
+Runner export commit ของ `lab4-staging` ด้วย `git archive` ไปยัง snapshot ชั่วคราวและใช้ dependencies ที่ติดตั้งไว้ รัน Prisma/migration/seed, full tests/builds, E2E/responsive และ recovery บน `toktickit_e2e` เท่านั้น ไม่แก้ Source Code/tests ใน snapshot ไม่เขียนทับหลักฐานเดิม ไม่ Stage/Commit/Push และปฏิเสธ output directory ที่มีอยู่แล้ว เพื่อไม่ลบผลรอบก่อน หลังรันลบ snapshot, private `.env` และ temporary reports; logs ที่เก็บกรองข้อมูลลับแล้ว CI หลัง merge ตรวจ `npm ci` จาก lockfiles บน hosted runner แยกต่างหาก
+
+ลำดับ Release: review เอกสารเตรียม Release เข้า staging ก่อน → เปิด PR `lab4-staging` ไป `main` → peer review/merge → ตรวจ final `main` commit จริง → review เอกสาร/หลักฐาน Final → จัดทำ PDF Answer Part 1–9 ห้ามปิด Issue #74 อัตโนมัติจาก Release PR ก่อนหลักฐาน Final เสร็จ ผล staging ที่ผ่านไม่เปลี่ยนคอลัมน์ Final เป็น Pass
