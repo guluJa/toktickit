@@ -60,7 +60,8 @@ export function lab3ScreenshotPath(
   screen: "authentication" | "staff-queue" | "staff-ticket-detail" | "user-management",
   filename: string,
 ): string {
-  return path.join(REPOSITORY_ROOT, "artifacts", "lab-03", "screenshots", screen, filename);
+  // New regression evidence must not replace the submitted Lab 3 screenshots.
+  return path.join(REPOSITORY_ROOT, "artifacts", "lab-04", "screenshots", "regression-lab-03", screen, filename);
 }
 
 export async function loginApi(

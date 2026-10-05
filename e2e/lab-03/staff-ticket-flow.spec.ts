@@ -64,7 +64,9 @@ test("IT Staff can search the Queue, open Detail, operate safely, and use respon
       contrastingTicket = extraBody.ticket;
     }
   }
-  await loginApi(request, "staff1@toktickit.test");
+  // Seed preserves existing passwords. Normalize this isolated test account
+  // through the Administrator API rather than depending on a previous run.
+  await prepareApiUser(request, "staff1@toktickit.test");
   const contrastStaff2 = await prepareApiUser(request, "staff2@toktickit.test");
   if (!contrastingTicket) throw new Error("Missing contrasting Staff Queue fixture.");
   const contrastDetail = await request.get(`${API_URL}/api/staff/tickets/${contrastingTicket.id}`);

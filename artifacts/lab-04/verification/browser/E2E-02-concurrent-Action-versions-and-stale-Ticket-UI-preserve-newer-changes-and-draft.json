@@ -1,0 +1,87 @@
+{
+  "title": "E2E-02: concurrent Action versions and stale Ticket UI preserve newer changes and draft",
+  "status": "passed",
+  "note": "Includes deliberate authorization/conflict/network-failure injection and unauthenticated auth/me probes; these are not normal-flow failures. No request bodies, cookies or headers recorded.",
+  "pageErrors": [],
+  "consoleMessages": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    }
+  ],
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3136",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3136",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3136/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3136/actions",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3136/status",
+      "status": 409
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3136",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3136/status",
+      "status": 200
+    }
+  ]
+}
