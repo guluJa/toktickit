@@ -40,3 +40,15 @@ AI ไม่ใช่ผู้อนุมัติความถูกต้�
 > ไม่ทำ Release เข้า main, Final-main verification หรือ PDF ส่ง Answer Part 1–9 ของ Issue #74 และห้าม Commit, Push, เปิด PR, Merge หรือเปลี่ยนสถานะ GitHub แทนฉัน
 
 เพิ่ม tests และตรวจผลคำสั่งจริง พร้อมปรับ visible label ของ Owner ID และ safety guard ที่ต้องแยกฐานจากชื่อฐาน/host ไม่ใช่ credentials ผลรันและข้อจำกัด recovery อยู่ใน `tests.md` ข้อ 16 ไม่สร้าง Review หรือข้อสรุปผล Final ล่วงหน้า Selected Key Prompts 6–10 ข้อและ My Reflection ของผู้จัดทำสำหรับส่งงานยัง Pending ไม่เขียนแทนประสบการณ์ของผู้จัดทำ
+
+## บันทึกการใช้ AI ใน Issue #74: Pre-release — 5 ตุลาคม 2026
+
+ใช้ Codex ตรวจ Labsheet, Issue #74, เอกสาร/หลักฐาน และ Review/Approval/Merge/CI ของ PR #79 ก่อนตรวจ Release candidate จาก staging `3b7291e` ข้อความตัดตอนจาก Prompt ที่ใช้จริงในรอบนี้:
+
+> ตรวจ Release candidate และรันการตรวจที่จำเป็นบน staging โดยใช้ฐานทดสอบแยก รักษาหลักฐาน feature branch เดิม
+
+> อัปเดตเอกสารเฉพาะสถานะและผลที่ตรวจสอบได้จริง คง Final-main เป็น Pending
+
+> ห้ามเพิ่มฟีเจอร์ ห้าม Stage, Commit, Push, เปิด PR หรือ Merge
+
+ผลรอบนี้อยู่ใน `tests.md` ข้อ 17 และ `artifacts/lab-04/release-candidate/3b7291e/` ใช้ snapshot ของ commit จริงเพื่อไม่เขียนทับหลักฐานเดิม ไม่เพิ่มฟีเจอร์หรืออ้าง Final-main ผ่าน ข้อจำกัดการอ่าน Project และงานส่ง Final ที่ยังเหลือบันทึกตามข้อมูลจริง การคัด 6–10 Selected Key Prompts, การยืนยันชื่อ model variant และ My Reflection ของผู้จัดทำยัง Pending

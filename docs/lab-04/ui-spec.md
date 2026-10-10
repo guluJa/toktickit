@@ -1,6 +1,6 @@
 # TokTickIT Lab 4: ข้อกำหนดหน้าจอ
 
-สถานะ: Actions Taken UI และ Workflow merge แล้วใน PR #76/#77; Dashboard พัฒนาและตรวจบน feature branch ของ Issue #72 หลักฐาน Full E2E/visual ยัง Planned
+สถานะ: Actions Taken UI, Workflow และ Dashboard merge แล้วใน PR #76/#77/#78; Full E2E/visual ของ Issue #73 อยู่ใน PR #79 และตรวจ Release candidate จาก staging ซ้ำแล้ว ผล Final-main ยัง Pending
 Baseline: Zen Green, role navigation, accessibility และ responsive conventions จาก docs/lab-03/ui-spec.md
 
 ## 1. Application Shell
@@ -157,4 +157,4 @@ Final-main visual checklist: Pending ต้องตรวจซ้ำหลั�
 - Actions Taken: `create-validation-*`, `edit-*` และ `workflow-reopen-*` พร้อม `*-actions-panel.png`; editor captures เห็น labels/fields/controls ไม่ใช่เฉพาะรายการ
 - Regression รอบใหม่: `artifacts/lab-04/screenshots/regression-lab-03/` เก็บ authentication, queue/detail และ user management โดยไม่ทับภาพที่ส่งใน Lab 3
 
-รายละเอียด viewport, controlled fault injection, console/network และขอบเขตการตรวจอยู่ใน tests.md ข้อ 16 ผลเป็น feature-branch verification; staging หลัง merge และ Final-main ยัง Pending
+รายละเอียด viewport, controlled fault injection, console/network และขอบเขตการตรวจอยู่ใน tests.md ข้อ 16 ภาพชุดนี้เป็น feature-branch verification เดิมและไม่ถูกเขียนทับ ผล staging หลัง merge และภาพรอบใหม่อยู่ใน `artifacts/lab-04/release-candidate/3b7291e/` ตาม tests.md ข้อ 17 ส่วน Final-main ยัง Pending

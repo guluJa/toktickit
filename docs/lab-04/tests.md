@@ -1,7 +1,7 @@
 # TokTickIT Lab 4: แผนทดสอบและการเชื่อมโยงข้อกำหนด
 
 สถานะ: แผนทดสอบพร้อมผลตรวจ Foundation, Actions UI, Workflow, Dashboard และ hardening ระหว่างพัฒนา
-คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจระหว่างพัฒนาและ CI ที่เกิดขึ้นจริงบันทึกแยกในข้อ 7–16
+คอลัมน์ Final ยังคงเป็น Planned จนกว่าจะตรวจ implementation, assertions และผลรันบน final main ครบ ผลตรวจระหว่างพัฒนาอยู่ในข้อ 7–16 และ Release candidate จาก staging อยู่ในข้อ 17 ผลเก่าแต่ละรอบยังคงตามที่บันทึก ไม่ใช้สถานะในประวัติแทนสถานะปัจจุบัน
 
 ## 1. Test Strategy
 
@@ -394,3 +394,67 @@ E2E-03, STYLE-01/AUTH-01 แบบรวมฟีเจอร์, browser respon
 ### สถานะก่อน Peer Review
 
 Test/evidence เป็นของ feature working tree นี้เท่านั้น Peer Review และ merge เข้า `lab4-staging` ยัง Pending ต้องตรวจผลอีกครั้งบน staging หลัง merge ก่อน Release งาน Issue #74 และคอลัมน์ Final/Product DoD ยังคง Planned ไม่ Stage/Commit/Push หรือสร้าง PR ในรอบนี้
+
+## 17. Issue #74: Pre-release audit และ Release candidate
+
+ตรวจวันที่ 5 ตุลาคม 2026 เวลา 17:41–17:44 น. (Asia/Bangkok) จาก `lab4-staging` commit `3b7291e47b6c53eb21202f2402cd480f72f883e6` ซึ่งรวม PR #79 แล้ว Working tree สะอาดก่อนสร้าง `codex/lab4-pre-release-audit` เพื่อแก้เอกสารเตรียม Release เท่านั้น ไม่มีการ Stage, Commit, Push, เปิด PR หรือ Merge ในรอบนี้
+
+### แหล่งอ้างอิงและผล audit
+
+- อ่าน SE Lab 4 Labsheet ครบ, Issue #74, เอกสาร Lab 4 ทั้งหกไฟล์, baseline API ของ Lab 3, schema/migrations/seed, tests และหลักฐานเดิม โดยไม่ถือสรุปจากแชทเป็นผลตรวจ
+- PR #68 และ #75–#79 มี Approval ของ PhraewaS บน revision ที่ merge เข้า `lab4-staging` จริง; merge commits อยู่ใน ancestry ของ candidate และ Contract PR #68 เกิดก่อน implementation PRs รายละเอียดใน `reviewer.md`
+- PR #79: [review comment](https://github.com/guluJa/toktickit/pull/79#pullrequestreview-5410260883), [คำตอบ](https://github.com/guluJa/toktickit/pull/79#issuecomment-5990353143), [Approval](https://github.com/guluJa/toktickit/pull/79#pullrequestreview-5412952624), head `af6fe86`, merge `3b7291e` วันที่ 5 ตุลาคม 2026
+- [CI หลัง merge — run 37295186571](https://github.com/guluJa/toktickit/actions/runs/37295186571) ทดสอบ `3b7291e` จริง ทั้งสอง jobs สำเร็จ; log ยืนยัน Server 28 files / 272 tests และ Client 23 files / 131 tests รวม builds, Prisma/migrations/seed และ `npm ci` จาก lockfiles CI นี้ไม่มี E2E/responsive จึงใช้ผล Local candidate ด้านล่างสำหรับสองส่วนดังกล่าว
+- พบข้อความสถานะก่อนเปิด PR #79 ค้างอยู่ใน reviewer/specification/API/UI spec จึงปรับเฉพาะสถานะและลิงก์หลักฐาน ไม่เปลี่ยน requirement, route, role, error code หรือ FR/BR/AC และไม่เปลี่ยนผลเก่าในข้อ 7–16
+- Minimum structure ตาม Labsheet ข้อ 12 มีครบทั้ง 20 paths ที่ระบุใน manifest เดิม; test-file paths/FR–BR–AC–Test traceability ตรวจซ้ำกับไฟล์จริง ผลก่อนปล่อยและข้อจำกัดอยู่ใน `release-candidate/3b7291e/audit.json`
+- ไม่พบ `.env`, `node_modules`, private uploads หรือ generated Playwright reports/traces ถูก track; migration ใหม่มีเพียง additive foundation ของ PR #75 ไม่มีการแก้ migration ที่ merge แล้ว ค่า credential/URL ใน disposable CI เป็นค่าทดสอบที่ระบุไว้ชัดเจน ไม่ใช่ credential ของเครื่องผู้จัดทำ
+
+### วิธีรันโดยรักษาหลักฐานเดิม
+
+รัน `node artifacts/lab-04/run-release-candidate.mjs 3b7291e` จาก repository root: export commit ด้วย `git archive` ไปยัง snapshot ชั่วคราว ใช้ dependencies ที่ติดตั้งไว้ผ่าน junctions และเรียกคำสั่งของ runner เดิมบน `toktickit_e2e` เท่านั้น ไม่มีการเปลี่ยน application/schema/migration/seed/tests ใน snapshot และไม่รันคำสั่งบน Development/Production หลังรันลบ private `.env`, junctions และ snapshot/report ชั่วคราว รวมทั้ง scratch recovery database และ dump ที่ procedure เดิมจัดการ
+
+ผลใหม่อยู่ใน `artifacts/lab-04/release-candidate/3b7291e/` ทั้ง logs, Dashboard queries, browser records และภาพ 57 ไฟล์ ส่วน `artifacts/lab-04/verification/`, `screenshots/`, recovery เดิมและ Lab 3 evidence ยังคงเดิม ตรวจ SHA-256 แล้ว 107 historical files ไม่เปลี่ยน (`manifest.json`) การแก้ label ใน `commands.json` และ `dashboard-metrics.json` ทำเฉพาะสำเนา evidence ใหม่เพื่อระบุ staging revision ให้ถูกต้อง เพราะ runner/spec เดิมมี label feature branch คงที่ ไม่แก้ assertions หรือผลวัด
+
+### ผลคำสั่งจาก candidate commit จริง
+
+ทุกคำสั่งด้านล่างได้ exit 0; เวลาและ stdout/stderr ที่กรองข้อมูลลับอยู่ใน `verification/commands.json` และ logs ใต้โฟลเดอร์ candidate
+
+| ชุดตรวจ | ผลรันจริง | Log ใต้ candidate/verification/ |
+|---|---|---|
+| Prisma validate/generate, migrate status/deploy | ผ่าน; migration ทั้ง 6 รายการครบ ไม่มี pending migration | `prisma-validate.txt`, `prisma-generate.txt`, `migration-status.txt`, `migration-deploy.txt` |
+| Seed สองรอบ | ผ่านทั้งคู่; preservation/idempotence assertions ผ่านใน Full Server | `seed-first.txt`, `seed-second.txt` |
+| Focused Server Lab 4 | 9 files / 123 tests passed | `server-focused.txt` |
+| Full Server Labs 1–4 | 28 files / 272 tests passed | `server-full.txt` |
+| Focused Client Lab 4 | 7 files / 59 tests passed | `client-focused.txt` |
+| Full Client Labs 1–4 | 23 files / 131 tests passed | `client-full.txt` |
+| Server/Client builds | ผ่านทั้งสองคำสั่ง | `server-build.txt`, `client-build.txt` |
+| Full E2E | 15 tests passed | `e2e-full.txt` |
+| Responsive run | 15 passed, 0 failed/flaky/skipped; desktop/tablet/mobile captures | `responsive.txt`, `run.json` |
+| PERF-01 | Requester 21 ms / 4,353 UTF-8 bytes; Staff 16 ms / 9,171 bytes, limit=5; ผ่าน <2 วินาที/<100 KB | `performance-smoke.txt` |
+| Backup/restore | complete row snapshots ตรงกัน, scratch/drop และ dump cleanup สำเร็จ | `recovery-restore.txt` |
+
+Recovery source/restored counts ตรงกัน: Users 11, Tickets 14, Actions 9, Comments 3, Internal Notes 3, Attachments 0; ไม่อ้างว่ารอบ restore นี้มี Attachment ที่ไม่เป็นศูนย์ การรักษา Attachment เดิมหนึ่งรายการพร้อม ID/FK/data ตรวจใน real Lab 3 → Lab 4 migration test บน scratch database แยก ซึ่งผ่านใน Full Server
+
+ไม่มี skip ในชุดที่รัน; retired `e2e/lab-02/` ถูก exclude ตาม config เดิมและไม่นับเป็น Pass Regression ของ Lab 2 พิสูจน์ด้วย full API/component tests และ authenticated Lab 3 E2E ใช้ Chromium เท่านั้น ไม่ใช่ทุก browser/device หรือ WCAG certification และ performance-smoke ไม่ใช่ SLA/load benchmark
+
+### AC และขอบเขตหลักฐาน
+
+AC-01–AC-16 ใช้ traceability ในข้อ 3–4 และ mapping ข้อ 16 เดิม โดย rerun automated suites จาก staging commit นี้ครบ: UNIT/API/MIG/PERF/UI/STYLE/AUTH/REG และ E2E-01–03/RESP-01; ไม่เพิ่ม AC หรือเปลี่ยน Final เป็น Pass Selected Dashboard metrics ใน `verification/dashboard-metrics.json` เทียบ PostgreSQL ณ `asOf` กับ API/UI จริง; empty Staff captures เป็น controlled HTTP fixture ส่วน Requester empty ใช้บัญชีไม่มี Ticket และ zero-data Backend ตรวจใน API suites
+
+Browser records ไม่มี uncaught pageerror; auth/me 401 ของ guest และ deliberate 403/409/503/network fault เป็น expected scenarios ไม่เรียกว่า console ไม่มี HTTP error ทั้งหมด ตรวจภาพตัวแทนรอบใหม่ 6 ไฟล์ ได้แก่ Action create-desktop/edit-mobile/workflow-tablet, Requester populated-mobile, Staff populated-desktop/empty-tablet ร่วมกับ automated keyboard/labels/focus/overlap/overflow checks ที่สาม viewport ไม่อ้างว่าตรวจภาพทั้ง 57 ไฟล์ด้วยตา
+
+### Release readiness และสิ่งที่ยัง Pending
+
+| รายการ | สถานะ |
+|---|---|
+| Dependencies #67/#69–#73 และ peer review/merge เข้า staging | ตรวจจริงครบ; Issues ปิดแล้ว |
+| Candidate tests/builds/migration/seed/recovery | ผ่านบน `3b7291e` ตาม logs; ไม่ใช่ Final-main |
+| เอกสาร/หลักฐาน pre-release รอบนี้ | แก้ใน working tree; peer review ยัง Pending |
+| GitHub Project/Kanban | Pending: token ไม่มี `read:project`; ต้องตรวจ Done ด้วยมือ ไม่เปลี่ยนสิทธิ์เอง |
+| การตีความ rubric assign/complete/cancel/append-only | คง Contract ที่อนุมัติใน PR #68; ไม่เพิ่ม Action lifecycle หรืออ้าง TA confirmation |
+| Release PR staging → main | Pending; ไม่มีการสร้าง PR ในรอบนี้ |
+| Final-main verification และ Final AC/Product DoD | Pending; ต้องรันจาก main หลัง Release merge จริง |
+| AI-use สำหรับส่งงาน | Pending: คัด 6–10 prompts จริง, ยืนยันชื่อ LLM และ My Reflection ของผู้จัดทำ |
+| PDF Answer Part 1–9 และ links ฉบับส่ง | Pending; ใช้ final main เป็น source of truth หลัง verification |
+
+ลำดับถัดไป: review เอกสารเตรียม Release เข้า staging → Release PR `lab4-staging` ไป `main` โดยไม่ใช้ closing keyword กับ #74 → review/merge → Final-main verification → review เอกสาร/หลักฐาน Final เข้า main → ตรวจ Project/links และจัดทำ PDF แล้วจึงปิด #74 เมื่อเงื่อนไขครบ

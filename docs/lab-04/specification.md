@@ -1,6 +1,6 @@
 # TokTickIT Lab 4: ข้อกำหนดระบบและเกณฑ์รับงาน
 
-สถานะ: Contract ผ่าน review และ merge ใน PR #68; กำลังพัฒนาตาม Issues #69–#74
+สถานะ: Contract ผ่าน review ใน PR #68; implementation และ hardening merge ครบใน PR #75–#79 กำลังตรวจ Release candidate ของ Issue #74; Final-main ยัง Pending
 แหล่งอ้างอิง: SE Lab 4 Labsheet และผลตรวจ Lab 3 main
 Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 3 verification commit 8755d21
 
@@ -253,7 +253,7 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - AC-15: Regression ของ Lab 1–3 ผ่านและไม่มี feature เดิมเสีย
 - AC-16: การกดบันทึกซ้ำหรือ recoverable network failure ไม่ทำให้ผู้ใช้สูญเสียข้อมูลที่กรอก; เมื่อผล POST ไม่ทราบแน่ชัด UI ต้องคงฟอร์มและ submission-uncertain, ตรวจ Actions ครบทุกหน้ารวมการ refresh เมื่อคำขอเดิมอาจบันทึกภายหลัง, ไม่ถือว่าข้อความเหมือนกันเป็นหลักฐานยืนยัน, ไม่แจ้งสำเร็จหรือ retry อัตโนมัติ และเตือนความเสี่ยงรายการซ้ำก่อนผู้ใช้เลือกสร้างใหม่; Contract นี้ไม่รับรอง Idempotency-Key หรือการรวมคำขอซ้ำใน Backend
 
-คอลัมน์ Final ของ AC-01 ถึง AC-16 ยังเป็น Planned ผลตรวจ Foundation, Actions UI, Workflow, Dashboard และ feature-branch E2E/visual ของ Issue #73 มีบันทึกใน `tests.md` ข้อ 7–16; Peer Review/staging หลัง merge และ Final-main ของ Issue #74 ยัง Pending
+คอลัมน์ Final ของ AC-01 ถึง AC-16 ยังเป็น Planned ผลระหว่างพัฒนาอยู่ใน `tests.md` ข้อ 7–16; PR #79 ผ่าน Peer Review และ merge แล้ว ผล Release candidate จาก staging `3b7291e` อยู่ในข้อ 17 โดยไม่ใช้แทน Final-main ของ Issue #74
 
 ## 11. Product Definition of Done
 

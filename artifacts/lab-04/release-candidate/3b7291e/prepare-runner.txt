@@ -1,0 +1,12 @@
+prisma-validate: npx.cmd --no-install prisma validate
+prisma-validate: exit 0
+prisma-generate: npx.cmd --no-install prisma generate
+prisma-generate: exit 0
+migration-status: npx.cmd --no-install prisma migrate status
+migration-status: exit 0
+migration-deploy: npx.cmd --no-install prisma migrate deploy
+migration-deploy: exit 0
+seed-first: npm.cmd run prisma:seed
+seed-first: exit 0
+seed-second: npm.cmd run prisma:seed
+seed-second: exit 0
