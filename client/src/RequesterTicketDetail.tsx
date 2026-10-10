@@ -14,6 +14,7 @@ import {
   PublicComment,
 } from "./api.js";
 import AttachmentSection from "./AttachmentSection.js";
+import ActionsTaken from "./ActionsTaken.js";
 
 type DetailViewState =
   | "loading"
@@ -434,6 +435,7 @@ export default function RequesterTicketDetail({
             }
           />
         </div>
+        <div className="col-12"><ActionsTaken key={ticket.id} ticketId={ticket.id} audience="requester" ticketOwner={ticket.owner} /></div>
       </div>
     </section>
   );

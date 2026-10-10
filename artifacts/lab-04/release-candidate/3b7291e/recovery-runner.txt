@@ -1,0 +1,2 @@
+recovery-restore: pwsh.exe -NoProfile -File artifacts/lab-04/verify-recovery.ps1
+recovery-restore: exit 0

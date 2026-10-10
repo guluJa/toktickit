@@ -1,0 +1,15 @@
+Command: npx.cmd --no-install prisma generate
+Started: 2026-10-04T16:37:46.263Z
+Exit: 0
+STDOUT
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+✔ Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 100ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to react to database changes in your app as they happen? Discover how with Pulse: https://pris.ly/tip-1-pulse
+
+
+STDERR

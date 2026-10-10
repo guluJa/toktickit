@@ -1,0 +1,140 @@
+{
+  "title": "E2E-02: gate, assignment, follow-up completion, close/reopen/cancel and advisory indication",
+  "status": "passed",
+  "note": "Includes deliberate authorization/conflict/network-failure injection and unauthenticated auth/me probes; these are not normal-flow failures. No request bodies, cookies or headers recorded.",
+  "pageErrors": [],
+  "consoleMessages": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 409 (Conflict)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3135",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3135",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3135/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3135/actions",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3135/status",
+      "status": 409
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff/tickets/3135/actions",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3135",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3135/status",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3135/status",
+      "status": 409
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3135/actions/1676",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3135",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3135/status",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3135/status",
+      "status": 200
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/staff/tickets/3135/status",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff/tickets/3135/assignment",
+      "status": 404
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff/tickets/3135/assignment",
+      "status": 200
+    }
+  ]
+}

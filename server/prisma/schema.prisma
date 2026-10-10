@@ -45,6 +45,7 @@ model RequesterUser {
   sessions           Session[]
   comments           Comment[]
   internalNotes      InternalNote[]
+  performedActions   ActionTaken[]
   removedAttachments Attachment[] @relation("AttachmentRemovedBy")
 
   @@index([isActive])
@@ -87,6 +88,7 @@ model Ticket {
   ownerId           Int?
   itPriority        RequestedPriority @default(MEDIUM)
   requesterResolvedAt DateTime?
+  version           Int               @default(1)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @default(now()) @updatedAt
 
@@ -97,6 +99,7 @@ model Ticket {
   attachments   Attachment[]
   comments      Comment[]
   internalNotes InternalNote[]
+  actions       ActionTaken[]
 
   @@unique([requesterId, submissionKey])
   @@index([requesterId, updatedAt])
@@ -157,4 +160,24 @@ model InternalNote {
   author    RequesterUser @relation(fields: [authorId], references: [id], onDelete: Restrict)
 
   @@index([ticketId, createdAt])
+}
+
+model ActionTaken {
+  id               Int           @id @default(autoincrement())
+  ticketId         Int
+  actionAt         DateTime      @default(now()) @db.Timestamp(3)
+  description      String        @db.Text
+  result           String        @db.Text
+  performedById    Int
+  followUpRequired Boolean
+  followUpNote     String?       @db.Text
+  attachmentNotes  String?       @db.Text
+  createdAt        DateTime      @default(now()) @db.Timestamp(3)
+  updatedAt        DateTime      @default(now()) @updatedAt @db.Timestamp(3)
+  version          Int           @default(1)
+  ticket           Ticket        @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+  performedBy      RequesterUser @relation(fields: [performedById], references: [id], onDelete: Restrict)
+
+  @@index([ticketId, actionAt, id])
+  @@index([performedById, actionAt, id])
 }

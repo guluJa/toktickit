@@ -1,0 +1,142 @@
+{
+  "revision": "3b7291e47b6c53eb21202f2402cd480f72f883e6",
+  "scope": "Committed lab4-staging release candidate; not Final-main",
+  "startedAt": "2026-10-05T10:41:35.526Z",
+  "completedAt": "2026-10-05T10:44:38.622Z",
+  "phases": [
+    {
+      "mode": "prepare",
+      "exitCode": 0,
+      "durationMs": 8177
+    },
+    {
+      "mode": "unit",
+      "exitCode": 0,
+      "durationMs": 61038
+    },
+    {
+      "mode": "browser",
+      "exitCode": 0,
+      "durationMs": 110749
+    },
+    {
+      "mode": "recovery",
+      "exitCode": 0,
+      "durationMs": 2686
+    }
+  ],
+  "results": [
+    {
+      "id": "prisma-validate",
+      "command": "npx.cmd --no-install prisma validate",
+      "startedAt": "2026-10-05T10:41:35.964Z",
+      "exitCode": 0,
+      "durationMs": 1770
+    },
+    {
+      "id": "prisma-generate",
+      "command": "npx.cmd --no-install prisma generate",
+      "startedAt": "2026-10-05T10:41:37.735Z",
+      "exitCode": 0,
+      "durationMs": 1636
+    },
+    {
+      "id": "migration-status",
+      "command": "npx.cmd --no-install prisma migrate status",
+      "startedAt": "2026-10-05T10:41:39.371Z",
+      "exitCode": 0,
+      "durationMs": 1344
+    },
+    {
+      "id": "migration-deploy",
+      "command": "npx.cmd --no-install prisma migrate deploy",
+      "startedAt": "2026-10-05T10:41:40.716Z",
+      "exitCode": 0,
+      "durationMs": 1374
+    },
+    {
+      "id": "seed-first",
+      "command": "npm.cmd run prisma:seed",
+      "startedAt": "2026-10-05T10:41:42.090Z",
+      "exitCode": 0,
+      "durationMs": 1154
+    },
+    {
+      "id": "seed-second",
+      "command": "npm.cmd run prisma:seed",
+      "startedAt": "2026-10-05T10:41:43.244Z",
+      "exitCode": 0,
+      "durationMs": 824
+    },
+    {
+      "id": "performance-smoke",
+      "command": "npm.cmd test -- tests/lab-04/performance-smoke.api.test.ts",
+      "startedAt": "2026-10-05T10:41:44.145Z",
+      "exitCode": 0,
+      "durationMs": 2404
+    },
+    {
+      "id": "server-focused",
+      "command": "npm.cmd test -- tests/lab-04 --silent",
+      "startedAt": "2026-10-05T10:41:46.549Z",
+      "exitCode": 0,
+      "durationMs": 9335
+    },
+    {
+      "id": "server-full",
+      "command": "npm.cmd test -- --silent",
+      "startedAt": "2026-10-05T10:41:55.885Z",
+      "exitCode": 0,
+      "durationMs": 23378
+    },
+    {
+      "id": "client-focused",
+      "command": "npm.cmd test -- tests/lab-04 --silent",
+      "startedAt": "2026-10-05T10:42:19.263Z",
+      "exitCode": 0,
+      "durationMs": 8218
+    },
+    {
+      "id": "client-full",
+      "command": "npm.cmd test -- --silent",
+      "startedAt": "2026-10-05T10:42:27.482Z",
+      "exitCode": 0,
+      "durationMs": 10348
+    },
+    {
+      "id": "server-build",
+      "command": "npm.cmd run build",
+      "startedAt": "2026-10-05T10:42:37.831Z",
+      "exitCode": 0,
+      "durationMs": 3107
+    },
+    {
+      "id": "client-build",
+      "command": "npm.cmd run build",
+      "startedAt": "2026-10-05T10:42:40.939Z",
+      "exitCode": 0,
+      "durationMs": 4177
+    },
+    {
+      "id": "e2e-full",
+      "command": "npm.cmd test --",
+      "startedAt": "2026-10-05T10:42:45.184Z",
+      "exitCode": 0,
+      "durationMs": 57056
+    },
+    {
+      "id": "responsive",
+      "command": "npm.cmd run test:responsive",
+      "startedAt": "2026-10-05T10:43:42.241Z",
+      "exitCode": 0,
+      "durationMs": 53609
+    },
+    {
+      "id": "recovery-restore",
+      "command": "pwsh.exe -NoProfile -File artifacts/lab-04/verify-recovery.ps1",
+      "startedAt": "2026-10-05T10:44:35.919Z",
+      "exitCode": 0,
+      "durationMs": 2615
+    }
+  ]
+}

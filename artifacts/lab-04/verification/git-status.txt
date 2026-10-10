@@ -1,0 +1,29 @@
+Command: git status --short --branch
+Started: 2026-10-04T17:33:55.448Z
+Exit: 0
+STDOUT
+## feature/06-lab4-final-hardening
+ M .gitignore
+ M README.md
+ M client/src/StaffTicketDetail.tsx
+ M docs/lab-04/ai-use.md
+ M docs/lab-04/reviewer.md
+ M docs/lab-04/specification.md
+ M docs/lab-04/tests.md
+ M docs/lab-04/ui-spec.md
+ M e2e/database-guard.ts
+ M e2e/global-setup.ts
+ M e2e/lab-02/support.ts
+ M e2e/lab-03/staff-ticket-flow.spec.ts
+ M e2e/package-lock.json
+ M e2e/package.json
+ M e2e/playwright.config.ts
+ M server/tests/lab-04/performance-smoke.api.test.ts
+?? artifacts/lab-04/run-verification.mjs
+?? artifacts/lab-04/screenshots/
+?? artifacts/lab-04/verification/
+?? client/tests/lab-04/AccessibilityStyle.test.tsx
+?? client/tests/lab-04/AuthorizationStates.test.tsx
+?? e2e/lab-04/
+
+STDERR

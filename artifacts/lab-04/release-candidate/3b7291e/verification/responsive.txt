@@ -1,0 +1,32 @@
+Command: npm.cmd run test:responsive
+Started: 2026-10-05T10:43:42.241Z
+Exit: 0
+STDOUT
+
+> test:responsive
+> playwright test lab-03 lab-04
+
+
+Running 15 tests using 1 worker
+
+  ok  1 lab-03\authentication.spec.ts:35:3 › Lab 3 authentication and requester regression › rejects invalid credentials, authenticates an Administrator, and logs out (1.3s)
+  ok  2 lab-03\authentication.spec.ts:61:3 › Lab 3 authentication and requester regression › enforces first-login password change, logout invalidation, and inactive-account rejection (1.5s)
+  ok  3 lab-03\authentication.spec.ts:99:3 › Lab 3 authentication and requester regression › keeps requester ownership authenticated and blocks role-forbidden direct access (1.1s)
+  ok  4 lab-03\staff-ticket-flow.spec.ts:47:1 › IT Staff can search the Queue, open Detail, operate safely, and use responsive layouts (5.2s)
+  ok  5 lab-03\staff-ticket-flow.spec.ts:221:1 › rejects malformed Queue queries with a safe error (189ms)
+  ok  6 lab-03\user-administration.spec.ts:32:1 › Administrator manages users with search, role filtering, safe editing and responsive evidence (2.7s)
+  ok  7 lab-04\actions-taken-flow.spec.ts:4:1 › E2E-01: real create/edit, validation, saving guard, stale conflict and Requester/Admin authorization (6.3s)
+  ok  8 lab-04\actions-taken-flow.spec.ts:31:1 › E2E-01/AC-16: lost POST response, identical old Action, late commit on later page, failed reconciliation and preserved draft (3.3s)
+  ok  9 lab-04\actions-taken-flow.spec.ts:75:1 › E2E-01: client 30-second timeout after real server commit remains uncertain without automatic retry (2.6s)
+  ok 10 lab-04\dashboards.spec.ts:6:1 › E2E-03: selected metrics agree with PostgreSQL/API/UI, ordered limited lists, links and responsive layouts (9.1s)
+  ok 11 lab-04\dashboards.spec.ts:47:1 › E2E-03: Staff Dashboard browser feedback states with controlled empty response and keyboard recovery (3.1s)
+  ok 12 lab-04\dashboards.spec.ts:69:1 › E2E-03: zero, loading, forbidden and safe failure with keyboard retry (2.1s)
+  ok 13 lab-04\database-safety.spec.ts:7:1 › SAFETY-01: reject Development database despite different credentials/query and require explicit E2E marker (6ms)
+  ok 14 lab-04\ticket-resolution.spec.ts:3:1 › E2E-02: gate, assignment, follow-up completion, close/reopen/cancel and advisory indication (6.8s)
+  ok 15 lab-04\ticket-resolution.spec.ts:30:1 › E2E-02: concurrent Action versions and stale Ticket UI preserve newer changes and draft (2.2s)
+
+  15 passed (52.7s)
+
+STDERR
+(node:5008) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

@@ -1,0 +1,26 @@
+Command: npm.cmd test -- tests/lab-04/performance-smoke.api.test.ts
+Started: 2026-10-04T17:17:38.997Z
+Exit: 0
+STDOUT
+
+> toktickit-server@1.0.0 test
+> vitest run tests/lab-04/performance-smoke.api.test.ts
+
+
+ RUN  v2.1.9 C:/CPE334 Software Eng/Lab1_Starter_Scaffold/toktickit/server
+
+stdout | tests/lab-04/performance-smoke.api.test.ts > PERF-01 bounded Dashboard response on seeded data > keeps all embedded lists bounded while counts use the full database
+PERF-01 {"route":"/api/requester/dashboard","durationMs":30,"responseBytes":4353,"limit":5}
+
+stdout | tests/lab-04/performance-smoke.api.test.ts > PERF-01 bounded Dashboard response on seeded data > keeps all embedded lists bounded while counts use the full database
+PERF-01 {"route":"/api/staff/dashboard","durationMs":24,"responseBytes":9171,"limit":5}
+
+ ✓ tests/lab-04/performance-smoke.api.test.ts (1 test) 723ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  00:18:18
+   Duration  2.67s (transform 496ms, setup 15ms, collect 1.60s, tests 723ms, environment 0ms, prepare 108ms)
+
+
+STDERR

@@ -11,6 +11,9 @@ import {
   logout,
   changePassword,
   Category,
+  DashboardLink,
+  MyTicketsQuery,
+  StaffQueueQuery,
 } from "./api.js";
 import CreateTicket from "./CreateTicket.js";
 import MyTickets from "./MyTickets.js";
@@ -18,12 +21,14 @@ import RequesterTicketDetail from "./RequesterTicketDetail.js";
 import StaffTicketQueue from "./StaffTicketQueue.js";
 import StaffTicketDetail from "./StaffTicketDetail.js";
 import UserManagement from "./UserManagement.js";
+import { RequesterDashboard, StaffDashboard } from "./Dashboard.js";
 
 type ActiveView =
   | "create"
   | "tickets"
-  | "detail";
-type AdminView = "users" | "queue";
+  | "detail"
+  | "dashboard";
+type AdminView = "users" | "queue" | "dashboard";
 
 type UiState =
   | "idle"
@@ -54,6 +59,16 @@ export default function App() {
 
   const [adminView, setAdminView] =
     useState<AdminView>("users");
+  const [staffView, setStaffView] = useState<"queue" | "dashboard">("queue");
+  const [requesterQuery, setRequesterQuery] = useState<MyTicketsQuery | undefined>();
+  const [staffQuery, setStaffQuery] = useState<StaffQueueQuery | undefined>();
+  function openDashboardLink(link: DashboardLink) {
+    setIsMobileNavigationOpen(false);
+    if (link.target === "requester-tickets" && link.query) { setRequesterQuery(link.query as MyTicketsQuery); setSelectedTicketId(null); setActiveView("tickets"); }
+    else if (link.target === "requester-ticket-detail" && link.ticketId) { setSelectedTicketId(link.ticketId); setActiveView("detail"); }
+    else if (link.target === "staff-queue" && link.query) { setStaffQuery(link.query as StaffQueueQuery); setStaffTicketId(null); setStaffView("queue"); setAdminView("queue"); }
+    else if (link.target === "staff-ticket-detail" && link.ticketId) { setStaffTicketId(link.ticketId); }
+  }
 
   const [isMobileNavigationOpen, setIsMobileNavigationOpen] =
     useState(true);
@@ -95,11 +110,12 @@ export default function App() {
         <button type="button" className="btn btn-outline-success" onClick={async () => { try { await logout(); setAuthUser(null); setAuthError(""); } catch (error) { setAuthError(error instanceof Error ? error.message : "Unable to sign out."); } }}>Logout</button>
       </header>
       {authError && <div className="alert alert-danger" role="alert">{authError}</div>}
-      {isAdministrator && !staffTicketId && <nav className="nav nav-pills gap-2 mb-4" aria-label="Administrator workspace">
-        <button type="button" className={`nav-link ${adminView === "users" ? "active" : "text-success"}`} aria-current={adminView === "users" ? "page" : undefined} onClick={() => setAdminView("users")}>User Management</button>
-        <button type="button" className={`nav-link ${adminView === "queue" ? "active" : "text-success"}`} aria-current={adminView === "queue" ? "page" : undefined} onClick={() => setAdminView("queue")}>Staff Ticket Queue</button>
+      {!staffTicketId && <nav className="nav nav-pills flex-column flex-sm-row gap-2 mb-4" aria-label={isAdministrator ? "Administrator workspace" : "IT Staff workspace"}>
+        <button type="button" className={`nav-link ${(isAdministrator ? adminView : staffView) === "dashboard" ? "active" : "text-success"}`} aria-current={(isAdministrator ? adminView : staffView) === "dashboard" ? "page" : undefined} onClick={() => { setAdminView("dashboard"); setStaffView("dashboard"); }}>Staff Dashboard</button>
+        {isAdministrator && <button type="button" className={`nav-link ${adminView === "users" ? "active" : "text-success"}`} aria-current={adminView === "users" ? "page" : undefined} onClick={() => setAdminView("users")}>User Management</button>}
+        <button type="button" className={`nav-link ${(isAdministrator ? adminView : staffView) === "queue" ? "active" : "text-success"}`} aria-current={(isAdministrator ? adminView : staffView) === "queue" ? "page" : undefined} onClick={() => { setStaffQuery(undefined); setAdminView("queue"); setStaffView("queue"); }}>Staff Ticket Queue</button>
       </nav>}
-      {staffTicketId ? <StaffTicketDetail ticketId={staffTicketId} currentUserId={authUser.id} role={authUser.role} onBack={() => setStaffTicketId(null)} /> : isAdministrator && adminView === "users" ? <UserManagement onUserUpdated={(updatedUser) => { if (updatedUser.id === authUser.id) setAuthUser(updatedUser); }} /> : <StaffTicketQueue role={authUser.role} onOpenTicket={(ticketId) => setStaffTicketId(ticketId)} />}
+      {staffTicketId ? <StaffTicketDetail ticketId={staffTicketId} currentUserId={authUser.id} role={authUser.role} onBack={() => setStaffTicketId(null)} /> : isAdministrator && adminView === "users" ? <UserManagement onUserUpdated={(updatedUser) => { if (updatedUser.id === authUser.id) setAuthUser(updatedUser); }} /> : (isAdministrator ? adminView : staffView) === "dashboard" ? <StaffDashboard userId={authUser.id} onNavigate={openDashboardLink} /> : <StaffTicketQueue role={authUser.role} initialQuery={staffQuery} onOpenTicket={(ticketId) => setStaffTicketId(ticketId)} />}
     </main>;
   }
   const requester = authUser;
@@ -173,6 +189,7 @@ export default function App() {
         }`}
         aria-label="Requester workspace"
       >
+        <button type="button" className={`nav-link ${activeView === "dashboard" ? "active" : "text-success"}`} aria-current={activeView === "dashboard" ? "page" : undefined} onClick={() => { setSelectedTicketId(null); setActiveView("dashboard"); setIsMobileNavigationOpen(false); }}>Requester Dashboard</button>
         <button
           type="button"
           className={`nav-link ${
@@ -210,6 +227,7 @@ export default function App() {
           onClick={() => {
             setSelectedTicketId(null);
             setActiveView("tickets");
+            setRequesterQuery(undefined);
             setIsMobileNavigationOpen(false);
           }}
         >
@@ -217,7 +235,7 @@ export default function App() {
         </button>
       </nav>
 
-      {activeView === "create" ? (
+      {activeView === "dashboard" ? <RequesterDashboard userId={requester.id} onNavigate={openDashboardLink} /> : activeView === "create" ? (
         <>
           <div className="mb-4">
             <CreateTicket
@@ -299,6 +317,7 @@ export default function App() {
         </>
       ) : activeView === "tickets" ? (
         <MyTickets
+          initialQuery={requesterQuery}
           requesterId={requester.id}
           requesterName={requester.name}
           onCreateTicket={() =>

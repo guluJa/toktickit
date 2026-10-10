@@ -1,10 +1,10 @@
 {
-  "name": "toktickit-lab-02-e2e",
+  "name": "toktickit-e2e",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "playwright test",
-    "test:responsive": "playwright test lab-03"
+    "test:responsive": "playwright test lab-03 lab-04"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0"

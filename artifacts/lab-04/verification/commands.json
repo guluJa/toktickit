@@ -1,0 +1,146 @@
+{
+  "baseline": "51bcf9c",
+  "scope": "feature/06-lab4-final-hardening working tree; not Final-main; latest result per command",
+  "results": [
+    {
+      "id": "prisma-validate",
+      "command": "npx.cmd --no-install prisma validate",
+      "startedAt": "2026-10-04T16:37:44.807Z",
+      "exitCode": 0,
+      "durationMs": 1455
+    },
+    {
+      "id": "prisma-generate",
+      "command": "npx.cmd --no-install prisma generate",
+      "startedAt": "2026-10-04T16:37:46.263Z",
+      "exitCode": 0,
+      "durationMs": 1524
+    },
+    {
+      "id": "migration-status",
+      "command": "npx.cmd --no-install prisma migrate status",
+      "startedAt": "2026-10-04T16:37:47.788Z",
+      "exitCode": 0,
+      "durationMs": 1221
+    },
+    {
+      "id": "migration-deploy",
+      "command": "npx.cmd --no-install prisma migrate deploy",
+      "startedAt": "2026-10-04T16:37:49.010Z",
+      "exitCode": 0,
+      "durationMs": 1195
+    },
+    {
+      "id": "seed-first",
+      "command": "npm.cmd run prisma:seed",
+      "startedAt": "2026-10-04T16:37:50.205Z",
+      "exitCode": 0,
+      "durationMs": 1167
+    },
+    {
+      "id": "seed-second",
+      "command": "npm.cmd run prisma:seed",
+      "startedAt": "2026-10-04T16:37:51.373Z",
+      "exitCode": 0,
+      "durationMs": 702
+    },
+    {
+      "id": "e2e-focused",
+      "command": "npm.cmd test -- lab-04",
+      "startedAt": "2026-10-04T17:05:36.243Z",
+      "exitCode": 0,
+      "durationMs": 43413
+    },
+    {
+      "id": "performance-smoke",
+      "command": "npm.cmd test -- tests/lab-04/performance-smoke.api.test.ts",
+      "startedAt": "2026-10-04T17:17:38.997Z",
+      "exitCode": 0,
+      "durationMs": 42343
+    },
+    {
+      "id": "server-focused",
+      "command": "npm.cmd test -- tests/lab-04 --silent",
+      "startedAt": "2026-10-04T17:18:21.341Z",
+      "exitCode": 0,
+      "durationMs": 14557
+    },
+    {
+      "id": "server-full",
+      "command": "npm.cmd test -- --silent",
+      "startedAt": "2026-10-04T17:18:35.898Z",
+      "exitCode": 0,
+      "durationMs": 28217
+    },
+    {
+      "id": "client-focused",
+      "command": "npm.cmd test -- tests/lab-04 --silent",
+      "startedAt": "2026-10-04T17:19:04.116Z",
+      "exitCode": 0,
+      "durationMs": 8999
+    },
+    {
+      "id": "client-full",
+      "command": "npm.cmd test -- --silent",
+      "startedAt": "2026-10-04T17:19:13.116Z",
+      "exitCode": 0,
+      "durationMs": 12119
+    },
+    {
+      "id": "server-build",
+      "command": "npm.cmd run build",
+      "startedAt": "2026-10-04T17:19:25.236Z",
+      "exitCode": 0,
+      "durationMs": 4078
+    },
+    {
+      "id": "client-build",
+      "command": "npm.cmd run build",
+      "startedAt": "2026-10-04T17:19:29.316Z",
+      "exitCode": 0,
+      "durationMs": 4618
+    },
+    {
+      "id": "recovery-restore",
+      "command": "pwsh.exe -NoProfile -File artifacts/lab-04/verify-recovery.ps1",
+      "startedAt": "2026-10-04T17:25:08.000Z",
+      "exitCode": 0,
+      "durationMs": 4504
+    },
+    {
+      "id": "e2e-full",
+      "command": "npm.cmd test --",
+      "startedAt": "2026-10-04T17:30:03.890Z",
+      "exitCode": 0,
+      "durationMs": 75108
+    },
+    {
+      "id": "responsive",
+      "command": "npm.cmd run test:responsive",
+      "startedAt": "2026-10-04T17:31:18.999Z",
+      "exitCode": 0,
+      "durationMs": 70995
+    },
+    {
+      "id": "diff-check",
+      "command": "git diff --check",
+      "startedAt": "2026-10-04T17:33:55.192Z",
+      "exitCode": 0,
+      "durationMs": 131
+    },
+    {
+      "id": "diff-stat",
+      "command": "git diff --stat",
+      "startedAt": "2026-10-04T17:33:55.324Z",
+      "exitCode": 0,
+      "durationMs": 123
+    },
+    {
+      "id": "git-status",
+      "command": "git status --short --branch",
+      "startedAt": "2026-10-04T17:33:55.448Z",
+      "exitCode": 0,
+      "durationMs": 114
+    }
+  ]
+}
