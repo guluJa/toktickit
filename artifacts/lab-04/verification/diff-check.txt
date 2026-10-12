@@ -1,0 +1,6 @@
+Command: git diff --check
+Started: 2026-10-04T17:33:55.192Z
+Exit: 0
+STDOUT
+
+STDERR

@@ -1,0 +1,14 @@
+performance-smoke: npm.cmd test -- tests/lab-04/performance-smoke.api.test.ts
+performance-smoke: exit 0
+server-focused: npm.cmd test -- tests/lab-04 --silent
+server-focused: exit 0
+server-full: npm.cmd test -- --silent
+server-full: exit 0
+client-focused: npm.cmd test -- tests/lab-04 --silent
+client-focused: exit 0
+client-full: npm.cmd test -- --silent
+client-full: exit 0
+server-build: npm.cmd run build
+server-build: exit 0
+client-build: npm.cmd run build
+client-build: exit 0

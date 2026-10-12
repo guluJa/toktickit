@@ -1,0 +1,14 @@
+Command: npx.cmd --no-install prisma migrate deploy
+Started: 2026-10-04T16:37:49.010Z
+Exit: 0
+STDOUT
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "toktickit_e2e", schema "public" at "localhost:5432"
+
+6 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+
+STDERR

@@ -1,0 +1,50 @@
+Command: npm.cmd test -- --silent
+Started: 2026-10-04T17:18:35.898Z
+Exit: 0
+STDOUT
+
+> toktickit-server@1.0.0 test
+> vitest run --silent
+
+
+ RUN  v2.1.9 C:/CPE334 Software Eng/Lab1_Starter_Scaffold/toktickit/server
+
+ ✓ tests/lab-02/create-ticket.api.test.ts (8 tests) 273ms
+ ✓ tests/lab-02/attachments.api.test.ts (11 tests) 440ms
+ ✓ tests/lab-04/ticket-workflow.api.test.ts (12 tests) 1492ms
+   ✓ API-04 Ticket workflow and atomic Action/Status changes > checks all 64 transition pairs, increments once and preserves data on rejection 591ms
+ ✓ tests/lab-03/staff-ticket-detail.api.test.ts (8 tests) 1545ms
+   ✓ Lab 3 Staff Ticket Detail and operations > accepts every contract transition and rejects every other transition with 409 665ms
+ ✓ tests/lab-03/users-admin.api.test.ts (13 tests) 1549ms
+ ✓ tests/lab-02/my-tickets.api.test.ts (16 tests) 260ms
+ ✓ tests/lab-04/migration-regression.api.test.ts (4 tests) 2000ms
+   ✓ API-07/08 additive migration and repeated seed > preserves exact Lab 3 rows and relationships across the real Lab 4 migration 1622ms
+ ✓ tests/lab-02/ticket-detail.api.test.ts (12 tests) 180ms
+ ✓ tests/lab-04/actions-taken.api.test.ts (5 tests) 681ms
+ ✓ tests/lab-03/staff-queue.api.test.ts (5 tests) 700ms
+ ✓ tests/lab-03/migration-regression.api.test.ts (6 tests) 452ms
+ ✓ tests/lab-04/staff-dashboard.api.test.ts (7 tests) 690ms
+ ✓ tests/lab-02/development-requesters.api.test.ts (13 tests) 161ms
+ ✓ tests/lab-03/auth.api.test.ts (8 tests) 848ms
+ ✓ tests/lab-03/comments-notes.api.test.ts (3 tests) 670ms
+ ✓ tests/lab-03/authorization.api.test.ts (4 tests) 464ms
+ ✓ tests/lab-04/requester-dashboard.api.test.ts (13 tests) 1226ms
+ ✓ tests/lab-02/validation.unit.test.ts (8 tests) 6ms
+ ✓ tests/lab-02/attachment-validation.unit.test.ts (16 tests) 6ms
+ ✓ tests/lab-02/reference-data.api.test.ts (2 tests) 113ms
+ ✓ tests/lab-03/auth.unit.test.ts (10 tests) 11ms
+ ✓ tests/lab-04/ticket-workflow.unit.test.ts (75 tests) 10ms
+ ✓ tests/lab-04/actions-taken.unit.test.ts (5 tests) 4ms
+ ✓ tests/lab-04/migration-recovery.api.test.ts (1 test) 79ms
+ ✓ tests/lab-02/ticket-number.unit.test.ts (4 tests) 4ms
+ ✓ tests/lab-04/performance-smoke.api.test.ts (1 test) 553ms
+ ✓ tests/lab-01/categories.test.ts (1 test) 91ms
+ ✓ tests/lab-01/health.test.ts (1 test) 25ms
+
+ Test Files  28 passed (28)
+      Tests  272 passed (272)
+   Start at  00:18:36
+   Duration  27.12s (transform 430ms, setup 55ms, collect 5.75s, tests 14.53s, environment 5ms, prepare 2.32s)
+
+
+STDERR

@@ -12,6 +12,7 @@ import {
   MyTicketsResponse,
   RelatedSystem,
   TicketSummary,
+  TicketStatus,
 } from "./api.js";
 
 type MyTicketsViewState =
@@ -26,6 +27,7 @@ interface MyTicketsProps {
   requesterName: string;
   onCreateTicket: () => void;
   onViewTicket?: (ticketId: number) => void;
+  initialQuery?: MyTicketsQuery;
 }
 
 const DEFAULT_QUERY: MyTicketsQuery = {
@@ -66,6 +68,7 @@ export default function MyTickets({
   requesterName,
   onCreateTicket,
   onViewTicket,
+  initialQuery,
 }: MyTicketsProps) {
   const [viewState, setViewState] =
     useState<MyTicketsViewState>("loading");
@@ -160,16 +163,16 @@ export default function MyTickets({
   }
 
   useEffect(() => {
-    const resetQuery = { ...DEFAULT_QUERY };
+    const resetQuery = { ...DEFAULT_QUERY, ...initialQuery };
 
     setSearch("");
     setCategoryId("");
     setRelatedSystemId("");
     setRequestedPriority("");
-    setCurrentStatus("");
-    setSortBy(DEFAULT_QUERY.sortBy);
-    setSortDirection(DEFAULT_QUERY.sortDirection);
-    setPageSize(DEFAULT_QUERY.pageSize);
+    setCurrentStatus(resetQuery.currentStatus ?? "");
+    setSortBy(resetQuery.sortBy);
+    setSortDirection(resetQuery.sortDirection);
+    setPageSize(resetQuery.pageSize);
     setAppliedQuery(resetQuery);
     setResult(null);
 
@@ -179,7 +182,7 @@ export default function MyTickets({
     return () => {
       requestSequence.current += 1;
     };
-  }, [requesterId]);
+  }, [requesterId, initialQuery]);
 
   function buildDraftQuery(): MyTicketsQuery {
     return {
@@ -371,6 +374,7 @@ export default function MyTickets({
               >
                 <option value="">All Statuses</option>
                 <option value="NEW">New</option>
+                {(["OPEN", "IN_PROGRESS", "WAITING_FOR_REQUESTER", "RESOLVED", "CLOSED", "REOPENED", "CANCELLED"] as TicketStatus[]).map(status => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}
               </select>
             </div>
 

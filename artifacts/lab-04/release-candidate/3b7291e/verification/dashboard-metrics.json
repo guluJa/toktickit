@@ -1,0 +1,95 @@
+{
+  "revision": "3b7291e47b6c53eb21202f2402cd480f72f883e6",
+  "scope": "Committed lab4-staging release candidate; not Final-main",
+  "startedAt": "2026-10-05T10:41:35.526Z",
+  "completedAt": "2026-10-05T10:44:38.622Z",
+  "results": {
+    "requester": {
+      "asOf": "2026-10-05T10:44:11.845Z",
+      "expected": {
+        "recentlyUpdatedCount": 4,
+        "recentlyResolvedCount": 2
+      },
+      "actual": {
+        "openCount": 2,
+        "waitingForRequesterCount": 1,
+        "resolvedCount": 2,
+        "recentlyUpdatedCount": 4,
+        "recentlyResolvedCount": 2
+      },
+      "ids": [
+        3472,
+        3471,
+        3470,
+        3469
+      ],
+      "resolvedIds": [
+        3471,
+        3470
+      ],
+      "currentUserActionIds": []
+    },
+    "staff": {
+      "asOf": "2026-10-05T10:44:14.558Z",
+      "expected": {
+        "recentlyUpdatedCount": 19,
+        "recentlyResolvedCount": 5
+      },
+      "actual": {
+        "unassignedCount": 4,
+        "mineCount": 3,
+        "highPriorityCount": 6,
+        "recentlyUpdatedCount": 19,
+        "recentlyResolvedCount": 5
+      },
+      "ids": [
+        3473,
+        3472,
+        3471,
+        3470,
+        3469
+      ],
+      "resolvedIds": [
+        3471,
+        3470,
+        1419,
+        1418,
+        1064
+      ],
+      "currentUserActionIds": [
+        1956
+      ]
+    },
+    "admin": {
+      "asOf": "2026-10-05T10:44:19.884Z",
+      "expected": {
+        "recentlyUpdatedCount": 19,
+        "recentlyResolvedCount": 5
+      },
+      "actual": {
+        "unassignedCount": 4,
+        "mineCount": 0,
+        "highPriorityCount": 6,
+        "recentlyUpdatedCount": 19,
+        "recentlyResolvedCount": 5
+      },
+      "ids": [
+        3473,
+        3472,
+        3471,
+        3470,
+        3469
+      ],
+      "resolvedIds": [
+        3471,
+        3470,
+        1419,
+        1418,
+        1064
+      ],
+      "currentUserActionIds": [
+        1957
+      ]
+    }
+  }
+}

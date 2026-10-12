@@ -426,6 +426,7 @@ describe("Create Ticket", () => {
             description:
               "The connection disconnects after a few minutes.",
             currentStatus: "NEW",
+            version: 1,
             createdAt:
               "2026-08-30T14:00:00.000Z",
             updatedAt:
@@ -560,6 +561,7 @@ describe("Create Ticket", () => {
             currentStatus: "NEW",
             createdAt:
               "2026-08-30T14:10:00.000Z",
+            version: 1,
             updatedAt:
               "2026-08-30T14:10:00.000Z",
             attachments: [],
@@ -799,6 +801,7 @@ describe("Create Ticket", () => {
           description:
             "The connection disconnects after a few minutes.",
           currentStatus: "NEW",
+          version: 1,
           createdAt:
             "2026-08-31T14:00:00.000Z",
           updatedAt:

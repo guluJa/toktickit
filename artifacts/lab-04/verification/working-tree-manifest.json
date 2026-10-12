@@ -1,0 +1,441 @@
+{
+  "head": "51bcf9c86d89e2a1df0df86b9021d12d341f5bab",
+  "branch": "feature/06-lab4-final-hardening",
+  "capturedAt": "2026-10-04T17:33:55.883Z",
+  "scope": "Uncommitted feature working tree; not staged, not staging-after-merge or Final-main",
+  "minimumStructure": {
+    "required": [
+      "docs/lab-04/specification.md",
+      "docs/lab-04/api-spec.md",
+      "docs/lab-04/ui-spec.md",
+      "docs/lab-04/tests.md",
+      "docs/lab-04/reviewer.md",
+      "docs/lab-04/ai-use.md",
+      "server/tests/lab-04/actions-taken.api.test.ts",
+      "server/tests/lab-04/ticket-workflow.api.test.ts",
+      "server/tests/lab-04/requester-dashboard.api.test.ts",
+      "server/tests/lab-04/staff-dashboard.api.test.ts",
+      "client/tests/lab-04/StaffDashboard.test.tsx",
+      "client/tests/lab-04/RequesterDashboard.test.tsx",
+      "client/tests/lab-04/ActionsTaken.test.tsx",
+      "client/tests/lab-04/TicketWorkflow.test.tsx",
+      "e2e/lab-04/actions-taken-flow.spec.ts",
+      "e2e/lab-04/ticket-resolution.spec.ts",
+      "e2e/lab-04/dashboards.spec.ts",
+      "artifacts/lab-04/screenshots/staff-dashboard",
+      "artifacts/lab-04/screenshots/requester-dashboard",
+      "artifacts/lab-04/screenshots/actions-taken"
+    ],
+    "missing": []
+  },
+  "screenshotCount": 57,
+  "whitespaceErrors": [],
+  "secretMatches": [],
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 365,
+      "sha256": "8f58f2bf668ed4544bd5baaf490dca335143685f70899c836e586b87659f89a8"
+    },
+    {
+      "path": "README.md",
+      "bytes": 17216,
+      "sha256": "e52b379d1c807a08d0f77559c0132bac6bf8e85b194ceeacf882d661f96a419b"
+    },
+    {
+      "path": "client/src/StaffTicketDetail.tsx",
+      "bytes": 18274,
+      "sha256": "3143aa7807170c72e4517d6ed224c0df0df799018f9bab71ef676ce9e6fdeddc"
+    },
+    {
+      "path": "docs/lab-04/ai-use.md",
+      "bytes": 5602,
+      "sha256": "3c2cdf15ebf49a1370e60c9f4278ee9d584629a6f478a6dac52400c73e2ce90c"
+    },
+    {
+      "path": "docs/lab-04/reviewer.md",
+      "bytes": 4557,
+      "sha256": "b80dcd3cfdce262cbc61828275098bb43157b1fba52a1f0b36d85f524819fb87"
+    },
+    {
+      "path": "docs/lab-04/specification.md",
+      "bytes": 36767,
+      "sha256": "902189c9ba0b699d45a9cd5bdfe780feaa2dea4aca5aa61041b84b2a87630454"
+    },
+    {
+      "path": "docs/lab-04/tests.md",
+      "bytes": 57299,
+      "sha256": "9fb0e0754756bed26509e4327344b4acb0ba50e0782771599f933ce12f07f69f"
+    },
+    {
+      "path": "docs/lab-04/ui-spec.md",
+      "bytes": 16217,
+      "sha256": "d8eb2826118593dd4ddc763dff61e577b972970e063b444f3625b001563bac31"
+    },
+    {
+      "path": "e2e/database-guard.ts",
+      "bytes": 2334,
+      "sha256": "8ecda7a6bce6c08fda5cf95ec351e41eedce092c39a0ad6fa6e73028848ad630"
+    },
+    {
+      "path": "e2e/global-setup.ts",
+      "bytes": 1042,
+      "sha256": "2873aad20fa88c2a8094a1f0e966fd540719048a28ddae3959c49da1b8f7f1ee"
+    },
+    {
+      "path": "e2e/lab-02/support.ts",
+      "bytes": 13207,
+      "sha256": "dbd39f8cdb9427fd6f1cf47b3f15decff743c705313ca19dae7b5514a1365252"
+    },
+    {
+      "path": "e2e/lab-03/staff-ticket-flow.spec.ts",
+      "bytes": 14235,
+      "sha256": "bf4b463ceca8455a4685aa6a8bfbdfb795d99e703fe331e34d78cf5d93330ecf"
+    },
+    {
+      "path": "e2e/package-lock.json",
+      "bytes": 2263,
+      "sha256": "523730ab1c4def6d52d3a92f025200e0083c705607ad1e208c94a6b0e5b79797"
+    },
+    {
+      "path": "e2e/package.json",
+      "bytes": 249,
+      "sha256": "b24df8aaaed9046dde0f7b6ecad30c4b0d9be5f778a7a015c63e37ae4e833686"
+    },
+    {
+      "path": "e2e/playwright.config.ts",
+      "bytes": 2172,
+      "sha256": "b565657e6eec266fb4f43ebb6069b577068cad582dea3eb06781996802a5498d"
+    },
+    {
+      "path": "server/tests/lab-04/performance-smoke.api.test.ts",
+      "bytes": 1310,
+      "sha256": "0acfc728b6487aa817d63c0d85bb8dc330064fe1e1f5a102f46c9738706a0f32"
+    },
+    {
+      "path": "artifacts/lab-04/run-verification.mjs",
+      "bytes": 7584,
+      "sha256": "35d6b98542338b1694abbe3aedd4f298e02b10f035700a1c23dd5bedce27b0c8"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/create-validation-desktop-actions-panel.png",
+      "bytes": 33000,
+      "sha256": "ec028598bc552b1ae5e56f9b6de4ab0b8327475dc0538a161465e9c7e7da41f3"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/create-validation-desktop.png",
+      "bytes": 124323,
+      "sha256": "992aa9c615cd45b6a54a66746cd363f10ebc595243d77aff7589f6af95e20332"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/create-validation-mobile-actions-panel.png",
+      "bytes": 30014,
+      "sha256": "1abb669c769b175bd7960b3134f4e6c7312dd36c257ea0cba1d37932066ccf24"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/create-validation-mobile.png",
+      "bytes": 120801,
+      "sha256": "36f5264a1c7c24d4a3c5b5ea54991f65a2d756325eb0cb7d4f648ad49a2d9a95"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/create-validation-tablet-actions-panel.png",
+      "bytes": 31731,
+      "sha256": "518ed8d6ac4fdf13173be41880c07a6ffd801c55d1268ffe95766b0ace744c1d"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/create-validation-tablet.png",
+      "bytes": 123170,
+      "sha256": "2e12fe9b3f3bf288b6d16cf4151c398258d05f150d7bca0a08413fdc882519ea"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/edit-desktop-actions-panel.png",
+      "bytes": 50488,
+      "sha256": "78f02b1409429427104ec593557b281072c3ad554af04dd55d31f596994a23cc"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/edit-desktop.png",
+      "bytes": 143302,
+      "sha256": "692ed18706c4bbbf4d5862a4d8350736bbf6701eb31c9d42dd24e8aeb3e09f78"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/edit-mobile-actions-panel.png",
+      "bytes": 46718,
+      "sha256": "bb710e10654a7bf3ac113a7767191f15401b966653ee87b2ebdbc2de558feb00"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/edit-mobile.png",
+      "bytes": 138103,
+      "sha256": "a3b47581c9f26aac4f734d70046e410f70c0b46a206ff8357b3732c3f5753206"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/edit-tablet-actions-panel.png",
+      "bytes": 48767,
+      "sha256": "1a06334ddaec287b06a11b86a6e13079f17ce1b279915dd372cd38a63b8ef91b"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/edit-tablet.png",
+      "bytes": 140488,
+      "sha256": "f4ddc47fa3218399bdcbb7c25d71c887aa78e01212e50d16e408a68aac720e72"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/workflow-reopen-desktop-actions-panel.png",
+      "bytes": 28145,
+      "sha256": "d99d752ddcb72983163fd804856e3fa1ff2e1d9fefccf5e37dfe8dc52b04327a"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/workflow-reopen-desktop.png",
+      "bytes": 127200,
+      "sha256": "65b4405ce200a1f32e93585fc22a72019993716c8027a371df2ec23e23fa9d9d"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/workflow-reopen-mobile-actions-panel.png",
+      "bytes": 26640,
+      "sha256": "0b2f737af0d443a4073eaa5e4a0faa77abb9871b0b1ac013156063f07b5f9c42"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/workflow-reopen-mobile.png",
+      "bytes": 124013,
+      "sha256": "3cc56f4247a96329dc3246cfe8cca7ec46afb07dd1244b3c0354381387becd6b"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/workflow-reopen-tablet-actions-panel.png",
+      "bytes": 26926,
+      "sha256": "362e78f7eb166f31045a201a192886d8b6671845c795b276284c6fd778ac01ac"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/actions-taken/workflow-reopen-tablet.png",
+      "bytes": 125598,
+      "sha256": "d7b9023aab8feaf26e459b27c48f92796ea5b90865940acd99851c35e7c8f70b"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/authentication/change-password-desktop.png",
+      "bytes": 20796,
+      "sha256": "3a4e4247727989f978a875f8a45b380d0fe848306d608ffcac1c4309f23ee0b6"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/authentication/change-password-mobile.png",
+      "bytes": 15346,
+      "sha256": "93f284c35183d6e7fb56f9cba04ad149f68cd3f59813ab1b7c9c38273d9fb31a"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/authentication/change-password-tablet.png",
+      "bytes": 19616,
+      "sha256": "f94b27cb2242f6e92cdf8d04cabc83b2f3448980e20deb3c867555537b2d967b"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/authentication/login-desktop.png",
+      "bytes": 15756,
+      "sha256": "31d389e09138dbbb496c4f03f52946b12cfe44aa4195fff129dfaedf42b4c6eb"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/authentication/login-mobile.png",
+      "bytes": 11047,
+      "sha256": "366268c45cf842e387f85293f95a9e6b443cde7e98283db8ffc97752fd742376"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/authentication/login-tablet.png",
+      "bytes": 14040,
+      "sha256": "5a89a2f57f71403d9601312c214164e164995fe2c900455b08f1a278c418d81a"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/staff-queue/desktop.png",
+      "bytes": 116659,
+      "sha256": "4b0a0505e1fa53a74d05b2c12b455939fd9db0923f204134406abae22619093e"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/staff-queue/mobile.png",
+      "bytes": 53497,
+      "sha256": "65bb44f7f5677e87abcc42dc6fc61ce840bc2e21bfef73621314b9d1dbd1d0be"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/staff-queue/tablet.png",
+      "bytes": 50841,
+      "sha256": "cee90a627a1456c76f6c7bc286c90438c8938e71037be6665652004f18f8cead"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/staff-ticket-detail/desktop.png",
+      "bytes": 118909,
+      "sha256": "907e7aba5d911e29211d272b332c04f3462e51d2598765c587f80937741f581d"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/staff-ticket-detail/mobile.png",
+      "bytes": 117444,
+      "sha256": "74999e0f519e325cdedd7319b64e66564504dcfeac26fcf1e1562fea6bbd920d"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/staff-ticket-detail/tablet.png",
+      "bytes": 119494,
+      "sha256": "b26f08b8a624533cd5cdd4d1c4b5efa7b49bd0250b3adbbe771ae5fb1a96f485"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/user-management/desktop.png",
+      "bytes": 80798,
+      "sha256": "7eaa0a09ffb60e18e0ea5c65bd42c00fa7ada60283a3d5f465b33341de3cbf3f"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/user-management/mobile-right.png",
+      "bytes": 82024,
+      "sha256": "35aaf6f3c6c61ea8d3fa0302d61a03bd7c9a0a25552fc2e1eed78e56b6a79eaa"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/user-management/mobile.png",
+      "bytes": 81640,
+      "sha256": "ca18bbb160f3c80f0e0c52dfe28e08fe492df878e01db9dd19a63c75a7eda3a7"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/regression-lab-03/user-management/tablet.png",
+      "bytes": 100162,
+      "sha256": "4afffabccefd6cac24e811f753e8185848bf1173d8158cbc1227d28217f5c98b"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/empty-desktop.png",
+      "bytes": 85886,
+      "sha256": "838c84b41efd0f7d98074d17851763035ad9bc73ecaa908f3ced6786af5e8964"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/empty-mobile.png",
+      "bytes": 82212,
+      "sha256": "1089ffc3ff5721362897363feb5a543e1ed22a4cf3dcc042ef1f9a5793c473e4"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/empty-tablet.png",
+      "bytes": 82795,
+      "sha256": "b0470ffdd75ff5184eeb57f787042f5f66b1e3dbdca0765b24a83021e417c7e3"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/populated-desktop-metrics.png",
+      "bytes": 35068,
+      "sha256": "860ec579ef5e261664984e23c755b104b93240521d065232639d934042b6e80c"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/populated-desktop.png",
+      "bytes": 126919,
+      "sha256": "b30f0449493952bec3b85ecc048162c6a9350e4557fac61db0022a7d177a0545"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/populated-mobile-metrics.png",
+      "bytes": 38141,
+      "sha256": "bf0ad326b4e6952bee076a478c042712afa34588c981f1fb0088e02f5958b2ee"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/populated-mobile.png",
+      "bytes": 117833,
+      "sha256": "8728dcf7b9a7205f968ad7988cb7b5b5182bdf02c0522a1119bf35d21c64451d"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/populated-tablet-metrics.png",
+      "bytes": 35753,
+      "sha256": "e9c17f7de1107de106bbbc6325d4dc185cdbe505d818c255cdb32dc2d34a590f"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/requester-dashboard/populated-tablet.png",
+      "bytes": 122372,
+      "sha256": "810383c9e3a4d3dc5990c038cc96193bf4e85d0dd3a64896fcac16e2ec3f2dfb"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/empty-fixture-desktop.png",
+      "bytes": 134302,
+      "sha256": "c24e5e115bce319862fe1cba96a28e79152b2f1457d1eaa536911f01e1a1348f"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/empty-fixture-mobile.png",
+      "bytes": 140143,
+      "sha256": "e0cc8930c79a6008ff171882d049cd522461d7c057ef421856b8f81c4fc82b15"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/empty-fixture-tablet.png",
+      "bytes": 131376,
+      "sha256": "7bb0f207f7d37b26fc868fb0a20ff74871cbe8b98f67d3076d9d7b14e8497dff"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/forbidden-mobile.png",
+      "bytes": 20033,
+      "sha256": "1758254134dea00f22801226ed2ad478dfcfb2960fce034321a92cab4de18318"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-desktop-metrics.png",
+      "bytes": 49647,
+      "sha256": "04419a4fb34446b5f0a012db53f4f667e8de97a28a28c6ff634ccefd93bf43b4"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-desktop-my-actions.png",
+      "bytes": 11500,
+      "sha256": "7b4d92053981f4c78586cef0ed9d4cb91bbb57c423f69d10a0deddcaa0a33cc3"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-desktop.png",
+      "bytes": 354617,
+      "sha256": "330ef32e67f567695141362265cf68fe2ae17b3ce9f84a757321640857392058"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-mobile-metrics.png",
+      "bytes": 58388,
+      "sha256": "7377e91776edb22c786bda65759ee45873b29d4b5337722c9b5e20ef95267fac"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-mobile-my-actions.png",
+      "bytes": 10214,
+      "sha256": "b3e642760318a62f97de1b8086222c4fe8d459040a0c3f07d3f5ae37174f4769"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-mobile.png",
+      "bytes": 330942,
+      "sha256": "e4e8496bad0ff3926a35c4aed0398615e394838a0f326057592a89c670285f68"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-tablet-metrics.png",
+      "bytes": 51910,
+      "sha256": "9d58e0def079d1faf19dcd240c18c5c9e46fbd5e0ee6166320194e9a2384a2d7"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-tablet-my-actions.png",
+      "bytes": 10990,
+      "sha256": "dae634619c2cd4de0b2a22cc28498f5902595f9eb615709c15b6019c689c1f1f"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/populated-tablet.png",
+      "bytes": 338891,
+      "sha256": "804f603cf7f9186ec62dafb3e52893ea074bd771c9565adcb500752e2ca0c23d"
+    },
+    {
+      "path": "artifacts/lab-04/screenshots/staff-dashboard/safe-failure-mobile.png",
+      "bytes": 20488,
+      "sha256": "7bd7fe9284afd8e4e63b068dcad3771f66fae4204242f42bc0b7dccc22d2c36e"
+    },
+    {
+      "path": "client/tests/lab-04/AccessibilityStyle.test.tsx",
+      "bytes": 2174,
+      "sha256": "8b5d8b4455cdf5b61315d5ff9d86869718d815a0e2e29c5602a89ec3b139a7be"
+    },
+    {
+      "path": "client/tests/lab-04/AuthorizationStates.test.tsx",
+      "bytes": 1835,
+      "sha256": "e1b017e84f2dacd32c1198c642b641326595152b34a10ab8dae1690bbc0a528d"
+    },
+    {
+      "path": "e2e/lab-04/actions-taken-flow.spec.ts",
+      "bytes": 9799,
+      "sha256": "7580c34127617a07b08021010fc10264f6b1c308e0727195e96821fabe6deec3"
+    },
+    {
+      "path": "e2e/lab-04/dashboards.spec.ts",
+      "bytes": 9924,
+      "sha256": "9b5368633a6151b1f298be6e1f3892101f3057ede3fc2857f678a0456763f6a6"
+    },
+    {
+      "path": "e2e/lab-04/database-safety.spec.ts",
+      "bytes": 1290,
+      "sha256": "ecddc33fa6d92f494b433194f9487e9da95aea632c0651918ee32fa586a32357"
+    },
+    {
+      "path": "e2e/lab-04/support.ts",
+      "bytes": 9364,
+      "sha256": "034ab35b0c2348d044484c5a8ad08c71f7132e02304dbdbb5bfc4c8c0d351de0"
+    },
+    {
+      "path": "e2e/lab-04/ticket-resolution.spec.ts",
+      "bytes": 6281,
+      "sha256": "00f11222424800621ee7059fafccb68ebff75e9ff42cc969671cf33f7dba598f"
+    }
+  ]
+}

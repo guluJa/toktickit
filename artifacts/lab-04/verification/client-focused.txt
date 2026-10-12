@@ -1,0 +1,43 @@
+Command: npm.cmd test -- tests/lab-04 --silent
+Started: 2026-10-04T17:19:04.116Z
+Exit: 0
+STDOUT
+
+> toktickit-client@1.0.0 test
+> vitest run tests/lab-04 --silent
+
+
+ RUN  v2.1.9 C:/CPE334 Software Eng/Lab1_Starter_Scaffold/toktickit/client
+
+ ✓ tests/lab-04/ActionsTakenApi.test.tsx (3 tests) 11ms
+ ✓ tests/lab-04/AccessibilityStyle.test.tsx (2 tests) 444ms
+ ✓ tests/lab-04/AuthorizationStates.test.tsx (3 tests) 409ms
+ ✓ tests/lab-04/RequesterDashboard.test.tsx (9 tests) 584ms
+ ✓ tests/lab-04/StaffDashboard.test.tsx (8 tests) 1222ms
+   ✓ UI-04 Staff and Administrator Dashboard > shows authoritative metrics, every breakdown including zero and current-user Actions 539ms
+ ✓ tests/lab-04/TicketWorkflow.test.tsx (17 tests) 3489ms
+   ✓ UI-05 Ticket workflow > requires a labelled nonblank reopen reason and sends latest Ticket version 474ms
+   ✓ UI-05 Ticket workflow > requires explicit refresh after STALE_UPDATE and preserves Action draft 498ms
+   ✓ UI-05 Ticket workflow > requires explicit refresh after RESOLUTION_GATE_FAILED and preserves Action draft 459ms
+   ✓ UI-05 Ticket workflow > requires explicit refresh after STATUS_TRANSITION_NOT_ALLOWED and preserves Action draft 447ms
+   ✓ UI-05 Ticket workflow > preserves reason and feedback after safe failure and failed refresh without automatic mutation 434ms
+   ✓ UI-05 Ticket workflow > maps server validation to the reason field and keeps its contents 337ms
+ ✓ tests/lab-04/ActionsTaken.test.tsx (17 tests) 5714ms
+   ✓ UI-01 Actions Taken Staff UI > preserves a confirmed create when an older GET arrives later (snapshot includes new Action: false) 603ms
+   ✓ UI-01 Actions Taken Staff UI > preserves a confirmed create when an older GET arrives later (snapshot includes new Action: true) 395ms
+   ✓ UI-01 Actions Taken Staff UI > keeps a newer GET version instead of overwriting it with a confirmed create 508ms
+   ✓ UI-01 Actions Taken Staff UI > updates Action Ticket Owner after Claim, Reassign and Unassign without changing performer or edit draft 685ms
+   ✓ UI-01 Actions Taken Staff UI > validates follow-up, guards saving, and sends only approved create fields 763ms
+   ✓ UI-01 Actions Taken Staff UI > keeps edits on stale conflict and requires explicit latest-version review before retry 456ms
+   ✓ UI-01 Actions Taken Staff UI > keeps POST uncertain through all pages, identical old text, late save and refresh 525ms
+   ✓ UI-01 Actions Taken Staff UI > preserves the draft when reconciliation GET fails and never retries POST automatically 343ms
+   ✓ UI-01 Actions Taken Staff UI > requires a fresh review and explicit duplicate-risk confirmation before a new POST 514ms
+   ✓ UI-01 Actions Taken Staff UI > maps server validation to labelled fields and keeps the draft 411ms
+
+ Test Files  7 passed (7)
+      Tests  59 passed (59)
+   Start at  00:19:05
+   Duration  7.89s (transform 826ms, setup 982ms, collect 3.31s, tests 11.87s, environment 6.02s, prepare 1.72s)
+
+
+STDERR

@@ -58,8 +58,9 @@ export function assertDedicatedE2EDatabase(
 function normalizeDatabaseUrl(value: string): string {
   try {
     const parsed = new URL(value);
-    parsed.hash = "";
-    return parsed.toString().replace(/\/$/, "");
+    // Credentials and schema/query variations do not make a database separate.
+    const host = ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname.toLowerCase()) ? "loopback" : parsed.hostname.toLowerCase();
+    return `${host}:${parsed.port || "5432"}/${decodeURIComponent(parsed.pathname.replace(/^\/+/, ""))}`;
   } catch {
     return value.trim().replace(/\/$/, "");
   }

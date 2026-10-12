@@ -64,10 +64,14 @@ test("IT Staff can search the Queue, open Detail, operate safely, and use respon
       contrastingTicket = extraBody.ticket;
     }
   }
-  await loginApi(request, "staff1@toktickit.test");
+  // Seed preserves existing passwords. Normalize this isolated test account
+  // through the Administrator API rather than depending on a previous run.
+  await prepareApiUser(request, "staff1@toktickit.test");
   const contrastStaff2 = await prepareApiUser(request, "staff2@toktickit.test");
   if (!contrastingTicket) throw new Error("Missing contrasting Staff Queue fixture.");
-  const contrastStatus = await request.patch(`${API_URL}/api/staff/tickets/${contrastingTicket.id}/status`, { data: { status: "OPEN" } });
+  const contrastDetail = await request.get(`${API_URL}/api/staff/tickets/${contrastingTicket.id}`);
+  expect(contrastDetail.status()).toBe(200);
+  const contrastStatus = await request.patch(`${API_URL}/api/staff/tickets/${contrastingTicket.id}/status`, { data: { status: "OPEN", version: (await contrastDetail.json()).data.ticket.version } });
   expect(contrastStatus.status()).toBe(200);
   const contrastOwner = await request.post(`${API_URL}/api/staff/tickets/${contrastingTicket.id}/assignment`, { data: { ownerId: contrastStaff2.id } });
   expect(contrastOwner.status()).toBe(200);
@@ -104,7 +108,9 @@ test("IT Staff can search the Queue, open Detail, operate safely, and use respon
     expect(filteredItems.every(matches), query).toBe(true);
     expect(filteredItems.some((item) => item.ticketNumber === contrastingTicket?.ticketNumber), query).toBe(false);
   }
-  const rejected = await request.patch(`${API_URL}/api/staff/tickets/${ticket.id}/status`, { data: { status: "CLOSED" } });
+  const currentDetail = await request.get(`${API_URL}/api/staff/tickets/${ticket.id}`);
+  expect(currentDetail.status()).toBe(200);
+  const rejected = await request.patch(`${API_URL}/api/staff/tickets/${ticket.id}/status`, { data: { status: "CLOSED", version: (await currentDetail.json()).data.ticket.version } });
   expect(rejected.status()).toBe(409);
   expect((await rejected.json()).error.code).toBe("STATUS_TRANSITION_NOT_ALLOWED");
   await loginApi(request, "requester3@toktickit.test");

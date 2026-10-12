@@ -1,0 +1,107 @@
+name: Lab 4 tests
+
+on:
+  push:
+    branches:
+      - feature/04-lab4-ticket-workflow
+      - lab4-staging
+  pull_request:
+    branches:
+      - lab4-staging
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab4-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server tests and migration regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          # Disposable CI-only credentials, never a Development database account.
+          POSTGRES_PASSWORD: ci-only-postgres
+          POSTGRES_DB: toktickit_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d toktickit_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:ci-only-postgres@localhost:5432/toktickit_e2e?schema=public
+      # Only used to seed this job's disposable test accounts.
+      LAB3_INITIAL_PASSWORD: Ci-Only-Lab4-Seed-2026!
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install PostgreSQL command-line tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+          psql --version
+          createdb --version
+          dropdb --version
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate Prisma schema
+        run: npx --no-install prisma validate
+      - name: Generate Prisma client
+        run: npx --no-install prisma generate
+      - name: Apply migrations to disposable test database
+        run: npx --no-install prisma migrate deploy
+      - name: Seed test database twice
+        run: |
+          npm run prisma:seed
+          npm run prisma:seed
+      - name: Run full Server suite including migration and concurrency tests
+        # More time for real migration subprocesses on a fresh hosted runner.
+        # This does not filter, skip or disable any test.
+        run: npm test -- --silent --testTimeout=60000 --hookTimeout=60000
+      - name: Build Server
+        run: npm run build
+      - name: Check whitespace in the tested commit
+        working-directory: .
+        run: git diff --check HEAD^ HEAD
+
+  client:
+    name: Client tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run full Client suite
+        run: npm test -- --silent
+      - name: Build Client
+        run: npm run build

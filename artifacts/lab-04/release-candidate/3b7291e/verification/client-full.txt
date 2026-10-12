@@ -1,0 +1,96 @@
+Command: npm.cmd test -- --silent
+Started: 2026-10-05T10:42:27.482Z
+Exit: 0
+STDOUT
+
+> toktickit-client@1.0.0 test
+> vitest run --silent
+
+
+ RUN  v2.1.9 C:/Users/natth/AppData/Local/Temp/toktickit-lab4-rc-2C9HCY/client
+
+ ✓ tests/lab-03/RequesterRegression.test.tsx (3 tests) 788ms
+   ✓ Lab 3 Requester regression > uses the authenticated requester and removes the development selector 349ms
+ ✓ tests/lab-04/RequesterDashboard.test.tsx (9 tests) 1012ms
+   ✓ UI-03 Requester Dashboard > shows loading, authoritative totals, Bangkok time and owned Ticket detail links 403ms
+ ✓ tests/lab-03/ChangePassword.test.tsx (2 tests) 1124ms
+   ✓ Lab 3 Change Password component > shows the mandatory gate, labels, and continues after success 827ms
+ ✓ tests/lab-02/AttachmentSection.test.tsx (6 tests) 1392ms
+   ✓ Attachment Section > downloads an active Attachment and soft-removes it only with a valid reason 787ms
+ ✓ tests/lab-03/StaffTicketQueue.test.tsx (5 tests) 1434ms
+   ✓ Staff Ticket Queue > shows loading then desktop table and responsive mobile cards 379ms
+   ✓ Staff Ticket Queue > sends exact search, filter and sort query 608ms
+ ✓ tests/lab-03/AuthorizationStates.test.tsx (5 tests) 1453ms
+   ✓ Lab 3 role navigation and authorization states > shows and opens User Management for an Administrator 483ms
+   ✓ Lab 3 role navigation and authorization states > refreshes the authenticated navigation after an Administrator changes their own role 463ms
+   ✓ Lab 3 role navigation and authorization states > keeps the Administrator shell when editing another user's role 326ms
+ ✓ tests/lab-02/RequesterTicketDetail.test.tsx (7 tests) 1748ms
+   ✓ Requester Ticket Detail > shows Loading and then renders the complete owned Ticket as read-only information 357ms
+   ✓ Requester Ticket Detail > allows the owner to add a public comment and mark the problem resolved 815ms
+ ✓ tests/lab-03/Login.test.tsx (3 tests) 1852ms
+   ✓ Lab 3 Login component > associates labels with fields and reports a safe failed login 782ms
+   ✓ Lab 3 Login component > shows a busy submit state while login is pending 501ms
+   ✓ Lab 3 Login component > shows the safe authentication failure for an inactive account 566ms
+ ✓ tests/lab-02/MyTickets.test.tsx (7 tests) 2107ms
+   ✓ My Tickets > shows loading and then renders requester-owned Tickets in desktop and mobile presentations 377ms
+   ✓ My Tickets > sends Search, Filter, Sort, and Page Size controls as the API query 947ms
+ ✓ tests/lab-04/StaffDashboard.test.tsx (8 tests) 2182ms
+   ✓ UI-04 Staff and Administrator Dashboard > shows authoritative metrics, every breakdown including zero and current-user Actions 888ms
+   ✓ UI-04 Staff and Administrator Dashboard > connects IT_STAFF role navigation to the existing list with the API query 366ms
+   ✓ UI-04 Staff and Administrator Dashboard > connects ADMINISTRATOR role navigation to the existing list with the API query 367ms
+   ✓ UI-04 Staff and Administrator Dashboard > connects REQUESTER role navigation to the existing list with the API query 302ms
+ ✓ tests/lab-03/StaffTicketDetail.test.tsx (8 tests) 2604ms
+   ✓ Staff Ticket Detail > renders read-only and operational fields and supports assignment, priority and confirmed status 1019ms
+   ✓ Staff Ticket Detail > separates Public Comments and Internal Notes with role-specific creation 889ms
+ ✓ tests/lab-04/ActionsTakenApi.test.tsx (3 tests) 19ms
+ ✓ tests/lab-02/accessibility.test.tsx (1 test) 239ms
+ ✓ tests/lab-03/AccessibilityStyle.test.tsx (1 test) 308ms
+   ✓ Lab 3 accessibility and style verification > exposes semantic landmarks, visible labels, keyboard focus and text state cues 305ms
+ ✓ tests/lab-02/ZenGreenStyle.test.tsx (2 tests) 274ms
+ ✓ tests/lab-01/App.test.tsx (3 tests) 475ms
+ ✓ tests/lab-04/AccessibilityStyle.test.tsx (2 tests) 523ms
+   ✓ STYLE-01: Action fields have visible labels, linked errors and natural keyboard order 315ms
+ ✓ tests/lab-02/DevelopmentRequesterSelection.test.tsx (2 tests) 302ms
+ ✓ tests/lab-04/AuthorizationStates.test.tsx (3 tests) 406ms
+ ✓ tests/lab-04/TicketWorkflow.test.tsx (17 tests) 4796ms
+   ✓ UI-05 Ticket workflow > shows only permitted targets for NEW 474ms
+   ✓ UI-05 Ticket workflow > requires a labelled nonblank reopen reason and sends latest Ticket version 826ms
+   ✓ UI-05 Ticket workflow > requires explicit refresh after STALE_UPDATE and preserves Action draft 650ms
+   ✓ UI-05 Ticket workflow > requires explicit refresh after RESOLUTION_GATE_FAILED and preserves Action draft 570ms
+   ✓ UI-05 Ticket workflow > requires explicit refresh after STATUS_TRANSITION_NOT_ALLOWED and preserves Action draft 555ms
+   ✓ UI-05 Ticket workflow > preserves reason and feedback after safe failure and failed refresh without automatic mutation 346ms
+ ✓ tests/lab-02/CreateTicket.test.tsx (6 tests) 5228ms
+   ✓ Create Ticket > disables the form while loading reference data and enables it when ready 361ms
+   ✓ Create Ticket > submits once, disables the form while busy, and displays the created Ticket 1637ms
+   ✓ Create Ticket > preserves the form and reuses the submission key after a safe failure 1367ms
+   ✓ Create Ticket > maps backend validation fields to the matching form controls 747ms
+   ✓ Create Ticket > keeps the created Ticket when Attachment upload fails and retries only the file 949ms
+ ✓ tests/lab-04/ActionsTaken.test.tsx (17 tests) 5853ms
+   ✓ UI-01 Actions Taken Staff UI > preserves a confirmed create when an older GET arrives later (snapshot includes new Action: false) 778ms
+   ✓ UI-01 Actions Taken Staff UI > preserves a confirmed create when an older GET arrives later (snapshot includes new Action: true) 409ms
+   ✓ UI-01 Actions Taken Staff UI > keeps a newer GET version instead of overwriting it with a confirmed create 561ms
+   ✓ UI-01 Actions Taken Staff UI > updates Action Ticket Owner after Claim, Reassign and Unassign without changing performer or edit draft 1171ms
+   ✓ UI-01 Actions Taken Staff UI > validates follow-up, guards saving, and sends only approved create fields 757ms
+   ✓ UI-01 Actions Taken Staff UI > keeps edits on stale conflict and requires explicit latest-version review before retry 370ms
+   ✓ UI-01 Actions Taken Staff UI > keeps POST uncertain through all pages, identical old text, late save and refresh 417ms
+   ✓ UI-01 Actions Taken Staff UI > preserves the draft when reconciliation GET fails and never retries POST automatically 300ms
+   ✓ UI-01 Actions Taken Staff UI > requires a fresh review and explicit duplicate-risk confirmation before a new POST 368ms
+   ✓ UI-01 Actions Taken Staff UI > maps server validation to labelled fields and keeps the draft 312ms
+ ✓ tests/lab-03/UserManagement.test.tsx (11 tests) 6321ms
+   ✓ Administrator User Management > shows safe user list fields, status text and Edit actions 355ms
+   ✓ Administrator User Management > searches by name/email and applies the optional role filter 529ms
+   ✓ Administrator User Management > creates an inactive user with one role and initial password 1193ms
+   ✓ Administrator User Management > edits a user and resets the initial password 911ms
+   ✓ Administrator User Management > confirms deactivation and prevents blank form submission 437ms
+   ✓ Administrator User Management > renders API validation fields with accessible error associations 711ms
+   ✓ Administrator User Management > preserves form data after duplicate-email and update-conflict responses 830ms
+   ✓ Administrator User Management > prevents duplicate submit while saving 584ms
+   ✓ Administrator User Management > uses a safe fallback and never renders password, hash or internal details 668ms
+
+ Test Files  23 passed (23)
+      Tests  131 passed (131)
+   Start at  17:42:28
+   Duration  9.33s (transform 2.81s, setup 4.09s, collect 13.53s, tests 42.44s, environment 30.57s, prepare 5.28s)
+
+
+STDERR

@@ -1,0 +1,19 @@
+Command: npm.cmd run build
+Started: 2026-10-05T10:42:40.939Z
+Exit: 0
+STDOUT
+
+> toktickit-client@1.0.0 build
+> tsc && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 38 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.41 kB │ gzip:  0.27 kB
+dist/assets/index-F-wCIacU.css  233.50 kB │ gzip: 31.49 kB
+dist/assets/index-BgBcYrLA.js   253.33 kB │ gzip: 69.31 kB
+✓ built in 876ms
+
+STDERR

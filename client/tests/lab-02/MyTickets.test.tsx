@@ -42,6 +42,7 @@ const mockedGetMyTickets =
 
 const firstTicket = {
   id: 101,
+  version: 1,
   ticketNumber: "TKT-20990101-A00001",
   summary: "Laptop cannot connect to Wi-Fi",
   category: { id: 1, name: "Hardware" },
@@ -57,6 +58,7 @@ const firstTicket = {
 
 const secondTicket = {
   id: 102,
+  version: 1,
   ticketNumber: "TKT-20990102-A00002",
   summary: "Email access request",
   category: {

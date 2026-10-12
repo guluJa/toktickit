@@ -1,0 +1,14 @@
+Command: pwsh.exe -NoProfile -File artifacts/lab-04/verify-recovery.ps1
+Started: 2026-10-04T17:25:08.000Z
+Exit: 0
+STDOUT
+BACKUP_EXIT=0
+SCRATCH_CREATE_EXIT=0
+RESTORE_EXIT=0
+SOURCE_COUNTS={"users": 11, "actions": 9, "tickets": 14, "comments": 3, "attachments": 0, "internalNotes": 3}
+RESTORED_COUNTS={"users": 11, "actions": 9, "tickets": 14, "comments": 3, "attachments": 0, "internalNotes": 3}
+ROW_SNAPSHOT_MATCH=true
+SCRATCH_DROP_EXIT=0
+TEMP_DUMP_REMOVED=true
+
+STDERR

@@ -1,0 +1,372 @@
+{
+  "title": "E2E-03: selected metrics agree with PostgreSQL/API/UI, ordered limited lists, links and responsive layouts",
+  "status": "passed",
+  "note": "Includes deliberate authorization/conflict/network-failure injection and unauthenticated auth/me probes; these are not normal-flow failures. No request bodies, cookies or headers recorded.",
+  "pageErrors": [],
+  "consoleMessages": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/requester/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/requester/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/requester/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/requester/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3472",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3472",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3472/comments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3472/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3472/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3473",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3473",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3473/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3473/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/users",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/dashboard",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3473",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3473",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3473/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3473/actions",
+      "status": 200
+    }
+  ]
+}

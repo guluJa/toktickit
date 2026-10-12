@@ -1,0 +1,93 @@
+{
+  "baseline": "51bcf9c",
+  "scope": "feature branch working tree; not Final-main",
+  "results": {
+    "requester": {
+      "asOf": "2026-10-04T17:31:58.690Z",
+      "expected": {
+        "recentlyUpdatedCount": 4,
+        "recentlyResolvedCount": 2
+      },
+      "actual": {
+        "openCount": 2,
+        "waitingForRequesterCount": 1,
+        "resolvedCount": 2,
+        "recentlyUpdatedCount": 4,
+        "recentlyResolvedCount": 2
+      },
+      "ids": [
+        3131,
+        3130,
+        3129,
+        3128
+      ],
+      "resolvedIds": [
+        3130,
+        3129
+      ],
+      "currentUserActionIds": []
+    },
+    "staff": {
+      "asOf": "2026-10-04T17:32:02.644Z",
+      "expected": {
+        "recentlyUpdatedCount": 19,
+        "recentlyResolvedCount": 5
+      },
+      "actual": {
+        "unassignedCount": 4,
+        "mineCount": 3,
+        "highPriorityCount": 6,
+        "recentlyUpdatedCount": 19,
+        "recentlyResolvedCount": 5
+      },
+      "ids": [
+        3132,
+        3131,
+        3130,
+        3129,
+        3128
+      ],
+      "resolvedIds": [
+        3130,
+        3129,
+        1419,
+        1418,
+        1064
+      ],
+      "currentUserActionIds": [
+        1674
+      ]
+    },
+    "admin": {
+      "asOf": "2026-10-04T17:32:08.639Z",
+      "expected": {
+        "recentlyUpdatedCount": 19,
+        "recentlyResolvedCount": 5
+      },
+      "actual": {
+        "unassignedCount": 4,
+        "mineCount": 0,
+        "highPriorityCount": 6,
+        "recentlyUpdatedCount": 19,
+        "recentlyResolvedCount": 5
+      },
+      "ids": [
+        3132,
+        3131,
+        3130,
+        3129,
+        3128
+      ],
+      "resolvedIds": [
+        3130,
+        3129,
+        1419,
+        1418,
+        1064
+      ],
+      "currentUserActionIds": [
+        1675
+      ]
+    }
+  }
+}

@@ -6,7 +6,7 @@ import { getStaffTickets, TicketApiError, StaffQueueResponse } from "../../src/a
 
 vi.mock("../../src/api.js", async (importOriginal) => ({ ...(await importOriginal<typeof import("../../src/api.js")>()), getStaffTickets: vi.fn() }));
 const mockedGetStaffTickets = vi.mocked(getStaffTickets);
-const ticket = { id: 1, ticketNumber: "TKT-QUEUE-1", summary: "Laptop issue", category: { id: 1, name: "Hardware" }, relatedSystem: { id: 1, name: "Campus Wi-Fi" }, requestedPriority: "HIGH" as const, itPriority: "MEDIUM" as const, currentStatus: "NEW" as const, owner: { id: 10, name: "Staff", role: "IT_STAFF" as const }, createdAt: "2026-09-01T00:00:00Z", updatedAt: "2026-09-02T00:00:00Z" };
+const ticket = { id: 1, version: 1, ticketNumber: "TKT-QUEUE-1", summary: "Laptop issue", category: { id: 1, name: "Hardware" }, relatedSystem: { id: 1, name: "Campus Wi-Fi" }, requestedPriority: "HIGH" as const, itPriority: "MEDIUM" as const, currentStatus: "NEW" as const, owner: { id: 10, name: "Staff", role: "IT_STAFF" as const }, createdAt: "2026-09-01T00:00:00Z", updatedAt: "2026-09-02T00:00:00Z" };
 function result(overrides: Partial<StaffQueueResponse> = {}): StaffQueueResponse { return { items: [ticket], pagination: { page: 1, pageSize: 10, totalItems: 1, totalPages: 1 }, ...overrides }; }
 beforeEach(() => { vi.resetAllMocks(); mockedGetStaffTickets.mockResolvedValue(result()); });
 

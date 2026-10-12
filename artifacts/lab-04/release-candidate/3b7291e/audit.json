@@ -1,0 +1,65 @@
+{
+  "candidate": "3b7291e47b6c53eb21202f2402cd480f72f883e6",
+  "preparationBranch": "codex/lab4-pre-release-audit",
+  "capturedAt": "2026-10-05T10:51:00.739Z",
+  "minimumStructure": {
+    "paths": 20,
+    "missing": []
+  },
+  "traceability": {
+    "requirements": 17,
+    "testIds": 25,
+    "requirementsWithoutTrace": [],
+    "unknownTraceTests": [],
+    "testFilePaths": 44,
+    "missingTestFiles": []
+  },
+  "trackedPrivateOrGeneratedPaths": [],
+  "developmentSecretMatches": [],
+  "whitespaceErrors": [],
+  "productChanges": [],
+  "pr79": {
+    "head": "af6fe862c4ba8e72a41bf5fd6a86c94afa7a5e11",
+    "merge": "3b7291e47b6c53eb21202f2402cd480f72f883e6",
+    "reviewComment": "https://github.com/guluJa/toktickit/pull/79#pullrequestreview-5410260883",
+    "response": "https://github.com/guluJa/toktickit/pull/79#issuecomment-5990353143",
+    "approval": "https://github.com/guluJa/toktickit/pull/79#pullrequestreview-5412952624",
+    "reviewer": "PhraewaS"
+  },
+  "postMergeCI": {
+    "url": "https://github.com/guluJa/toktickit/actions/runs/37295186571",
+    "revision": "3b7291e47b6c53eb21202f2402cd480f72f883e6",
+    "server": {
+      "files": 28,
+      "tests": 272,
+      "conclusion": "success"
+    },
+    "client": {
+      "files": 23,
+      "tests": 131,
+      "conclusion": "success"
+    },
+    "browserCoverage": false
+  },
+  "issues": {
+    "closed": [
+      67,
+      69,
+      70,
+      71,
+      72,
+      73
+    ],
+    "open": [
+      74
+    ]
+  },
+  "pending": [
+    "Project/Kanban: current token lacks read:project",
+    "Peer review of pre-release documents",
+    "Release PR and merge to main",
+    "Final-main verification",
+    "Selected AI prompts, model identification and human reflection",
+    "Submission PDF Answer Part 1-9"
+  ]
+}

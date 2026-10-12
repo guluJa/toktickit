@@ -1,0 +1,37 @@
+{
+  "revision": "3b7291e47b6c53eb21202f2402cd480f72f883e6",
+  "scope": "Committed lab4-staging release candidate; not Final-main",
+  "startedAt": "2026-10-05T10:41:35.526Z",
+  "completedAt": "2026-10-05T10:44:38.622Z",
+  "phases": [
+    {
+      "mode": "prepare",
+      "exitCode": 0,
+      "durationMs": 8177
+    },
+    {
+      "mode": "unit",
+      "exitCode": 0,
+      "durationMs": 61038
+    },
+    {
+      "mode": "browser",
+      "exitCode": 0,
+      "durationMs": 110749
+    },
+    {
+      "mode": "recovery",
+      "exitCode": 0,
+      "durationMs": 2686
+    }
+  ],
+  "browserResults": {
+    "lastResponsiveRun": {
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0
+    }
+  },
+  "note": "Snapshot exported with git archive; installed dependencies reused through junctions. Application, schema, migrations and tests were not edited. Browser screenshots/logs are fresh outputs; old feature evidence remains unchanged."
+}

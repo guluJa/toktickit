@@ -80,7 +80,7 @@ describe("Ticket status transition contract", () => {
     WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
     RESOLVED: ["CLOSED", "REOPENED"],
     CLOSED: ["REOPENED"],
-    REOPENED: [],
+    REOPENED: ["IN_PROGRESS"],
     CANCELLED: [],
   };
 

@@ -11,6 +11,8 @@ test-results/
 playwright-report/
 test-results-lab3/
 playwright-report-lab3/
+test-results-lab4/
+playwright-report-lab4/
 e2e/downloads/
 # prisma
 server/prisma/*.db

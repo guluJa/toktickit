@@ -1,0 +1,23 @@
+Command: git diff --stat
+Started: 2026-10-04T17:33:55.324Z
+Exit: 0
+STDOUT
+ .gitignore                                        |  2 +
+ README.md                                         | 39 +++++++++++-
+ client/src/StaffTicketDetail.tsx                  |  2 +-
+ docs/lab-04/ai-use.md                             | 16 ++++-
+ docs/lab-04/reviewer.md                           | 18 +++++-
+ docs/lab-04/specification.md                      |  2 +-
+ docs/lab-04/tests.md                              | 76 ++++++++++++++++++++++-
+ docs/lab-04/ui-spec.md                            | 33 ++++++----
+ e2e/database-guard.ts                             |  5 +-
+ e2e/global-setup.ts                               |  2 +-
+ e2e/lab-02/support.ts                             |  3 +-
+ e2e/lab-03/staff-ticket-flow.spec.ts              |  4 +-
+ e2e/package-lock.json                             |  4 +-
+ e2e/package.json                                  |  4 +-
+ e2e/playwright.config.ts                          | 14 +++--
+ server/tests/lab-04/performance-smoke.api.test.ts |  7 ++-
+ 16 files changed, 192 insertions(+), 39 deletions(-)
+
+STDERR

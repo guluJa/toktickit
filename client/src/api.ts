@@ -219,6 +219,7 @@ export interface AttachmentMetadata {
 
 export interface TicketDetail {
   id: number;
+  version: number;
   ticketNumber: string;
   requester: RequesterSummary;
   category: Category;
@@ -309,6 +310,7 @@ export interface CreateTicketResponse {
 
 export interface TicketSummary {
   id: number;
+  version: number;
   ticketNumber: string;
   summary: string;
   category: Category;
@@ -355,7 +357,7 @@ export interface MyTicketsQuery {
   categoryId?: number;
   relatedSystemId?: number;
   requestedPriority?: RequestedPriority;
-  currentStatus?: "NEW";
+  currentStatus?: TicketStatus;
   sortBy: MyTicketsSortField;
   sortDirection: MyTicketsSortDirection;
   page: number;
@@ -370,6 +372,52 @@ export interface MyTicketsResponse {
   totalItems: number;
   totalPages: number;
 }
+
+export interface DashboardLink {
+  rel: "recentTickets" | "recentlyResolved" | "recentActions" | "ticketDetail";
+  target: "requester-tickets" | "staff-queue" | "requester-ticket-detail" | "staff-ticket-detail";
+  ticketId?: number;
+  query?: MyTicketsQuery | StaffQueueQuery;
+}
+export interface DashboardTicket {
+  id: number; ticketNumber: string; summary: string; currentStatus: TicketStatus;
+  requestedPriority: RequestedPriority; itPriority: RequestedPriority;
+  owner?: AuthUser | null; updatedAt: string; detailLink: DashboardLink;
+}
+export interface RequesterDashboardData {
+  timezone: "Asia/Bangkok"; asOf: string;
+  metrics: { openCount: number; waitingForRequesterCount: number; resolvedCount: number; recentlyUpdatedCount: number; recentlyResolvedCount: number };
+  recentTickets: DashboardTicket[]; recentlyResolvedTickets: DashboardTicket[]; links: DashboardLink[];
+}
+export interface StaffDashboardData {
+  timezone: "Asia/Bangkok"; asOf: string;
+  metrics: { unassignedCount: number; mineCount: number; highPriorityCount: number; recentlyUpdatedCount: number; recentlyResolvedCount: number };
+  byStatus: Record<TicketStatus, number>; byPriority: Record<RequestedPriority, number>;
+  recentTickets: DashboardTicket[]; recentlyResolvedTickets: DashboardTicket[];
+  recentActions: { id: number; ticketId: number; actionAt: string; description: string; result: string; performedBy: AuthUser; detailLink: DashboardLink }[];
+  links: DashboardLink[];
+}
+async function dashboardRequest<T>(route: string, limit: number): Promise<T> {
+  const fallback = "Unable to load the dashboard. Please try again.";
+  try {
+    const response = await fetch(`${API_URL}${route}?limit=${encodeURIComponent(limit)}`, { credentials: "include" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new TicketApiError(fallback, response.status, body.error?.code ?? "DASHBOARD_REQUEST_FAILED");
+    const data = body.data;
+    const counts = (value: unknown) => value !== null && typeof value === "object" && Object.values(value).every(v => Number.isInteger(v) && Number(v) >= 0);
+    const validDate = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value));
+    const ticketRows = (value: unknown) => Array.isArray(value) && value.every(row => validDate(row.updatedAt) && row.detailLink?.target && Number.isInteger(row.id));
+    const metricNames = route === "/api/staff/dashboard" ? ["unassignedCount", "mineCount", "highPriorityCount", "recentlyUpdatedCount", "recentlyResolvedCount"] : ["openCount", "waitingForRequesterCount", "resolvedCount", "recentlyUpdatedCount", "recentlyResolvedCount"];
+    if (!data || data.timezone !== "Asia/Bangkok" || !validDate(data.asOf) || !counts(data.metrics) || metricNames.some(key => !Number.isInteger(data.metrics[key])) || !ticketRows(data.recentTickets) || !ticketRows(data.recentlyResolvedTickets) || !Array.isArray(data.links)) throw new Error("Invalid dashboard response");
+    if (route === "/api/staff/dashboard" && (!counts(data.byStatus) || !counts(data.byPriority) || !Array.isArray(data.recentActions) || data.recentActions.some((a: StaffDashboardData["recentActions"][number]) => !validDate(a.actionAt) || !a.performedBy?.name || !a.detailLink?.target))) throw new Error("Invalid Staff Dashboard response");
+    return body.data as T;
+  } catch (error) {
+    if (error instanceof TicketApiError) throw error;
+    throw new TicketApiError(fallback, 0, "DASHBOARD_REQUEST_FAILED");
+  }
+}
+export const getRequesterDashboard = (limit = 20) => dashboardRequest<RequesterDashboardData>("/api/requester/dashboard", limit);
+export const getStaffDashboard = (limit = 20) => dashboardRequest<StaffDashboardData>("/api/staff/dashboard", limit);
 
 interface TicketApiErrorResponse {
   error?: {
@@ -430,6 +478,94 @@ export interface StaffTicketDetailResponse {
   internalNotes: InternalNote[];
 }
 
+export interface ActionTaken {
+  id: number;
+  ticketId: number;
+  actionAt: string;
+  description: string;
+  result: string;
+  performedBy: AuthUser;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+  ticketOwner: AuthUser | null;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+}
+
+export interface ActionFields {
+  description: string;
+  result: string;
+  followUpRequired: boolean;
+  followUpNote: string | null;
+  attachmentNotes: string | null;
+}
+
+export interface ActionPage {
+  items: ActionTaken[];
+  pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
+async function actionRequest<T>(url: string, init: RequestInit, fallback: string): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        ...init,
+        signal: controller.signal,
+        credentials: "include",
+        headers: { ...(init.body ? { "Content-Type": "application/json" } : {}), ...(init.headers ?? {}) },
+      });
+    } catch {
+      throw new TicketApiError(fallback, 0, "NETWORK_RESULT_UNKNOWN");
+    }
+    const body = await response.json().catch(() => ({})) as {
+      data?: T;
+      error?: { code?: string; message?: string; fields?: Record<string, string> };
+    };
+    if (!response.ok) {
+      throw new TicketApiError(
+        body.error?.message ?? fallback,
+        response.status,
+        body.error?.code ?? "ACTION_REQUEST_FAILED",
+        body.error?.fields,
+      );
+    }
+    if (!body.data) throw new TicketApiError(fallback, 0, "NETWORK_RESULT_UNKNOWN");
+    return body.data;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export function getActionPage(ticketId: number, audience: "staff" | "requester", page: number): Promise<ActionPage> {
+  const prefix = audience === "staff" ? "/api/staff/tickets" : "/api/tickets";
+  return actionRequest<ActionPage>(
+    `${API_URL}${prefix}/${ticketId}/actions?page=${page}&pageSize=100`,
+    { method: "GET" },
+    "Unable to load Actions Taken.",
+  );
+}
+
+export function createAction(ticketId: number, fields: ActionFields): Promise<{ action: ActionTaken }> {
+  return actionRequest<{ action: ActionTaken }>(
+    `${API_URL}/api/staff/tickets/${ticketId}/actions`,
+    { method: "POST", body: JSON.stringify(fields) },
+    "Unable to confirm whether the Action was saved.",
+  );
+}
+
+export function updateAction(ticketId: number, actionId: number, fields: ActionFields, version: number): Promise<{ action: ActionTaken }> {
+  return actionRequest<{ action: ActionTaken }>(
+    `${API_URL}/api/staff/tickets/${ticketId}/actions/${actionId}`,
+    { method: "PATCH", body: JSON.stringify({ ...fields, version }) },
+    "Unable to update Action Taken.",
+  );
+}
+
 async function staffMutation<T>(url: string, init: RequestInit, fallback: string): Promise<T> {
   let response: Response;
   try {
@@ -458,8 +594,8 @@ export async function updateStaffPriority(ticketId: number, itPriority: Requeste
   return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/priority`, { method: "PATCH", body: JSON.stringify({ itPriority }) }, "Unable to update IT Priority.");
 }
 
-export async function updateStaffStatus(ticketId: number, status: TicketStatus): Promise<{ ticket: TicketDetail }> {
-  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/status`, { method: "PATCH", body: JSON.stringify({ status }) }, "Unable to update Ticket status.");
+export async function updateStaffStatus(ticketId: number, status: TicketStatus, version: number, reopenReason?: string): Promise<{ ticket: TicketDetail }> {
+  return staffMutation<{ ticket: TicketDetail }>(`${API_URL}/api/staff/tickets/${ticketId}/status`, { method: "PATCH", body: JSON.stringify({ status, version, ...(status === "REOPENED" ? { reopenReason: reopenReason?.trim() } : {}) }) }, "Unable to update Ticket status.");
 }
 
 export async function getStaffComments(ticketId: number): Promise<PublicComment[]> {

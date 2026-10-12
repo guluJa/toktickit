@@ -1,0 +1,11 @@
+Command: npm.cmd run prisma:seed
+Started: 2026-10-05T10:41:43.244Z
+Exit: 0
+STDOUT
+
+> toktickit-server@1.0.0 prisma:seed
+> tsx prisma/seed.ts
+
+Seeded Lab 3 data and Lab 4 Action, workflow and Dashboard fixtures successfully.
+
+STDERR

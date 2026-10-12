@@ -1,0 +1,26 @@
+Command: npm.cmd test -- lab-04
+Started: 2026-10-04T17:05:36.243Z
+Exit: 0
+STDOUT
+
+> test
+> playwright test lab-04
+
+
+Running 9 tests using 1 worker
+
+  ok 1 lab-04\actions-taken-flow.spec.ts:4:1 › E2E-01: real create/edit, validation, saving guard, stale conflict and Requester/Admin authorization (7.7s)
+  ok 2 lab-04\actions-taken-flow.spec.ts:30:1 › E2E-01/AC-16: lost POST response, identical old Action, late commit on later page, failed reconciliation and preserved draft (5.2s)
+  ok 3 lab-04\actions-taken-flow.spec.ts:74:1 › E2E-01: client 30-second timeout after real server commit remains uncertain without automatic retry (2.7s)
+  ok 4 lab-04\dashboards.spec.ts:6:1 › E2E-03: selected metrics agree with PostgreSQL/API/UI, ordered limited lists, links and responsive layouts (8.8s)
+  ok 5 lab-04\dashboards.spec.ts:47:1 › E2E-03: Staff Dashboard browser feedback states with controlled empty response and keyboard recovery (3.1s)
+  ok 6 lab-04\dashboards.spec.ts:69:1 › E2E-03: zero, loading, forbidden and safe failure with keyboard retry (2.0s)
+  ok 7 lab-04\database-safety.spec.ts:7:1 › SAFETY-01: reject Development database despite different credentials/query and require explicit E2E marker (5ms)
+  ok 8 lab-04\ticket-resolution.spec.ts:3:1 › E2E-02: gate, assignment, follow-up completion, close/reopen/cancel and advisory indication (5.7s)
+  ok 9 lab-04\ticket-resolution.spec.ts:29:1 › E2E-02: concurrent Action versions and stale Ticket UI preserve newer changes and draft (1.7s)
+
+  9 passed (42.5s)
+
+STDERR
+(node:32252) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)

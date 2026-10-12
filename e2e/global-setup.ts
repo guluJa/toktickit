@@ -29,6 +29,6 @@ export default async function globalSetup(): Promise<void> {
   );
   const repositoryRoot = fileURLToPath(new URL("../", import.meta.url));
   for (const directory of ["authentication", "staff-queue", "staff-ticket-detail", "user-management"]) {
-    await fs.mkdir(path.join(repositoryRoot, "artifacts", "lab-03", "screenshots", directory), { recursive: true });
+    await fs.mkdir(path.join(repositoryRoot, "artifacts", "lab-04", "screenshots", "regression-lab-03", directory), { recursive: true });
   }
 }

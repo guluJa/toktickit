@@ -1,4 +1,5 @@
-import { Prisma, TicketStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+export { allowedStatusTransitions, isAllowedStatusTransition } from "./ticket-workflow.js";
 
 export const staffTicketDetailSelect = {
   id: true,
@@ -8,6 +9,7 @@ export const staffTicketDetailSelect = {
   itPriority: true,
   description: true,
   currentStatus: true,
+  version: true,
   requesterResolvedAt: true,
   createdAt: true,
   updatedAt: true,
@@ -42,21 +44,6 @@ export type StaffTicketDetailRecord = Prisma.TicketGetPayload<{
   select: typeof staffTicketDetailSelect;
 }>;
 
-export const allowedStatusTransitions: Record<TicketStatus, readonly TicketStatus[]> = {
-  NEW: ["OPEN"],
-  OPEN: ["IN_PROGRESS", "WAITING_FOR_REQUESTER", "CANCELLED"],
-  IN_PROGRESS: ["WAITING_FOR_REQUESTER", "RESOLVED", "CANCELLED"],
-  WAITING_FOR_REQUESTER: ["IN_PROGRESS", "RESOLVED", "CANCELLED"],
-  RESOLVED: ["CLOSED", "REOPENED"],
-  CLOSED: ["REOPENED"],
-  REOPENED: [],
-  CANCELLED: [],
-};
-
-export function isAllowedStatusTransition(from: TicketStatus, to: TicketStatus): boolean {
-  return allowedStatusTransitions[from].includes(to);
-}
-
 export function toAttachmentMetadata(attachment: StaffTicketDetailRecord["attachments"][number]) {
   return {
     ...attachment,
@@ -75,6 +62,7 @@ export function toStaffTicketDetail(ticket: StaffTicketDetailRecord) {
     itPriority: ticket.itPriority,
     description: ticket.description,
     currentStatus: ticket.currentStatus,
+    version: ticket.version,
     requesterResolvedAt: ticket.requesterResolvedAt,
     createdAt: ticket.createdAt,
     updatedAt: ticket.updatedAt,

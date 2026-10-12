@@ -16,7 +16,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getCurrentUser).mockResolvedValue(staff);
   vi.mocked(getStaffTickets).mockResolvedValue({
-    items: [{ id: 42, ticketNumber: "TKT-A11Y-42", summary: "Keyboard fixture", requestedPriority: "HIGH", itPriority: "HIGH", currentStatus: "NEW", owner: null, category: { id: 1, name: "Access" }, relatedSystem: { id: 1, name: "Portal" }, createdAt: "2026-09-14T00:00:00.000Z", updatedAt: "2026-09-14T00:00:00.000Z" }],
+    items: [{ id: 42, version: 1, ticketNumber: "TKT-A11Y-42", summary: "Keyboard fixture", requestedPriority: "HIGH", itPriority: "HIGH", currentStatus: "NEW", owner: null, category: { id: 1, name: "Access" }, relatedSystem: { id: 1, name: "Portal" }, createdAt: "2026-09-14T00:00:00.000Z", updatedAt: "2026-09-14T00:00:00.000Z" }],
     pagination: { page: 1, pageSize: 10, totalItems: 1, totalPages: 1 },
   });
 });

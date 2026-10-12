@@ -12,7 +12,7 @@ function Badge({ value }: { value: string | undefined }) { const display = value
 function ownerName(owner: TicketSummary["owner"]) { return owner ? `${owner.name} (${owner.role})` : "Unassigned"; }
 function OpenButton({ ticketId, onOpenTicket }: { ticketId: number; onOpenTicket?: (ticketId: number) => void }) { return <button type="button" className="btn btn-sm btn-outline-success" onClick={() => onOpenTicket?.(ticketId)}>Open Ticket</button>; }
 
-export default function StaffTicketQueue({ role, onOpenTicket }: { role: Role; onOpenTicket?: (ticketId: number) => void }) {
+export default function StaffTicketQueue({ role, onOpenTicket, initialQuery }: { role: Role; onOpenTicket?: (ticketId: number) => void; initialQuery?: StaffQueueQuery }) {
   const [state, setState] = useState<ViewState>("loading");
   const [result, setResult] = useState<StaffQueueResponse | null>(null);
   const [query, setQuery] = useState<StaffQueueQuery>(DEFAULT_QUERY);
@@ -22,7 +22,11 @@ export default function StaffTicketQueue({ role, onOpenTicket }: { role: Role; o
   const [sortOrder, setSortOrder] = useState<StaffQueueQuery["sortOrder"]>("desc"); const [pageSize, setPageSize] = useState<StaffQueueQuery["pageSize"]>(10);
   const sequence = useRef(0);
   async function load(next: StaffQueueQuery) { const current = ++sequence.current; setState("loading"); try { const data = await getStaffTickets(next); if (current !== sequence.current) return; setQuery(next); setResult(data); setState(data.pagination.totalItems === 0 ? (next.search || next.status || next.requestedPriority || next.itPriority || next.ownerId !== undefined ? "no-results" : "empty") : "loaded"); } catch (error) { if (current !== sequence.current) return; setState(error instanceof TicketApiError && error.status === 403 ? "forbidden" : "error"); } }
-  useEffect(() => { void load(DEFAULT_QUERY); return () => { sequence.current += 1; }; }, [role]);
+  useEffect(() => {
+    const next = { ...DEFAULT_QUERY, ...initialQuery };
+    setSearch(next.search ?? ""); setStatus(next.status ?? ""); setRequestedPriority(next.requestedPriority ?? ""); setItPriority(next.itPriority ?? ""); setOwnerId(next.ownerId === undefined ? "" : String(next.ownerId)); setSortBy(next.sortBy); setSortOrder(next.sortOrder); setPageSize(next.pageSize);
+    void load(next); return () => { sequence.current += 1; };
+  }, [role, initialQuery]);
   function draft(): StaffQueueQuery | null { const next: StaffQueueQuery = { sortBy, sortOrder, page: 1, pageSize, ...(search.trim() ? { search: search.trim() } : {}), ...(status ? { status: status as TicketStatus } : {}), ...(requestedPriority ? { requestedPriority: requestedPriority as RequestedPriority } : {}), ...(itPriority ? { itPriority: itPriority as RequestedPriority } : {}) }; if (ownerId.trim()) { if (ownerId.trim() === "unassigned") next.ownerId = "unassigned"; else if (/^[1-9]\d*$/.test(ownerId.trim())) next.ownerId = Number(ownerId); else return null; } return next; }
   function apply(event: FormEvent) { event.preventDefault(); const next = draft(); if (!next) { setState("error"); return; } void load(next); }
   function clear() { setSearch(""); setStatus(""); setRequestedPriority(""); setItPriority(""); setOwnerId(""); setSortBy("updatedAt"); setSortOrder("desc"); setPageSize(10); void load(DEFAULT_QUERY); }

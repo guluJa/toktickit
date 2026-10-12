@@ -1,6 +1,6 @@
 # TokTickIT
 
-TokTickIT เป็นระบบศูนย์บริการด้านไอทีสำหรับสร้างและติดตาม Ticket โดยใช้ authenticated session และ role-based authorization รองรับ Requester, IT Staff และ Administrator พร้อม Staff Queue, Staff Ticket Detail และ User Management ระบบรักษา ownership ของ Requester, จัดการข้อผิดพลาดโดยไม่เปิดเผยข้อมูลภายใน และแสดงผลด้วย Zen Green UI ที่รองรับหลายขนาดหน้าจอ
+TokTickIT เป็นระบบศูนย์บริการด้านไอทีสำหรับสร้างและติดตาม Ticket โดยใช้ authenticated session และ role-based authorization รองรับ Requester, IT Staff และ Administrator พร้อม Actions Taken, Ticket Workflow, Role Dashboards, Staff Queue และ User Management ระบบรักษา ownership ของ Requester, จัดการข้อผิดพลาดโดยไม่เปิดเผยข้อมูลภายใน และแสดงผลด้วย Zen Green UI ที่รองรับหลายขนาดหน้าจอ
 
 ## Technology Stack
 
@@ -173,7 +173,7 @@ cd ..\e2e
 npm.cmd test
 ```
 
-รัน Lab 3 E2E suite ซึ่งมี responsive assertions และสร้าง Visual Evidence:
+รัน authenticated regression ของ Lab 3 และ Lab 4 E2E ซึ่งมี responsive assertions และสร้าง Visual Evidence:
 ```powershell
 npm.cmd run test:responsive
 ```
@@ -216,6 +216,8 @@ test-results/
 playwright-report/
 test-results-lab3/
 playwright-report-lab3/
+test-results-lab4/
+playwright-report-lab4/
 ```
 
 Commit ได้เฉพาะ `.env.example` ที่ไม่มี Password หรือข้อมูลลับ
@@ -233,3 +235,48 @@ Select-String -Pattern '(^|/)(node_modules|\.env)(/|$)'
 ## Submission Note
 
 Lab 3 ส่งเป็น PDF หนึ่งไฟล์แยกจาก Repository โดยเรียงหัวข้อ `Answer Part 1` ถึง `Answer Part 9` ตาม Labsheet พร้อม working links และภาพที่อ่านได้ ไม่ต้องสร้างหรือ Commit PDF เข้า Repository นี้ เอกสารใน `docs/lab-03/`, หลักฐานใน `artifacts/lab-03/` และ Final `main` เป็นแหล่งข้อมูลสำหรับจัดทำ PDF หลัง Release PR merge และ Final-main verification เสร็จแล้ว
+
+## Lab 4: setup, verification และ demo
+
+Lab 4 ใช้ schema/migrations เดิมแบบ additive: `ActionTaken` และ `Ticket.version` ไม่ใช้ `migrate reset`, `db push --force-reset` หรือลบข้อมูลเดิม Seed เพิ่ม Ticket ที่มี 0/1/หลาย Actions, workflow fixtures และ Dashboard fixtures; ไม่เขียนทับ Action/workflow fixture ที่มีผู้ใช้แก้แล้ว แต่ seed ของ Labs ก่อนหน้ายังปรับ reference data/บัญชีตัวอย่างตามกติกาเดิม จึงไม่ควรรันเพื่อทดลองบนฐาน Production
+
+คำสั่งตรวจทั้งหมดด้านล่างรันจาก repository root บน Windows ต้องมี `server/.env` ที่ตั้งค่าครบ และสร้างฐาน **`toktickit_e2e` แยกจากฐาน Development** ก่อน ตัว runner ใช้ host/credentials เดิมภายใน process แต่เปลี่ยนชื่อฐานเป็น `toktickit_e2e` โดยไม่เขียน `.env` หรือแสดงข้อมูลลับ หากฐาน Development ใช้ชื่อดังกล่าวอยู่แล้ว runner จะหยุด ห้ามใช้ฐานนั้นร่วมกัน ต้องแยกฐานก่อน
+
+```powershell
+node artifacts/lab-04/run-verification.mjs prepare
+node artifacts/lab-04/run-verification.mjs unit
+node artifacts/lab-04/run-verification.mjs focused-e2e
+node artifacts/lab-04/run-verification.mjs e2e
+node artifacts/lab-04/run-verification.mjs responsive
+git diff --check
+```
+
+- `prepare`: Prisma validate/generate, migration status/deploy และ seed สองรอบบนฐานทดสอบเท่านั้น
+- `unit`: focused/full Server–Client tests และทั้งสอง builds; Full Server รวม real migration-preservation, concurrency และ performance-smoke
+- `focused-e2e`: Lab 4; `e2e` และ `responsive`: Lab 3–4 รวมกัน ไม่ใช้ Development Requester selector ที่เลิกใช้งานแล้วของ Lab 2
+- ปิด server ที่ใช้ port 3000/5173 ก่อนเริ่ม Playwright; test config ไม่ reuse process เดิม เพื่อไม่ต่อฐานผิด และใช้ PostgreSQL client สำหรับ migration scratch test โดยไม่ลดนโยบายความปลอดภัยของเครื่อง
+- เก็บ stdout/stderr ที่กรองข้อมูลลับและ exit code ใน `artifacts/lab-04/verification/`; ผล test report/trace อยู่ในโฟลเดอร์ที่ Git ignore เพราะอาจมีข้อมูล session ไม่ใช่หลักฐานที่พร้อมเผยแพร่
+- `node artifacts/lab-04/run-verification.mjs recovery` ใช้ PowerShell 7 (`pwsh.exe` ต้องอยู่ใน PATH) เรียก procedure backup/restore เดิมไปยัง scratch database ที่สร้างเฉพาะรอบนั้น ต้องเป็นเครื่องที่นโยบายอนุญาตให้รัน script/เครื่องมือดังกล่าว หากถูกบล็อก ให้บันทึกว่า Blocked ไม่ปิดการป้องกันหรือข้ามเพื่ออ้าง Pass
+
+### Demo ตาม role
+
+1. Requester: เปลี่ยนรหัสครั้งแรก → Requester Dashboard → My Tickets/Detail ของตนเอง → อ่าน Actions โดยไม่มี create/edit controls; “Problem Appears Resolved” เป็น indication ไม่เปลี่ยน formal status
+2. IT Staff: Staff Dashboard → Queue/Detail → Claim/Assign/Reassign/Unassign Ticket → สร้างหลาย Actions โดย performer มาจาก session → แก้ follow-up; `RESOLVED` ต้องมี Owner ที่ active และ Action ที่ครบ แต่ยังมี follow-up ได้; `CLOSED` ต้องเคลียร์ follow-up ทั้งหมด; Reopen ต้องมีเหตุผลและไปต่อ `IN_PROGRESS` ได้
+3. Administrator: User Management และ Staff Dashboard; สร้าง/แก้ Actions ได้ตาม Contract แต่ไม่เปลี่ยน Ticket Status/assignment ตาม policy ที่อนุมัติไว้
+4. ตรวจ validation/conflict, timeout แบบ submission-uncertain และการคงฟอร์ม ไม่ retry POST อัตโนมัติหรืออ้างว่ามี server deduplication จากข้อความเหมือนกัน
+
+คำว่า assign/complete/cancel ใน rubric จับคู่กับ Ticket assignment/Status ตาม `docs/lab-04/specification.md` ข้อ 12; append-only ใช้ Public Comments/Internal Notes ไม่ใช่ Action ที่ Contract อนุญาตให้แก้ นี่คือการตีความใน Contract ที่ผ่าน peer review ไม่ใช่คำยืนยันจาก TA
+
+ภาพ Lab 4 อยู่ใน `artifacts/lab-04/screenshots/` มีภาพเต็มหน้าและภาพ panel/metrics ที่อ่านได้ ภาพ regression รอบใหม่อยู่ใต้ `regression-lab-03/` โดยไม่ทับหลักฐาน Lab 3 เดิม ผล feature branch แยกจาก Release candidate และไม่ใช่ Final-main; Release และ PDF Answer Part 1–9 เป็นงาน Issue #74
+
+### Release candidate
+
+ผลตรวจ staging commit `3b7291e` อยู่ใน `artifacts/lab-04/release-candidate/3b7291e/` แยกจากหลักฐาน Issue #73 คำสั่งที่ใช้จริง:
+
+```powershell
+node artifacts/lab-04/run-release-candidate.mjs 3b7291e
+```
+
+Runner export commit ของ `lab4-staging` ด้วย `git archive` ไปยัง snapshot ชั่วคราวและใช้ dependencies ที่ติดตั้งไว้ รัน Prisma/migration/seed, full tests/builds, E2E/responsive และ recovery บน `toktickit_e2e` เท่านั้น ไม่แก้ Source Code/tests ใน snapshot ไม่เขียนทับหลักฐานเดิม ไม่ Stage/Commit/Push และปฏิเสธ output directory ที่มีอยู่แล้ว เพื่อไม่ลบผลรอบก่อน หลังรันลบ snapshot, private `.env` และ temporary reports; logs ที่เก็บกรองข้อมูลลับแล้ว CI หลัง merge ตรวจ `npm ci` จาก lockfiles บน hosted runner แยกต่างหาก
+
+ลำดับ Release: review เอกสารเตรียม Release เข้า staging ก่อน → เปิด PR `lab4-staging` ไป `main` → peer review/merge → ตรวจ final `main` commit จริง → review เอกสาร/หลักฐาน Final → จัดทำ PDF Answer Part 1–9 ห้ามปิด Issue #74 อัตโนมัติจาก Release PR ก่อนหลักฐาน Final เสร็จ ผล staging ที่ผ่านไม่เปลี่ยนคอลัมน์ Final เป็น Pass

@@ -1,0 +1,10 @@
+Command: npm.cmd run build
+Started: 2026-10-04T17:19:25.236Z
+Exit: 0
+STDOUT
+
+> toktickit-server@1.0.0 build
+> tsc
+
+
+STDERR
