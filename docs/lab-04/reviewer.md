@@ -47,7 +47,7 @@ Release PR #81 merge เข้า main วันที่ 12 ตุลาคม 
 
 ## 4. การรีวิวที่ผู้จัดทำให้เพื่อน
 
-ผู้รีวิว: [guluJa](https://github.com/guluJa) — Repository ของเพื่อน: [PhraewaS/toktickit](https://github.com/PhraewaS/toktickit)
+ผู้รีวิว: [guluJa](https://github.com/guluJa) — Repository ของเพื่อน: [PhraewaS/toktickit](https://github.com/PhraewaS/toktickit) ตารางนี้สรุป PR #55–#62 ที่ผ่านการรีวิวและได้รับ Approval จากผู้จัดทำแล้ว
 
 | PR / งาน | ความคิดเห็นของผู้จัดทำ | คำตอบและการแก้ไขของเพื่อน | ผล Review |
 |---|---|---|---|
@@ -59,6 +59,5 @@ Release PR #81 merge เข้า main วันที่ 12 ตุลาคม 
 | [#60 — Verification/E2E](https://github.com/PhraewaS/toktickit/pull/60) | [Request changes](https://github.com/PhraewaS/toktickit/pull/60#pullrequestreview-5407138143): DB/API/UI metrics, ภาพ editor และ keyboard/focus checks | [เติมหลักฐาน](https://github.com/PhraewaS/toktickit/pull/60#issuecomment-5982418047) และ [ปรับ report/guarded database URL](https://github.com/PhraewaS/toktickit/pull/60#issuecomment-5988670426) | [Approved](https://github.com/PhraewaS/toktickit/pull/60#pullrequestreview-5413091909), revision `2f980e0` |
 | [#61 — Staging integration](https://github.com/PhraewaS/toktickit/pull/61) | [Comment](https://github.com/PhraewaS/toktickit/pull/61#pullrequestreview-5469015849): source, logs/reports และ close/cancel evidence สอดคล้องกัน | [ตอบรับผลตรวจ](https://github.com/PhraewaS/toktickit/pull/61#issuecomment-6096299454) | [Approved](https://github.com/PhraewaS/toktickit/pull/61#pullrequestreview-5478535660), revision `201a8df` |
 | [#62 — Recovery](https://github.com/PhraewaS/toktickit/pull/62) | [Comment](https://github.com/PhraewaS/toktickit/pull/62#pullrequestreview-5489403579): recovery snapshots, migration history และ safety checks สอดคล้องกัน | [ตอบรับผลตรวจ](https://github.com/PhraewaS/toktickit/pull/62#issuecomment-6122769564) | [Approved](https://github.com/PhraewaS/toktickit/pull/62#pullrequestreview-5489697574), revision `53e1375` |
-| [#63 — Release](https://github.com/PhraewaS/toktickit/pull/63) | [Comment](https://github.com/PhraewaS/toktickit/pull/63#pullrequestreview-5492867653): source และผลทั้งหก phases สอดคล้องกับ logs | เพื่อนมี [staging verification](https://github.com/PhraewaS/toktickit/pull/63#issuecomment-6123577441) ก่อน Review; ยังไม่พบคำตอบหลัง Review | Commented บน `c239461`; ยังไม่มี Approval หรือ Merge ณ วันที่ตรวจ |
 
 ตารางนี้เป็นบันทึกรีวิวของ Repository เพื่อน ไม่ใช้ผลทดสอบหรือ revision ของเพื่อนแทนหลักฐาน Final-main ของผู้จัดทำ
