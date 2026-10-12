@@ -150,6 +150,8 @@ E2E:
 | PERF-01, limit=5 | Requester 25 ms / 1,962 UTF-8 bytes; Staff 17 ms / 6,529 bytes | ผ่าน <2 วินาที/<100 KB | `performance-smoke.txt` |
 | Backup/restore | exit 0; `ROW_SNAPSHOT_MATCH=true`; scratch/drop และ dump cleanup สำเร็จ | 0 | `recovery-restore.txt` |
 
+E2E และ responsive ใช้กรณีทดสอบชุดเดียวกันจาก Labs 3–4 แต่รันแยกด้วย `npm.cmd test` และ `npm.cmd run test:responsive` จึงเป็นผลผ่าน 15 cases ในแต่ละรอบ ไม่ใช่ 30 cases ที่ไม่ซ้ำกัน การตรวจหลาย viewport อยู่ภายใน cases ที่เก็บภาพและตรวจ responsive
+
 
 คำสั่ง เวลา และ exit code อยู่ใน [commands.json](../../artifacts/lab-04/evidence/final-main/08328cd/verification/commands.json) และ [ผลรันทั้งหมด](../../artifacts/lab-04/evidence/final-main/08328cd/verification/) ส่วน [run.json](../../artifacts/lab-04/evidence/final-main/08328cd/run.json) ระบุ Product SHA และวิธีรัน
 
@@ -166,6 +168,7 @@ API-07 เปรียบเทียบจำนวนแถว ID ความ
 - ภาพหลักอยู่ใน [screenshots](../../artifacts/lab-04/screenshots/) เป็นหลักฐานรอบ hardening; โค้ด Product และ browser tests ไม่เปลี่ยนจาก `af6fe86` ถึง `08328cd` ผล browser assertions บน main ตรวจซ้ำในรอบ Final นี้
 - ภาพเสริมใน [supplemental/screenshots/actions-taken](../../artifacts/lab-04/evidence/final-main/08328cd/supplemental/screenshots/actions-taken/) แสดงหลาย Actions, performer ต่างจาก Owner และ Requester read-only ทั้งสามขนาด มีผลแยก 1 passed ไม่รวมกับ E2E 15 cases ของ main
 - การเก็บภาพเสริมใช้ helper ใน snapshot ที่ตรวจ accessible name ของ native file input แทน innerText โดยยังตรวจ labels, focus, clipping และ overflow; ไม่แก้ Product หรือ tests เดิม ผลและขอบเขตอยู่ใน [supplemental/run.json](../../artifacts/lab-04/evidence/final-main/08328cd/supplemental/run.json)
+- [Source และวิธีตรวจซ้ำ](../../artifacts/lab-04/evidence/final-main/08328cd/supplemental/source/README.md) มี spec ที่ใช้จริงและ helper patch สำหรับ snapshot `08328cd` แยกจาก Product tests; ผลการเก็บภาพเดิมยังคงเดิม
 
 ### ขอบเขตผลทดสอบ
 

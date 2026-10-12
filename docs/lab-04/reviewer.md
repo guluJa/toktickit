@@ -1,6 +1,6 @@
 # บันทึก Peer Review ของ TokTickIT Lab 4
 
-Reviewer: [PhraewaS](https://github.com/PhraewaS)
+Reviewer ของงานผู้จัดทำ: [PhraewaS](https://github.com/PhraewaS)
 
 Repository: [guluJa/toktickit](https://github.com/guluJa/toktickit)
 
@@ -44,3 +44,21 @@ Release PR #81 merge เข้า main วันที่ 12 ตุลาคม 
 | #79 / `af6fe86` | [Comment](https://github.com/guluJa/toktickit/pull/79#pullrequestreview-5410260883): hardening/evidence ผ่าน | [คำตอบ](https://github.com/guluJa/toktickit/pull/79#issuecomment-5990353143) ตอบรับผลตรวจ |
 | #80 / `f35b334` | [Comment](https://github.com/guluJa/toktickit/pull/80#pullrequestreview-5438605086): pre-release/evidence แยก revision ถูกต้อง | [คำตอบ](https://github.com/guluJa/toktickit/pull/80#issuecomment-6079183079) ตอบรับผลตรวจ |
 | #81 / `48694b8` | [Comment](https://github.com/guluJa/toktickit/pull/81#pullrequestreview-5484028720): staged integration และ CI บน merge จำลองผ่าน | [คำตอบ](https://github.com/guluJa/toktickit/pull/81#issuecomment-6122235362) ตอบรับผลตรวจ; Approval/merge แยกไว้ในตารางด้านบน |
+
+## 4. การรีวิวที่ผู้จัดทำให้เพื่อน
+
+ผู้รีวิว: [guluJa](https://github.com/guluJa) — Repository ของเพื่อน: [PhraewaS/toktickit](https://github.com/PhraewaS/toktickit)
+
+| PR / งาน | ความคิดเห็นของผู้จัดทำ | คำตอบและการแก้ไขของเพื่อน | ผล Review |
+|---|---|---|---|
+| [#55 — Contract](https://github.com/PhraewaS/toktickit/pull/55) | [Request changes](https://github.com/PhraewaS/toktickit/pull/55#pullrequestreview-5330909297): เติม Matrix, Dashboard/API, performance-smoke, paths และ feedback states | [แก้ข้อกำหนดหลัก](https://github.com/PhraewaS/toktickit/pull/55#issuecomment-5868772847) และ [ปรับสถานะ tests ให้ตรงกับแผน](https://github.com/PhraewaS/toktickit/pull/55#issuecomment-5887066518) | [Approved](https://github.com/PhraewaS/toktickit/pull/55#pullrequestreview-5353383942), revision `0580fc1` |
+| [#56 — Action foundation](https://github.com/PhraewaS/toktickit/pull/56) | [Request changes](https://github.com/PhraewaS/toktickit/pull/56#pullrequestreview-5364520356): performedBy response และ Staff/Admin route coverage | [ปรับ response/tests](https://github.com/PhraewaS/toktickit/pull/56#issuecomment-5911257519) และ [เพิ่ม updatedAt/stale-update checks](https://github.com/PhraewaS/toktickit/pull/56#issuecomment-5914162675) | [Approved](https://github.com/PhraewaS/toktickit/pull/56#pullrequestreview-5376979695), revision `eb9ae0a` |
+| [#57 — Workflow](https://github.com/PhraewaS/toktickit/pull/57) | [Request changes](https://github.com/PhraewaS/toktickit/pull/57#pullrequestreview-5380944006): stale/concurrent Status update อาจเขียนทับข้อมูลล่าสุด | [ปรับ Client ส่ง expectedCurrentStatus และเพิ่ม conflict tests](https://github.com/PhraewaS/toktickit/pull/57#issuecomment-5955588269) | [Approved](https://github.com/PhraewaS/toktickit/pull/57#pullrequestreview-5394091080), revision `df882a1` |
+| [#58 — Dashboards](https://github.com/PhraewaS/toktickit/pull/58) | [Request changes](https://github.com/PhraewaS/toktickit/pull/58#pullrequestreview-5395944922): drill-down filters, E2E navigation และ API examples | [ปรับ filters/tests/navigation](https://github.com/PhraewaS/toktickit/pull/58#issuecomment-5969346212) และ [แก้ counts/Owner ในตัวอย่าง](https://github.com/PhraewaS/toktickit/pull/58#issuecomment-5970795467) | [Approved](https://github.com/PhraewaS/toktickit/pull/58#pullrequestreview-5401602058), revision `6a07364` |
+| [#59 — Actions UI](https://github.com/PhraewaS/toktickit/pull/59) | [Request changes](https://github.com/PhraewaS/toktickit/pull/59#pullrequestreview-5401954695): draft หายเมื่อ refresh, POST ไม่ทราบผล และวินาทีของเวลา Action เปลี่ยนขณะแก้ Result | [แก้ทั้งสามกรณีและเพิ่ม regression tests](https://github.com/PhraewaS/toktickit/pull/59#issuecomment-5973555055) | [Approved](https://github.com/PhraewaS/toktickit/pull/59#pullrequestreview-5406206920), revision `b4e6315` |
+| [#60 — Verification/E2E](https://github.com/PhraewaS/toktickit/pull/60) | [Request changes](https://github.com/PhraewaS/toktickit/pull/60#pullrequestreview-5407138143): DB/API/UI metrics, ภาพ editor และ keyboard/focus checks | [เติมหลักฐาน](https://github.com/PhraewaS/toktickit/pull/60#issuecomment-5982418047) และ [ปรับ report/guarded database URL](https://github.com/PhraewaS/toktickit/pull/60#issuecomment-5988670426) | [Approved](https://github.com/PhraewaS/toktickit/pull/60#pullrequestreview-5413091909), revision `2f980e0` |
+| [#61 — Staging integration](https://github.com/PhraewaS/toktickit/pull/61) | [Comment](https://github.com/PhraewaS/toktickit/pull/61#pullrequestreview-5469015849): source, logs/reports และ close/cancel evidence สอดคล้องกัน | [ตอบรับผลตรวจ](https://github.com/PhraewaS/toktickit/pull/61#issuecomment-6096299454) | [Approved](https://github.com/PhraewaS/toktickit/pull/61#pullrequestreview-5478535660), revision `201a8df` |
+| [#62 — Recovery](https://github.com/PhraewaS/toktickit/pull/62) | [Comment](https://github.com/PhraewaS/toktickit/pull/62#pullrequestreview-5489403579): recovery snapshots, migration history และ safety checks สอดคล้องกัน | [ตอบรับผลตรวจ](https://github.com/PhraewaS/toktickit/pull/62#issuecomment-6122769564) | [Approved](https://github.com/PhraewaS/toktickit/pull/62#pullrequestreview-5489697574), revision `53e1375` |
+| [#63 — Release](https://github.com/PhraewaS/toktickit/pull/63) | [Comment](https://github.com/PhraewaS/toktickit/pull/63#pullrequestreview-5492867653): source และผลทั้งหก phases สอดคล้องกับ logs | เพื่อนมี [staging verification](https://github.com/PhraewaS/toktickit/pull/63#issuecomment-6123577441) ก่อน Review; ยังไม่พบคำตอบหลัง Review | Commented บน `c239461`; ยังไม่มี Approval หรือ Merge ณ วันที่ตรวจ |
+
+ตารางนี้เป็นบันทึกรีวิวของ Repository เพื่อน ไม่ใช้ผลทดสอบหรือ revision ของเพื่อนแทนหลักฐาน Final-main ของผู้จัดทำ

@@ -156,4 +156,4 @@ Frontend restrictions ต้องมี Backend authorization รองรั�
 | การทำงานเดิม | `artifacts/lab-04/screenshots/regression-lab-03/` | Authentication, Queue/Detail และ User Management ที่ตรวจต่อเนื่องใน Lab 4 |
 | หลาย Actions และ Requester read-only | `artifacts/lab-04/evidence/final-main/08328cd/supplemental/screenshots/actions-taken/` | ภาพเสริมจาก final Product: สาม Actions, performer ต่างจาก Owner, shared content และ Requester read-only ทั้งสามขนาด |
 
-ภาพเสริมมีผลทดสอบแยกจาก original-main suite และใช้ helper ตรวจ accessible name ของ native file input ตาม provenance ใน `supplemental/run.json` ไม่เปลี่ยน Product
+ภาพเสริมมีผลทดสอบแยกจาก original-main suite และใช้ helper ตรวจ accessible name ของ native file input ตาม provenance ใน `supplemental/run.json` โดยมี [source และ helper patch](../../artifacts/lab-04/evidence/final-main/08328cd/supplemental/source/README.md) ให้ตรวจย้อนกลับ ไม่เปลี่ยน Product
