@@ -1,54 +1,28 @@
-# Lab 4 AI Use and Reflection
+# การใช้ AI และ Reflection ของ TokTickIT Lab 4
 
-สถานะ: บันทึกระหว่างจัดทำ Contract และพัฒนา Lab 4; ยังไม่ใช่ Selected Key Prompts/Reflection ฉบับ Final
+## 1. เครื่องมือที่ใช้
 
-- AI tool: OpenAI Codex
-- LLM/model: ยังไม่ได้ยืนยันชื่อ model variant จากประวัติ session จึงไม่ระบุย้อนหลัง
+- เครื่องมือ: OpenAI Codex
+- LLM ในรอบตรวจงานและปรับเอกสารครั้งสุดท้าย: GPT-6.1 Sol
+- Reasoning effort: Medium
 
-## การใช้ AI ใน Issue #67
+ใช้ AI ช่วยจัดทำ Engineering Contract เขียนและปรับปรุงโค้ด วิเคราะห์ข้อเสนอจาก peer review และตรวจผลทดสอบ โดยตรวจความสอดคล้องกับ Labsheet และขอบเขตของแต่ละ Issue ก่อนนำผลลัพธ์ไปใช้
 
-ใช้ Codex ช่วยอ่าน Labsheet, เปรียบเทียบ Contract กับ API และพฤติกรรมเดิมของ Lab 3, ตรวจข้อเสนอใน PR #68 และจัดแผนทดสอบก่อนเริ่มเขียนฟีเจอร์ การตัดสินใจที่สำคัญคือคงชื่อ query ของ API เดิม, แยก Dashboard `limit` จาก Queue `pageSize` และไม่ถือว่า Action ที่ข้อความเหมือนกันเป็นหลักฐานว่าคำขอที่ timeout บันทึกสำเร็จ ทั้งหมดนี้เป็นข้อกำหนดและแผนทดสอบ ไม่ใช่ผลการ implement หรือผลทดสอบที่ผ่านแล้ว
+## 2. Selected Key Prompts
 
-## Selected Key Prompts และ My Reflection
+เลือกคำสั่งสำคัญ 8 รายการจากการทำงานจริง เนื่องจากคำสั่งต้นฉบับมีรายละเอียดค่อนข้างยาว ตารางนี้จึงสรุปใจความและขอบเขตของคำสั่ง ไม่ใช่ข้อความต้นฉบับทั้งหมด
 
-ยังไม่คัด Prompt สำหรับส่ง Final ใน PR เอกสารนี้ เมื่อถึงรอบสรุป Lab 4 จะเลือก 6–10 คำสั่งสำคัญจากประวัติการใช้งานจริง พร้อมอธิบายว่าใช้กับงานใด ได้ผลอะไร และผู้จัดทำตรวจหรือปฏิเสธข้อเสนอใด โดยไม่แต่งข้อความ Prompt หรือผลลัพธ์ย้อนหลัง
+| ลำดับ | งาน | ใจความของคำสั่งที่ใช้ | การนำผลลัพธ์ไปใช้ |
+|---|---|---|---|
+| 1 | Engineering Contract — #67 | อ่าน Labsheet และ baseline แล้วจัดทำ specification, API, UI และ Test Plan ให้สอดคล้องกัน โดยยังไม่เขียนฟีเจอร์ | กำหนด Model, fields, roles, routes, Status Matrix และ FR/BR–AC–Test traceability ก่อน implementation |
+| 2 | ปรับ Contract — PR #68 | แยก feedback เป็น Required, Clarification หรือ Out of Scope โดยเทียบข้อกำหนด ไม่เพิ่มฟีเจอร์จากข้อเสนอโดยอัตโนมัติ | ปรับ Resolution Gate, Dashboard, conflict และ timeout flow; ไม่เพิ่ม Action deletion, edit-history model หรือ Idempotency-Key |
+| 3 | Actions Taken foundation — #69 | เพิ่ม ActionTaken และ Ticket.version ด้วย additive migration พร้อม seed, API และ tests; ตรวจ preservation/recovery บนฐานทดสอบแยก | สร้าง foundation และเพิ่มการตรวจข้อมูลก่อน–หลัง migration, seed ซ้ำ, recovery และ concurrent PATCH |
+| 4 | Actions Taken UI — #70 | เมื่อ POST ไม่ทราบผล ให้คงฟอร์ม ตรวจรายการครบทุกหน้า แต่ไม่แจ้งสำเร็จจากข้อความที่เหมือนกันและไม่ส่งซ้ำอัตโนมัติ | เพิ่ม submission-uncertain, saving guard และคำเตือนก่อนผู้ใช้ส่งใหม่ พร้อม tests สำหรับ timeout และ conflict |
+| 5 | Ticket workflow — #71 | ตรวจ version และ Resolution Gate พร้อมเปลี่ยนสถานะแบบ atomic; stale/gate failure ต้องไม่เปลี่ยน status หรือ version | ใช้ Ticket.version แยกจาก ActionTaken.version และตรวจ Action/Status ที่ทำงานพร้อมกันทั้งสองลำดับ |
+| 6 | Role dashboards — #72 | ให้สูตรนับ ช่วงเวลา sorting, limits และ drill-down ตรงกันทุกชั้น โดยใช้ข้อมูลทั้งฐานจาก Backend | พัฒนา Dashboard ตาม role และตรวจค่าจากฐานข้อมูลเทียบกับ API/UI รวม ownership และขอบเขตวันเวลา |
+| 7 | Final hardening — #73 | รัน regression, E2E, responsive/accessibility, performance-smoke, migration และ recovery พร้อมเก็บผลจริงที่ไม่มีข้อมูลลับ | ตรวจฟีเจอร์ Lab 4 และการทำงานเดิมจาก Labs 1–3 พร้อมภาพและ browser evidence |
+| 8 | Final-main verification — #74 | ตรวจ main หลัง Release โดยแยก tested Product SHA จากเอกสารหลักฐาน และแยกผลเมื่อใช้ helper ที่ปรับใหม่ | บันทึกผลของ main 08328cd แยกจาก feature/staging และแยกภาพเสริมออกจากจำนวน E2E ของ main |
 
-AI ไม่ใช่ผู้อนุมัติความถูกต้องของ Contract, security policy หรือผลทดสอบ ผู้จัดทำเป็นผู้รับผิดชอบการตัดสินใจและการตรวจหลักฐานก่อนส่งงาน
+## 3. My Reflection
 
-## บันทึกการใช้ AI ใน Issue #72 — 4 ตุลาคม 2026
-
-ใช้ Codex ตรวจ Issue/Labsheet/Contract และพัฒนา Dashboard API/UI พร้อม tests บน `feature/05-lab4-role-dashboards` คำสั่งที่ใช้จริงในรอบนี้ (ข้อความตัดตอน ไม่ใช่ Prompt ใหม่):
-
-> Implement Dashboard API และ UI ตาม Scope ของ Issue #72 ให้ครบ
-
-> ใช้ข้อมูลจริงจาก Backend ไม่คำนวณยอดรวมจากรายการที่ถูก pagination แล้ว
-
-> ห้าม Commit, Push, เปิด PR, Merge หรือเปลี่ยนสถานะ GitHub แทนฉัน
-
-ผลการทำงานและข้อจำกัดบันทึกใน `tests.md` ข้อ 13–14 โดยแยก CI ของ PR #77 จากผล Local รอบนี้ ไม่สร้าง Prompt ย้อนหลังหรืออ้างว่า Full Server/Final-main ผ่าน การคัด Selected Key Prompts และ reflection ของผู้จัดทำสำหรับ Final ยังไม่ดำเนินการ
-
-## บันทึกการใช้ AI ใน Issue #73 — 4–5 ตุลาคม 2026
-
-ใช้ Codex อ่าน Issue/Labsheet/Contract และ implementation ก่อนเพิ่ม regression, E2E และ visual evidence บน `feature/06-lab4-final-hardening` ข้อความตัดตอนจาก Prompt ที่ใช้จริงในรอบนี้:
-
-> เริ่มจาก Read-only audit: ตรวจ branch, working tree และยืนยันว่าฐานมี PR #78
-
-> Dashboard: เทียบ selected metrics จาก query ฐานข้อมูลจริงกับ API และ UI รวม date boundaries, ordering, limits และ drill-down
-
-> ใช้ dedicated E2E database และ safety guard กับทุก migration/seed/reset/cleanup ห้ามแตะ development/production data
-
-> ไม่ทำ Release เข้า main, Final-main verification หรือ PDF ส่ง Answer Part 1–9 ของ Issue #74 และห้าม Commit, Push, เปิด PR, Merge หรือเปลี่ยนสถานะ GitHub แทนฉัน
-
-เพิ่ม tests และตรวจผลคำสั่งจริง พร้อมปรับ visible label ของ Owner ID และ safety guard ที่ต้องแยกฐานจากชื่อฐาน/host ไม่ใช่ credentials ผลรันและข้อจำกัด recovery อยู่ใน `tests.md` ข้อ 16 ไม่สร้าง Review หรือข้อสรุปผล Final ล่วงหน้า Selected Key Prompts 6–10 ข้อและ My Reflection ของผู้จัดทำสำหรับส่งงานยัง Pending ไม่เขียนแทนประสบการณ์ของผู้จัดทำ
-
-## บันทึกการใช้ AI ใน Issue #74: Pre-release — 5 ตุลาคม 2026
-
-ใช้ Codex ตรวจ Labsheet, Issue #74, เอกสาร/หลักฐาน และ Review/Approval/Merge/CI ของ PR #79 ก่อนตรวจ Release candidate จาก staging `3b7291e` ข้อความตัดตอนจาก Prompt ที่ใช้จริงในรอบนี้:
-
-> ตรวจ Release candidate และรันการตรวจที่จำเป็นบน staging โดยใช้ฐานทดสอบแยก รักษาหลักฐาน feature branch เดิม
-
-> อัปเดตเอกสารเฉพาะสถานะและผลที่ตรวจสอบได้จริง คง Final-main เป็น Pending
-
-> ห้ามเพิ่มฟีเจอร์ ห้าม Stage, Commit, Push, เปิด PR หรือ Merge
-
-ผลรอบนี้อยู่ใน `tests.md` ข้อ 17 และ `artifacts/lab-04/release-candidate/3b7291e/` ใช้ snapshot ของ commit จริงเพื่อไม่เขียนทับหลักฐานเดิม ไม่เพิ่มฟีเจอร์หรืออ้าง Final-main ผ่าน ข้อจำกัดการอ่าน Project และงานส่ง Final ที่ยังเหลือบันทึกตามข้อมูลจริง การคัด 6–10 Selected Key Prompts, การยืนยันชื่อ model variant และ My Reflection ของผู้จัดทำยัง Pending
+AI ช่วยเขียนโค้ด ทำให้งานเสร็จเร็วขึ้นและช่วยตรวจความถูกต้องได้มากขึ้น แต่ผลลัพธ์ไม่ได้ตรงตามที่ต้องการเสมอ ฉันจึงต้องตรวจอยู่ตลอดว่าเป็นไปตามงานที่ต้องการหรือไม่ บางครั้งคำสั่งที่ฉันเขียนยังไม่ครอบคลุมงานทั้งหมด ฉันจึงใช้ AI ช่วยเรียบเรียงสิ่งที่ต้องการให้ชัดเจนขึ้น แล้วนำข้อความนั้นไปใช้เป็นคำสั่งในการทำงานต่อ
