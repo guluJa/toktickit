@@ -1,0 +1,223 @@
+{
+  "stats": {
+    "startTime": "2026-10-12T11:06:40.029Z",
+    "duration": 59532.869,
+    "expected": 15,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "file": "lab-03/authentication.spec.ts",
+      "title": "rejects invalid credentials, authenticates an Administrator, and logs out",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2241,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-03/authentication.spec.ts",
+      "title": "enforces first-login password change, logout invalidation, and inactive-account rejection",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 1508,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-03/authentication.spec.ts",
+      "title": "keeps requester ownership authenticated and blocks role-forbidden direct access",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 1086,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-03/staff-ticket-flow.spec.ts",
+      "title": "IT Staff can search the Queue, open Detail, operate safely, and use responsive layouts",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 5096,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-03/staff-ticket-flow.spec.ts",
+      "title": "rejects malformed Queue queries with a safe error",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 202,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-03/user-administration.spec.ts",
+      "title": "Administrator manages users with search, role filtering, safe editing and responsive evidence",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2690,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/actions-taken-flow.spec.ts",
+      "title": "E2E-01: real create/edit, validation, saving guard, stale conflict and Requester/Admin authorization",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 5817,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/actions-taken-flow.spec.ts",
+      "title": "E2E-01/AC-16: lost POST response, identical old Action, late commit on later page, failed reconciliation and preserved draft",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 5363,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/actions-taken-flow.spec.ts",
+      "title": "E2E-01: client 30-second timeout after real server commit remains uncertain without automatic retry",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2637,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/dashboards.spec.ts",
+      "title": "E2E-03: selected metrics agree with PostgreSQL/API/UI, ordered limited lists, links and responsive layouts",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 8124,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/dashboards.spec.ts",
+      "title": "E2E-03: Staff Dashboard browser feedback states with controlled empty response and keyboard recovery",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 3171,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/dashboards.spec.ts",
+      "title": "E2E-03: zero, loading, forbidden and safe failure with keyboard retry",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 2090,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/database-safety.spec.ts",
+      "title": "SAFETY-01: reject Development database despite different credentials/query and require explicit E2E marker",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 5,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/ticket-resolution.spec.ts",
+      "title": "E2E-02: gate, assignment, follow-up completion, close/reopen/cancel and advisory indication",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 6852,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "file": "lab-04/ticket-resolution.spec.ts",
+      "title": "E2E-02: concurrent Action versions and stale Ticket UI preserve newer changes and draft",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 1695,
+          "errors": []
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

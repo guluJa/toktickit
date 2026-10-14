@@ -1,10 +1,8 @@
 # TokTickIT Lab 4: ข้อกำหนดระบบและเกณฑ์รับงาน
 
-สถานะ: Contract ผ่าน review ใน PR #68; implementation และ hardening merge ครบใน PR #75–#79 กำลังตรวจ Release candidate ของ Issue #74; Final-main ยัง Pending
-แหล่งอ้างอิง: SE Lab 4 Labsheet และผลตรวจ Lab 3 main
-Baseline ที่ตรวจแล้ว: main commit da82338; executable Lab 3 verification commit 8755d21
+Engineering Contract ผ่าน peer review ใน [PR #68](https://github.com/guluJa/toktickit/pull/68) ก่อน implementation และ Release เข้า main ใน [PR #81](https://github.com/guluJa/toktickit/pull/81) ผลทดสอบสุดท้ายของ `08328cd` อยู่ใน `tests.md` ข้อ 5
 
-เอกสารนี้กำหนดพฤติกรรมที่ต้องส่งใน Lab 4 ผลตรวจระหว่างพัฒนาบันทึกแยกใน `tests.md` และสถานะรีวิวบันทึกใน `reviewer.md` การ merge งานบางส่วนยังไม่ถือว่า Product Definition of Done หรือ Final-main ผ่านแล้ว
+แหล่งอ้างอิง: Lab 4 Labsheet และ baseline Lab 3 main `da82338` (ผลทดสอบ executable baseline `8755d21`)
 
 ## 1. เป้าหมายของ Lab 4
 
@@ -97,7 +95,7 @@ Primary Ticket Owner ใช้ Ticket.ownerId เดิมและไม่ท�
 
 1. เก็บ Primary Owner ที่ `Ticket.ownerId` เพียงจุดเดียว และเก็บผู้สร้าง Action ที่ `performedById` ซึ่งอาจเป็นคนละคนกัน วิธีนี้ลดข้อมูล Owner ซ้ำและรักษาความสัมพันธ์เดิม
 2. ใช้ foreign key ไปยัง `Ticket.id` และ `RequesterUser.id` พร้อม `onDelete: Restrict` เพื่อไม่ให้การลบ parent ทำให้หลักฐาน Actions หาย ส่วน `version` ใช้ตรวจการแก้ข้อมูลเก่าโดยไม่ใช้เวลาจาก Client
-3. ใช้ index `(ticketId, actionAt, id)` สำหรับรายการใต้ Ticket และ `(performedById, actionAt, id)` สำหรับรายการของผู้ปฏิบัติงาน ส่วน Dashboard ใช้ index ของ Ticket เดิมตาม owner/status/updatedAt แล้วตรวจ performance ใน Issue #72
+3. ใช้ index `(ticketId, actionAt, id)` สำหรับรายการใต้ Ticket และ `(performedById, actionAt, id)` สำหรับรายการของผู้ปฏิบัติงาน ส่วน Dashboard ใช้ index ของ Ticket เดิมตาม owner/status/updatedAt ผล performance-smoke อยู่ใน `tests.md` ข้อ 5
 
 ### 4.2 Zero/one/many behavior
 
@@ -124,7 +122,7 @@ Backend เป็นผู้ตัดสินสิทธิ์ขั้นส
 | สร้าง Action | ไม่ได้ | ได้ตาม Ticket access | ได้ตาม Ticket access |
 | แก้ Action | ไม่ได้ | ได้ตาม policy และ version | ได้ตาม policy และ version |
 | ลบ Action | ไม่ได้ | ไม่ได้ | ไม่ได้ |
-| เปลี่ยน Ticket status | ไม่ได้ | ได้ตาม matrix | คงสิทธิ์ Lab 3: ไม่ได้ จนกว่าจะอนุมัติการเปลี่ยน |
+| เปลี่ยน Ticket status | ไม่ได้ | ได้ตาม matrix | ไม่ได้ ตาม policy ของ Lab 3 ที่คงไว้ใน Lab 4 |
 | แก้ IT Priority | ไม่ได้ | ได้ | ได้ |
 | Assignment/เปลี่ยน Owner | ไม่ได้ | ได้ตาม Lab 3 และต้องเลือกผู้ใช้ active | ไม่ได้ตาม Lab 3 |
 | ดู Dashboard ของตนเอง | ได้เฉพาะ Requester | ได้เฉพาะ Staff | ได้เฉพาะ Admin/Staff metrics |
@@ -162,8 +160,7 @@ Requester endpoint สำหรับ Problem Appears Resolved บันทึ�
 
 - Current status เป็น IN_PROGRESS หรือ WAITING_FOR_REQUESTER
 - Ticket ต้องมี Primary Owner ที่ active เสมอ โดย `ownerId` ต้องอ้างถึงผู้ใช้ที่ active และเป็น role ที่ Lab 3 อนุญาตให้เป็น Ticket owner
-- มี ActionTaken อย่างน้อยหนึ่งรายการที่มี description และ result ครบ
-- `RESOLVED` ทำได้เมื่อมี Action อย่างน้อยหนึ่งรายการที่มี description และ result ครบ แม้บาง Action จะมี `followUpRequired=true`; ค่า true ยังคงแสดงว่างานติดตามยังค้างอยู่
+- มี ActionTaken อย่างน้อยหนึ่งรายการที่มี description และ result ครบ แม้บาง Action จะมี `followUpRequired=true`; ค่า true ยังคงแสดงว่างานติดตามยังค้างอยู่และไม่ขวางการเปลี่ยนเป็น `RESOLVED`
 - Request มี `Ticket.version` ล่าสุด
 
 หาก gate ไม่ผ่านตอบ 409 RESOLUTION_GATE_FAILED
@@ -183,7 +180,7 @@ Client ต้องส่ง `ActionTaken.version` เมื่อ Update Action
 
 ## 8. Dashboard Contract
 
-ฐานเวลา: เก็บ timestamp ใน UTC; API รับ/ส่ง ISO 8601; การคำนวณ “วันนี้” ใช้ timezone Asia/Bangkok และช่วงเวลาแบบ half-open [start, end)
+ฐานเวลา: เก็บ timestamp ใน UTC และตอบกลับเป็น ISO 8601; Dashboard ใช้ช่วงย้อนหลัง 7 × 24 ชั่วโมงจาก `asOf` แบบ [start, end) ไม่ใช่ช่วงที่เริ่มจากเที่ยงคืน และแสดงเวลา Asia/Bangkok โดย Client ไม่ส่งช่วงวันที่เอง
 
 ### 8.1 Requester metrics
 
@@ -220,6 +217,10 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 
 ทุก Dashboard ต้องมี metric definitions ใน API spec, empty state เมื่อค่าเป็นศูนย์ และไม่ส่งข้อมูล Ticket ที่ Role ไม่มีสิทธิ์
 
+### 8.4 สรุปหน้าจอและการใช้งาน
+
+Requester ใช้ Dashboard → My Tickets/Detail ของตนเองและอ่าน Actions แบบ read-only; IT Staff ใช้ Dashboard → Queue/Detail เพื่อจัดการ Owner, Status และ Action create/edit; Administrator ใช้ Staff Dashboard/User Management และ Action controls ตามสิทธิ์ที่ระบุไว้ หน้าจอแสดง loading/empty/validation/forbidden/conflict/safe failure/success พร้อมรักษาข้อมูลฟอร์มเมื่อเกิดข้อผิดพลาดที่แก้ไขได้ ไม่ retry mutation อัตโนมัติ ใช้ Zen Green, visible labels/focus, keyboard และ responsive layout ตาม [UI specification](ui-spec.md) ซึ่งกำหนด screen structure/controls/checklist โดยละเอียด
+
 ## 9. Migration, Legacy Data, Seed and Recovery
 
 - ใช้ additive migration เท่านั้น ห้าม reset หรือลบฐานข้อมูลเดิม
@@ -229,7 +230,7 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - เพิ่ม index สำหรับ ticketId, actionAt, performedById และ dashboard query ที่จำเป็นตามชนิดข้อมูลในข้อ 4.1
 - Seed ต้อง idempotent และสร้าง Action fixtures แบบ 0/1/many
 - Seed ต้องมี Ticket หลาย Status, Priority, owner/unassigned และ Dashboard metric ที่ทั้งศูนย์และไม่ศูนย์
-- Migration preservation และ repeated seed เป็นคนละการตรวจ Seed ปัจจุบันสืบทอดการอัปเดต named fixtures ของ Lab 3 ซึ่งอาจคืน name/role/owner/priority และข้อความให้เป็นค่าตัวอย่าง จึงไม่ใช้ผล seed ซ้ำเป็นหลักฐานว่าค่าที่ผู้ใช้แก้ใน Development จะไม่เปลี่ยน การขยาย fixtures ใน Issues #71–#72 ต้องแยกข้อมูลตัวอย่างใหม่และตรวจผลกระทบต่อข้อมูลเดิม
+- Migration preservation และ repeated seed เป็นคนละการตรวจ Seed ปัจจุบันสืบทอดการอัปเดต named fixtures ของ Lab 3 ซึ่งอาจคืน name/role/owner/priority และข้อความให้เป็นค่าตัวอย่าง จึงไม่ใช้ผล seed ซ้ำรับรองว่าค่าที่ผู้ใช้แก้ใน Development จะไม่เปลี่ยน Lab 4 ใช้ Ticket ตัวอย่างแยกสำหรับ workflow และ Dashboard โดย workflow fixtures สร้างเฉพาะเมื่อยังไม่มี Ticket และมี tests ตรวจการรักษา Status, Owner, version และ Action ที่แก้แล้ว
 - Migration test ต้องตรวจ preserved IDs, row counts, foreign keys, Action references, `Ticket.version` และ repeated seed
 - Recovery plan ต้อง backup ฐานข้อมูล E2E ก่อน migration, ตรวจ precondition และหยุดก่อนเขียนเมื่อไม่ผ่าน; หาก verification ล้มเหลวให้ restore backup, ตรวจ row count/foreign key/version และบันทึกผลก่อน retry. ห้ามใช้ Development database เป็นพื้นที่ recovery
 - Backup/restore เป็นหลักฐานและขั้นตอนตรวจสอบฐานข้อมูล E2E แบบแยก ไม่ใช่ Product API หรือการอนุญาตให้ใช้ `prisma migrate reset` กับ Development database
@@ -253,32 +254,33 @@ Administrator อ่าน Staff metrics ชุดเดียวกับ IT St
 - AC-15: Regression ของ Lab 1–3 ผ่านและไม่มี feature เดิมเสีย
 - AC-16: การกดบันทึกซ้ำหรือ recoverable network failure ไม่ทำให้ผู้ใช้สูญเสียข้อมูลที่กรอก; เมื่อผล POST ไม่ทราบแน่ชัด UI ต้องคงฟอร์มและ submission-uncertain, ตรวจ Actions ครบทุกหน้ารวมการ refresh เมื่อคำขอเดิมอาจบันทึกภายหลัง, ไม่ถือว่าข้อความเหมือนกันเป็นหลักฐานยืนยัน, ไม่แจ้งสำเร็จหรือ retry อัตโนมัติ และเตือนความเสี่ยงรายการซ้ำก่อนผู้ใช้เลือกสร้างใหม่; Contract นี้ไม่รับรอง Idempotency-Key หรือการรวมคำขอซ้ำใน Backend
 
-คอลัมน์ Final ของ AC-01 ถึง AC-16 ยังเป็น Planned ผลระหว่างพัฒนาอยู่ใน `tests.md` ข้อ 7–16; PR #79 ผ่าน Peer Review และ merge แล้ว ผล Release candidate จาก staging `3b7291e` อยู่ในข้อ 17 โดยไม่ใช้แทน Final-main ของ Issue #74
+AC-01–AC-16 มีผล Final-main ตาม Test Matrix และขอบเขตใน `tests.md` ข้อ 5 โดยแยกผล main ออกจากหลักฐานระหว่างพัฒนาและ staging
 
 ## 11. Product Definition of Done
 
-- Contract, API spec, UI spec และ Test Plan ผ่านการทบทวนก่อน implementation
-- Additive migration, legacy preservation และ idempotent seed ผ่านจริง
-- Backend authorization ครบทุก protected Action, Dashboard และ workflow route
-- ทุก AC เชื่อมกับ test file จริงและผล Final-main
-- Server, Client, build, migration, performance-smoke, responsive และ E2E ผ่าน
-- Reviewer record มี comment, response, approval และ merge SHA ที่เกิดขึ้นจริง
-- AI-use บันทึกเฉพาะ Prompt ที่ใช้จริง
-- ไม่มี secret, credential, cookie, token หรือ database URL ใน Repository/evidence
-- Final PDF ใช้ Answer Part 1–9 และ working links ตาม Labsheet
+- [x] พัฒนาขอบเขตที่อนุมัติครบ และ API/UI ตรงกับ Engineering Contract
+- [x] AC-01–AC-16 เชื่อมกับไฟล์ทดสอบจริงและผล Final-main
+- [x] Additive migration รักษาข้อมูลเดิม; legacy Ticket ที่ไม่มี Action ยังอ่านได้
+- [x] Seed รันซ้ำได้ และ preservation/recovery ผ่านบนฐานทดสอบแยก
+- [x] Backend บังคับ authorization, ownership, validation, Resolution Gate และ conflict handling
+- [x] Unit, API/integration, UI, authorization, workflow และ regression Labs 1–3 ผ่าน
+- [x] E2E, responsive/accessibility และ performance-smoke ผ่านตามขอบเขตใน tests.md
+- [x] Server/Client builds และ Prisma checks ผ่าน
+- [x] README มีขั้นตอน setup, migration, seed, tests และการใช้งานปัจจุบัน
+- [x] หลักฐานที่จัดเก็บไม่มี credentials, cookies, tokens หรือ database URL
 
-สถานะ DoD ปัจจุบัน: Planned; ยังไม่มี Final Result
+ผล Product Completion อ้างอิง main `08328cd` และผลรันวันที่ 12 ตุลาคม 2026 ส่วนประวัติ peer review อยู่ใน `reviewer.md` และการใช้ AI อยู่ใน `ai-use.md`
 
-## 12. Assumptions and Open Decisions
+## 12. ข้อตกลงและเหตุผลการออกแบบ
 
 ค่าช่วงเวลา 7 วัน, timezone `Asia/Bangkok`, limit และ Resolution Gate เป็นการตัดสินใจของ Contract ที่ผ่าน peer review ไม่ใช่ค่าที่ Labsheet กำหนดตายตัว
 
-Labsheet ข้อ 8.3 กำหนด Action fields และ create/view/edit ชัดเจน แต่ rubric Answer Part 6 ใช้คำว่า assign/complete/cancel และ inactive-assignee rejection ส่วน Part 7 ใช้ append-only โดยไม่ได้แจกแจง Action lifecycle เพิ่ม Contract นี้ผูก assign/inactive-assignee กับ Ticket Owner ของ Lab 3, complete/cancel กับ Ticket Status ของ Issue #71 และคง Comments/Internal Notes แบบ append-only; Actions แก้ fields ได้แต่ลบหรือเปลี่ยนผู้สร้างไม่ได้ตามข้อ 4.1–4.2 นี่เป็นการตีความที่ผ่าน peer review ใน PR #68 ไม่ใช่ข้อยืนยันจากอาจารย์/TA หรือคำรับรองคะแนน ให้สาธิตแต่ละรายการตามการจับคู่นี้ใน Issue #73 และอธิบายตรงกันในรายงาน
+Labsheet ข้อ 8.3 กำหนด Action fields และ create/view/edit ชัดเจน แต่ rubric Answer Part 6 ใช้คำว่า assign/complete/cancel และ inactive-assignee rejection ส่วน Part 7 ใช้ append-only โดยไม่ได้แจกแจง Action lifecycle เพิ่ม Contract นี้ผูก assign/inactive-assignee กับ Ticket Owner ของ Lab 3, complete/cancel กับ Ticket Status ของ Issue #71 และคง Comments/Internal Notes แบบ append-only; Actions แก้ fields ได้แต่ลบหรือเปลี่ยนผู้สร้างไม่ได้ตามข้อ 4.1–4.2 ขอบเขตนี้ผ่าน peer review ใน PR #68 โดยไม่เพิ่ม Action lifecycle, deletion หรือ history model
 
 - Assumption A-01: ActionTaken ไม่มี ownerId ซ้ำกับ Ticket; owner ใช้ Ticket.ownerId และ performer ใช้ performedById
 - Assumption A-02: Update Action อนุญาตให้แก้ข้อมูล แต่ห้ามลบและห้าม reorder
 - Assumption A-03: ใช้ `ActionTaken.version` สำหรับ Action update และ `Ticket.version` สำหรับ Status workflow
-- Decision D-01 (Lab 4): เพิ่ม `REOPENED → IN_PROGRESS` เพื่อให้ lifecycle เดินต่อได้ตามเป้าหมาย Lab 4; ใช้สิทธิ์ IT Staff, `Ticket.version` และ route เดิม. การเปลี่ยนนี้อยู่ใน Issue #67 Contract ไม่ใช่ implementation ของ Issue ถัดไป
+- Decision D-01 (Lab 4): เพิ่ม `REOPENED → IN_PROGRESS` เพื่อให้ lifecycle เดินต่อได้ตามเป้าหมาย Lab 4; ใช้สิทธิ์ IT Staff, `Ticket.version` และ route เดิม. การเปลี่ยนนี้ได้รับอนุมัติใน Contract ของ Issue #67
 - Decision D-02: Administrator ใช้สิทธิ์แบบ IT Staff เฉพาะขอบเขต Actions Taken ตาม Lab 4, อ่าน Staff Dashboard ได้ แต่ยังเปลี่ยน Ticket status ไม่ได้ตาม Lab 3 baseline
 - Decision D-03 (resolved): RESOLVED ต้องมี Action ที่มี description/result ครบและยังแสดง follow-up ได้; CLOSED ต้องรอให้ทุก follow-up ถูกเคลียร์
 - Decision D-04 (resolved): Dashboard ใช้ Asia/Bangkok, ช่วง 7 วันล่าสุด และช่วงเวลาแบบ [start, end)

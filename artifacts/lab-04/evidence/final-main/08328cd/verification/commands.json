@@ -1,0 +1,154 @@
+{
+  "revision": "08328cd293c11316da8496857007d781f2dafaa8",
+  "testedProductSHA": "08328cd293c11316da8496857007d781f2dafaa8",
+  "evidenceBranch": "feature/08-lab4-final-main-verification",
+  "evidenceBaseSHA": "08328cd293c11316da8496857007d781f2dafaa8",
+  "evidenceCommit": "Uncommitted; no commit created in this run",
+  "timezone": "Asia/Bangkok",
+  "scope": "Final verification of the committed main product snapshot",
+  "originalMainRunnerSHA256": "ebf0aedeac1c1174bdd52be89de4662467b761068fc8b75c8e44cb5c25a3c582",
+  "runnerPolicy": "New outer snapshot orchestrator; inner main runner/tests/schema/migrations unchanged. Only copied documentary labels corrected; no corrected-product or corrected-inner-runner run.",
+  "startedAt": "2026-10-12T11:05:21.111Z",
+  "completedAt": "2026-10-12T11:08:36.289Z",
+  "phases": [
+    {
+      "mode": "prepare",
+      "exitCode": 0,
+      "durationMs": 9414
+    },
+    {
+      "mode": "unit",
+      "exitCode": 0,
+      "durationMs": 67702
+    },
+    {
+      "mode": "e2e",
+      "exitCode": 0,
+      "durationMs": 60818
+    },
+    {
+      "mode": "responsive",
+      "exitCode": 0,
+      "durationMs": 52116
+    },
+    {
+      "mode": "recovery",
+      "exitCode": 0,
+      "durationMs": 4438
+    }
+  ],
+  "results": [
+    {
+      "id": "prisma-validate",
+      "command": "npx.cmd --no-install prisma validate",
+      "startedAt": "2026-10-12T11:05:21.799Z",
+      "exitCode": 0,
+      "durationMs": 1781
+    },
+    {
+      "id": "prisma-generate",
+      "command": "npx.cmd --no-install prisma generate",
+      "startedAt": "2026-10-12T11:05:23.580Z",
+      "exitCode": 0,
+      "durationMs": 1736
+    },
+    {
+      "id": "migration-status",
+      "command": "npx.cmd --no-install prisma migrate status",
+      "startedAt": "2026-10-12T11:05:25.316Z",
+      "exitCode": 0,
+      "durationMs": 2221
+    },
+    {
+      "id": "migration-deploy",
+      "command": "npx.cmd --no-install prisma migrate deploy",
+      "startedAt": "2026-10-12T11:05:27.537Z",
+      "exitCode": 0,
+      "durationMs": 1431
+    },
+    {
+      "id": "seed-first",
+      "command": "npm.cmd run prisma:seed",
+      "startedAt": "2026-10-12T11:05:28.969Z",
+      "exitCode": 0,
+      "durationMs": 1394
+    },
+    {
+      "id": "seed-second",
+      "command": "npm.cmd run prisma:seed",
+      "startedAt": "2026-10-12T11:05:30.364Z",
+      "exitCode": 0,
+      "durationMs": 773
+    },
+    {
+      "id": "performance-smoke",
+      "command": "npm.cmd test -- tests/lab-04/performance-smoke.api.test.ts",
+      "startedAt": "2026-10-12T11:05:31.207Z",
+      "exitCode": 0,
+      "durationMs": 3432
+    },
+    {
+      "id": "server-focused",
+      "command": "npm.cmd test -- tests/lab-04 --silent",
+      "startedAt": "2026-10-12T11:05:34.639Z",
+      "exitCode": 0,
+      "durationMs": 12250
+    },
+    {
+      "id": "server-full",
+      "command": "npm.cmd test -- --silent",
+      "startedAt": "2026-10-12T11:05:46.890Z",
+      "exitCode": 0,
+      "durationMs": 24393
+    },
+    {
+      "id": "client-focused",
+      "command": "npm.cmd test -- tests/lab-04 --silent",
+      "startedAt": "2026-10-12T11:06:11.283Z",
+      "exitCode": 0,
+      "durationMs": 8952
+    },
+    {
+      "id": "client-full",
+      "command": "npm.cmd test -- --silent",
+      "startedAt": "2026-10-12T11:06:20.235Z",
+      "exitCode": 0,
+      "durationMs": 10339
+    },
+    {
+      "id": "server-build",
+      "command": "npm.cmd run build",
+      "startedAt": "2026-10-12T11:06:30.575Z",
+      "exitCode": 0,
+      "durationMs": 3125
+    },
+    {
+      "id": "client-build",
+      "command": "npm.cmd run build",
+      "startedAt": "2026-10-12T11:06:33.700Z",
+      "exitCode": 0,
+      "durationMs": 5133
+    },
+    {
+      "id": "e2e-full",
+      "command": "npm.cmd test --",
+      "startedAt": "2026-10-12T11:06:38.914Z",
+      "exitCode": 0,
+      "durationMs": 60742
+    },
+    {
+      "id": "responsive",
+      "command": "npm.cmd run test:responsive",
+      "startedAt": "2026-10-12T11:07:39.727Z",
+      "exitCode": 0,
+      "durationMs": 52047
+    },
+    {
+      "id": "recovery-restore",
+      "command": "pwsh.exe -NoProfile -File artifacts/lab-04/verify-recovery.ps1",
+      "startedAt": "2026-10-12T11:08:31.846Z",
+      "exitCode": 0,
+      "durationMs": 4369
+    }
+  ]
+}

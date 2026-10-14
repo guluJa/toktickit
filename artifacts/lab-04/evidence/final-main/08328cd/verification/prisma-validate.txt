@@ -1,0 +1,14 @@
+Command: npx.cmd --no-install prisma validate
+Started: 2026-10-12T11:05:21.799Z
+Exit: 0
+STDOUT
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+The schema at prisma\schema.prisma is valid 🚀
+
+STDERR
+npm notice
+npm notice New major version of npm available! 11.17.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

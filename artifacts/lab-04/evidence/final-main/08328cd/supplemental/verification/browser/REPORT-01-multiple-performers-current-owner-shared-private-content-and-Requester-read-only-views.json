@@ -1,0 +1,206 @@
+{
+  "title": "REPORT-01: multiple performers, current owner, shared/private content and Requester read-only views",
+  "status": "passed",
+  "note": "Includes deliberate authorization/conflict/network-failure injection and unauthenticated auth/me probes; these are not normal-flow failures. No request bodies, cookies or headers recorded.",
+  "pageErrors": [],
+  "consoleMessages": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    }
+  ],
+  "responses": [
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3825",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3825",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3825/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3825/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3825",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3825",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3825/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/staff/tickets/3825/actions",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/categories",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/related-systems",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3825",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3825",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3825/comments",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3825/actions",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/tickets/3825/actions",
+      "status": 200
+    }
+  ]
+}

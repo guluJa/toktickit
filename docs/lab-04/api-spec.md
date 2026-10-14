@@ -1,12 +1,12 @@
 # TokTickIT Lab 4: ข้อกำหนด REST API
 
-สถานะ: Action API, Workflow และ Dashboard merge แล้วใน PR #75/#77/#78; hardening merge ใน PR #79 และมีผล Release candidate ใน tests.md ข้อ 17 ยังไม่ใช่ผล Final-main
+API นี้ต่อยอด response envelope และ security conventions ของ Lab 3 ผล API/integration และ regression บน main `08328cd` อยู่ใน `tests.md` ข้อ 5
 Baseline: ใช้ response envelope และ security conventions ของ docs/lab-03/api-spec.md
 
 ## 1. Conventions
 
 - Base path: /api
-- Success: { data: ... }
+- Success ของ routes ใหม่ใน Lab 4: { data: ... }; routes เดิมของ Labs 1–3 คง response ตาม baseline รวม Requester Ticket ที่ไม่ห่อ data
 - Error: { error: { code, message, fields? } }
 - Session: HttpOnly toktickit_session cookie
 - Timestamp: ISO 8601; เก็บใน UTC
@@ -17,7 +17,7 @@ Baseline: ใช้ response envelope และ security conventions ของ d
 - Protected routes คง first-login gate ของ Lab 3: ผู้ใช้ที่ยังต้องเปลี่ยนรหัสผ่านได้รับ `403 PASSWORD_CHANGE_REQUIRED` ก่อนใช้งานฟีเจอร์
 - ห้ามคืน password, passwordHash, token, cookie, SQL, stack trace หรือ internal path
 
-Dashboard link shape: `{ "rel": "recentTickets|recentlyResolved|recentActions|ticketDetail", "target": "requester-tickets|staff-queue|requester-ticket-detail|staff-ticket-detail", "ticketId": integer?, "query": object? }`. `ticketDetail` ใช้ `ticketId`; metric link ใช้ `query` ที่นำไปยังรายการเดิมของ Lab 3 และไม่สร้าง route ใหม่
+Dashboard link shape ตาม implementation: `{ "rel": "recentTickets|recentlyResolved|ticketDetail", "target": "requester-tickets|staff-queue|requester-ticket-detail|staff-ticket-detail", "ticketId": integer?, "query": object? }`. `ticketDetail` ใช้ `ticketId` รวม detailLink ของ recentActions; metric link ใช้ `query` ที่นำไปยังรายการเดิมของ Lab 3 และไม่สร้าง route ใหม่
 
 ## 2. Existing Lab 1–3 API Compatibility
 
@@ -72,9 +72,10 @@ Client ห้ามส่ง actionAt, performedById, createdAt, updatedAt, vers
 ใช้ได้เฉพาะ Requester ที่เป็นเจ้าของ Ticket และคืน Action fields ตาม visibility policy
 
 - 200: `{ data: { items: ActionTaken[], pagination: { page, pageSize, totalItems, totalPages } } }`
-- 400: `VALIDATION_ERROR` เมื่อ page/pageSize ไม่ถูกต้อง
+- 400: `VALIDATION_ERROR` เมื่อ ticketId หรือ page/pageSize ไม่ถูกต้อง
 - 401: `AUTHENTICATION_REQUIRED` หรือ `SESSION_INVALID` ตามชื่อ error ของ Lab 3 baseline
-- 404: `TICKET_NOT_FOUND` หรือ safe owner-not-found response
+- 403: `ROLE_FORBIDDEN` สำหรับ role อื่น; `PASSWORD_CHANGE_REQUIRED` เมื่อยังไม่ผ่าน first-login gate
+- 404: `TICKET_NOT_FOUND` ทั้งกรณีไม่พบ Ticket และกรณี Ticket เป็นของ Requester คนอื่น โดยไม่เปิดเผยข้อมูลของเจ้าของ
 - 500: `INTERNAL_ERROR` แบบไม่เปิดเผยรายละเอียด
 
 Requester ใช้ POST/PATCH/DELETE กับ Action ไม่ได้
@@ -86,9 +87,9 @@ Requester ใช้ POST/PATCH/DELETE กับ Action ไม่ได้
 IT Staff และ Administrator อ่าน Actions ของ Ticket ที่ตนมีสิทธิ์เห็นได้
 
 - 200: `{ data: { items: ActionTaken[], pagination: { page, pageSize, totalItems, totalPages } } }`
-- 400: `VALIDATION_ERROR` เมื่อ page/pageSize ไม่ถูกต้อง
+- 400: `VALIDATION_ERROR` เมื่อ ticketId หรือ page/pageSize ไม่ถูกต้อง
 - 401: `AUTHENTICATION_REQUIRED` หรือ `SESSION_INVALID`
-- 403: `ROLE_FORBIDDEN` หรือ `TICKET_FORBIDDEN`
+- 403: `ROLE_FORBIDDEN` หรือ `PASSWORD_CHANGE_REQUIRED` ตาม authentication/first-login gate
 - 404: `TICKET_NOT_FOUND`
 - 500: `INTERNAL_ERROR` แบบไม่เปิดเผยรายละเอียด
 
@@ -99,9 +100,10 @@ IT Staff และ Administrator สร้าง Action ได้ตาม autho
 - 201: { data: { action: ActionTaken } }
 - 400: VALIDATION_ERROR
 - 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
-- 403: ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN
+- 403: ROLE_FORBIDDEN หรือ PASSWORD_CHANGE_REQUIRED
 - 404: TICKET_NOT_FOUND
 - 409: `ACTION_STATE_CONFLICT` เมื่อ Ticket เป็น CLOSED/CANCELLED หรือเกิด concurrent mutation ที่ทำให้เขียน Action ต่อไม่ได้
+- 500: `INTERNAL_ERROR` แบบไม่เปิดเผยรายละเอียด
 
 performedBy ต้องมาจาก session ของผู้เรียก ไม่ใช่ request body
 
@@ -129,9 +131,10 @@ Request body:
 - 200: { data: { action: ActionTaken } }
 - 400: VALIDATION_ERROR
 - 401: AUTHENTICATION_REQUIRED หรือ SESSION_INVALID
-- 403: ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN
+- 403: ROLE_FORBIDDEN หรือ PASSWORD_CHANGE_REQUIRED
 - 404: ACTION_NOT_FOUND หรือ TICKET_NOT_FOUND
 - 409: `STALE_UPDATE` หรือ `ACTION_STATE_CONFLICT`
+- 500: `INTERNAL_ERROR` แบบไม่เปิดเผยรายละเอียด
 
 ### DELETE /api/staff/tickets/:ticketId/actions/:actionId
 
@@ -168,7 +171,8 @@ Request body:
 - 403: ROLE_FORBIDDEN
 - 404: TICKET_NOT_FOUND
 - 409: `STATUS_TRANSITION_NOT_ALLOWED`, `RESOLUTION_GATE_FAILED` หรือ `STALE_UPDATE`
-- เมื่อ version ไม่ตรง ต้องตอบ `{ error: { code: "STALE_UPDATE", message, fields: { expectedVersion, actualVersion } } }` และต้องไม่เปลี่ยน Status หรือ version
+- เมื่อ Ticket.version ไม่ตรง ตอบ `409 STALE_UPDATE` พร้อม `{ error: { code: "STALE_UPDATE", message, fields: { expectedVersion, actualVersion } } }` โดย expectedVersion คือค่าที่ Client ส่ง และ actualVersion คือค่าปัจจุบันในฐานข้อมูล ไม่มีการเปลี่ยน Status หรือ version
+- หาก transaction conflict หรือหมดเวลา ตอบ `409 STALE_UPDATE` พร้อมข้อความปลอดภัย โดยอาจไม่มี fields ของ version; Client ต้องโหลด Ticket ล่าสุดก่อนให้ผู้ใช้ลองใหม่ ไม่คาดเดา version หรือส่ง mutation ซ้ำอัตโนมัติ
 - Status mutation และ Action mutation ของ Ticket เดียวกันต้องถูกตรวจและยืนยันแบบ atomic ตาม specification; ไม่มี partial success หากอีก mutation ทำให้ gate หรือ version ไม่ผ่าน กลไกฐานข้อมูลที่ใช้เป็น implementation decision
 - `CLOSED` ทำได้เฉพาะจาก `RESOLVED`; หากยังมี Action ที่ `followUpRequired=true` การขอ `CLOSED` ต้องตอบ `409 RESOLUTION_GATE_FAILED` ส่วน `RESOLVED` ยังทำได้เมื่อมี Action ที่ valid และจะแสดง follow-up ที่ยังค้างอยู่
 
@@ -275,7 +279,8 @@ Backend อ่าน counts, breakdowns และ limited lists ใน transacti
 
 - 400 VALIDATION_ERROR: field missing, type ผิด, trimmed text ว่าง, `followUpRequired=true` แต่ไม่มี followUpNote, `followUpRequired=false` แต่ followUpNote ไม่เป็น `null` หรือ `status=REOPENED` แต่ไม่มี reopenReason
 - 401 AUTHENTICATION_REQUIRED หรือ SESSION_INVALID: ไม่มีหรือใช้ session ไม่ได้; `AUTHENTICATION_FAILED` ใช้กับ Login ที่ credentials ไม่ถูกต้องหรือ account inactive ตาม Lab 3 baseline
-- 403 ROLE_FORBIDDEN หรือ TICKET_FORBIDDEN: role/ownership ไม่อนุญาต
+- 403 ROLE_FORBIDDEN: role ไม่อนุญาต; PASSWORD_CHANGE_REQUIRED: ยังไม่ผ่าน first-login gate
+- Requester ที่ขอ Actions ของ Ticket คนอื่นได้รับ `404 TICKET_NOT_FOUND` เช่นเดียวกับ Ticket ที่ไม่มีอยู่
 - 404 TICKET_NOT_FOUND, ACTION_NOT_FOUND หรือ USER_NOT_FOUND: ไม่พบ resource/assignee หรือใช้ safe response
 - 405 METHOD_NOT_ALLOWED: operation ถูกห้าม เช่น Delete Action
 - 409 STATUS_TRANSITION_NOT_ALLOWED: transition ไม่อยู่ใน matrix
@@ -291,17 +296,17 @@ Backend อ่าน counts, breakdowns และ limited lists ใน transacti
 - Staff recentlyResolved ใช้ currentStatus เป็น RESOLVED/CLOSED และ updatedAt อยู่ในช่วง 7 วันล่าสุด; Staff recentActions ใช้ `performedBy.id` ของ session และ `actionAt` ในช่วงเดียวกัน
 - Action list routes รับ query `page` และ `pageSize` ตาม Pagination convention; ไม่รับค่า metric count จาก Client
 - Dashboard routes รับ `limit` เป็นจำนวนเต็ม 1–100; ค่าอื่นตอบ `400 VALIDATION_ERROR`
-- ช่วงวันที่ใช้ [start, end) และรับ ISO 8601
-- “วันนี้” แปลง Asia/Bangkok local midnight เป็น UTC ก่อน query
+- Timestamp ที่ API ตอบกลับเป็น ISO 8601; Dashboard รับเฉพาะ `limit` ไม่รับ start/end หรือช่วงวันที่จาก Client
+- ช่วงย้อนหลัง 7 วันหมายถึง 7 × 24 ชั่วโมงก่อน `asOf` แบบ [start, end) ไม่ใช่ช่วงที่เริ่มจากเที่ยงคืน; UI แสดงเวลา Asia/Bangkok
 - ไม่ให้ Client ส่ง metric count เพื่อบังคับผลลัพธ์
 
-## 10. Planned API Tests
+## 10. การทดสอบ API
 
-ไฟล์ที่วางแผนไว้ตาม Labsheet:
+ไฟล์ทดสอบตาม Labsheet:
 
 - server/tests/lab-04/actions-taken.api.test.ts
 - server/tests/lab-04/ticket-workflow.api.test.ts
 - server/tests/lab-04/requester-dashboard.api.test.ts
 - server/tests/lab-04/staff-dashboard.api.test.ts
 
-Action routes ในข้อ 4–5 มี implementation และ tests ใน PR #75 ส่วน Workflow/Dashboard ในข้อ 6–7 มี implementation และ tests ใน PR #77/#78 แล้ว ผลระหว่างพัฒนาและ Release candidate อยู่ใน `tests.md`; ผล Final-main ของ Lab 4 ยัง Planned ไม่มีการเปลี่ยน route, response หรือ policy ในรอบ pre-release นี้
+Action routes พัฒนาใน PR #75 ส่วน Workflow และ Dashboard พัฒนาใน PR #77/#78 ผล Final-main และ regression compatibility อยู่ใน `tests.md` ข้อ 5

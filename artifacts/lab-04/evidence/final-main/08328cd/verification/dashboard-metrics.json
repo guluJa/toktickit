@@ -1,0 +1,96 @@
+{
+  "revision": "08328cd293c11316da8496857007d781f2dafaa8",
+  "testedProductSHA": "08328cd293c11316da8496857007d781f2dafaa8",
+  "evidenceBranch": "feature/08-lab4-final-main-verification",
+  "evidenceBaseSHA": "08328cd293c11316da8496857007d781f2dafaa8",
+  "evidenceCommit": "Uncommitted; no commit created in this run",
+  "timezone": "Asia/Bangkok",
+  "scope": "Final verification of the committed main product snapshot",
+  "originalMainRunnerSHA256": "ebf0aedeac1c1174bdd52be89de4662467b761068fc8b75c8e44cb5c25a3c582",
+  "runnerPolicy": "New outer snapshot orchestrator; inner main runner/tests/schema/migrations unchanged. Only copied documentary labels corrected; no corrected-product or corrected-inner-runner run.",
+  "startedAt": "2026-10-12T11:05:21.111Z",
+  "completedAt": "2026-10-12T11:08:36.289Z",
+  "results": {
+    "requester": {
+      "asOf": "2026-10-12T11:08:09.296Z",
+      "expected": {
+        "recentlyUpdatedCount": 4,
+        "recentlyResolvedCount": 2
+      },
+      "actual": {
+        "openCount": 2,
+        "waitingForRequesterCount": 1,
+        "resolvedCount": 2,
+        "recentlyUpdatedCount": 4,
+        "recentlyResolvedCount": 2
+      },
+      "ids": [
+        3813,
+        3812,
+        3811,
+        3810
+      ],
+      "resolvedIds": [
+        3812,
+        3811
+      ],
+      "currentUserActionIds": []
+    },
+    "staff": {
+      "asOf": "2026-10-12T11:08:12.087Z",
+      "expected": {
+        "recentlyUpdatedCount": 10,
+        "recentlyResolvedCount": 2
+      },
+      "actual": {
+        "unassignedCount": 4,
+        "mineCount": 3,
+        "highPriorityCount": 6,
+        "recentlyUpdatedCount": 10,
+        "recentlyResolvedCount": 2
+      },
+      "ids": [
+        3814,
+        3813,
+        3812,
+        3811,
+        3810
+      ],
+      "resolvedIds": [
+        3812,
+        3811
+      ],
+      "currentUserActionIds": [
+        2238
+      ]
+    },
+    "admin": {
+      "asOf": "2026-10-12T11:08:16.098Z",
+      "expected": {
+        "recentlyUpdatedCount": 10,
+        "recentlyResolvedCount": 2
+      },
+      "actual": {
+        "unassignedCount": 4,
+        "mineCount": 0,
+        "highPriorityCount": 6,
+        "recentlyUpdatedCount": 10,
+        "recentlyResolvedCount": 2
+      },
+      "ids": [
+        3814,
+        3813,
+        3812,
+        3811,
+        3810
+      ],
+      "resolvedIds": [
+        3812,
+        3811
+      ],
+      "currentUserActionIds": [
+        2239
+      ]
+    }
+  }
+}
