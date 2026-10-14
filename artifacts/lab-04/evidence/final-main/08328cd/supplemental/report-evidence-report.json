@@ -1,0 +1,27 @@
+{
+  "stats": {
+    "startTime": "2026-10-12T11:26:00.171Z",
+    "duration": 10403.396,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "cases": [
+    {
+      "file": "lab-04/final-report-evidence.spec.ts",
+      "title": "REPORT-01: multiple performers, current owner, shared/private content and Requester read-only views",
+      "expectedStatus": "passed",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "retry": 0,
+          "durationMs": 5053,
+          "errors": []
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

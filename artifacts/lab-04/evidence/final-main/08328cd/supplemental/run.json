@@ -1,0 +1,42 @@
+{
+  "revision": "08328cd293c11316da8496857007d781f2dafaa8",
+  "testedProductSHA": "08328cd293c11316da8496857007d781f2dafaa8",
+  "evidenceBranch": "feature/08-lab4-final-main-verification",
+  "evidenceBaseSHA": "08328cd293c11316da8496857007d781f2dafaa8",
+  "evidenceCommit": "Uncommitted; no commit created in this run",
+  "timezone": "Asia/Bangkok",
+  "scope": "Supplemental report evidence with corrected evidence helper; Product from main; not the original-main suite",
+  "originalMainRunnerSHA256": "ebf0aedeac1c1174bdd52be89de4662467b761068fc8b75c8e44cb5c25a3c582",
+  "supportCorrection": {
+    "path": "e2e/lab-04/support.ts",
+    "originalHelperSHA256": "9b5ff2cb5bcf9e2a0a2adc40b70aa42264f324be48a09760a79510fa62ac4778",
+    "correctedHelperSHA256": "ed493982494b483f630926d7a24f48cfd8945c02d3982ee995a2af503fde63b4",
+    "scope": "Supplemental snapshot only",
+    "reason": "Require accessible name rather than innerText for native labelled file inputs; no assertion skipped"
+  },
+  "runnerPolicy": "New supplemental evidence spec and corrected helper in a temporary main snapshot. No Product edits or changes to the original-main run. Do not add this test to that suite count.",
+  "startedAt": "2026-10-12T11:25:58.715Z",
+  "completedAt": "2026-10-12T11:26:10.649Z",
+  "phases": [
+    {
+      "mode": "report-evidence",
+      "exitCode": 0,
+      "durationMs": 11426
+    }
+  ],
+  "browserResults": {
+    "supplemental": {
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "report-evidence": {
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0
+    }
+  },
+  "note": "Product/schema/migrations/original tests unchanged. Additional evidence spec is new, not part of the original-main suite. Browser outputs are separate from historical evidence."
+}

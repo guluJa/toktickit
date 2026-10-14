@@ -1,6 +1,6 @@
 # TokTickIT Lab 4: ข้อกำหนดหน้าจอ
 
-สถานะ: Actions Taken UI, Workflow และ Dashboard merge แล้วใน PR #76/#77/#78; Full E2E/visual ของ Issue #73 อยู่ใน PR #79 และตรวจ Release candidate จาก staging ซ้ำแล้ว ผล Final-main ยัง Pending
+หน้าจอ Lab 4 ต่อเนื่องจาก Zen Green และ role navigation ของ Lab 3 ผลทดสอบบน main อยู่ใน tests.md ข้อ 5 และผลตรวจ Visual/Accessibility อยู่ในข้อ 7
 Baseline: Zen Green, role navigation, accessibility และ responsive conventions จาก docs/lab-03/ui-spec.md
 
 ## 1. Application Shell
@@ -57,7 +57,7 @@ Metric ขั้นต่ำต้องมี Open Tickets, Waiting for Request
 
 Dashboard แสดงเวลา Asia/Bangkok และอธิบายว่า Recently Resolved อ้าง `updatedAt` ของ Ticket ที่ปัจจุบัน RESOLVED/CLOSED ไม่ใช่เวลาที่ resolve จริง หน้าจอใช้ยอดรวมจาก Backend โดยไม่คำนวณจากรายการที่จำกัด limit; ปุ่ม drill-down ส่ง link object เดิมไปหน้าปลายทาง
 
-ระหว่างโหลดไม่แสดงข้อมูลของคำขอก่อนหน้า ปุ่ม Refresh ถูกปิดขณะโหลด และผลตอบกลับเก่าต้องไม่ทับข้อมูลหลังเปลี่ยนผู้ใช้/Role ข้อผิดพลาดใช้ข้อความปลอดภัยพร้อม Retry/Refresh; forbidden ไม่แสดง metrics หรือรายการ Metric cards ใช้หนึ่งคอลัมน์บนมือถือ สองคอลัมน์บน tablet และสามคอลัมน์บน desktop พร้อม semantic headings, status/alert และ keyboard controls การตรวจภาพบน browser อยู่ใน Issue #73
+ระหว่างโหลดไม่แสดงข้อมูลของคำขอก่อนหน้า ปุ่ม Refresh ถูกปิดขณะโหลด และผลตอบกลับเก่าต้องไม่ทับข้อมูลหลังเปลี่ยนผู้ใช้/Role ข้อผิดพลาดใช้ข้อความปลอดภัยพร้อม Retry/Refresh; forbidden ไม่แสดง metrics หรือรายการ Metric cards ใช้หนึ่งคอลัมน์บนมือถือ สองคอลัมน์บน tablet และสามคอลัมน์บน desktop พร้อม semantic headings, status/alert และ keyboard controls ผลตรวจภาพและ accessibility อยู่ในข้อ 7–8
 
 ### 2.3 Actions Taken ใน Staff Ticket Detail
 
@@ -75,7 +75,7 @@ Dashboard แสดงเวลา Asia/Bangkok และอธิบายว�
 - Ticket Owner read-only จาก Ticket
 - Follow-Up Note
 - Attachment Notes
-- ปุ่มเปลี่ยน Ticket เป็น `RESOLVED`/`CLOSED` หรือ `CANCELLED` ใช้ Matrix และแสดง gate/conflict errors ใน Issue #71; ปุ่มเหล่านี้ไม่ได้เป็นสถานะ completion แยกของ Action
+- Controls เปลี่ยน Ticket เป็น `RESOLVED`/`CLOSED` หรือ `CANCELLED` ใช้ Status Matrix และแสดง gate/conflict errors ตาม API contract; เป็น Ticket workflow ไม่ใช่สถานะ completion แยกของ Action
 - ห้ามมี Delete action
 
 ### 2.4 Requester Ticket Detail
@@ -128,33 +128,32 @@ Frontend restrictions ต้องมี Backend authorization รองรั�
 - Loading/saving ใช้ role=status หรือ aria-live
 - Lists/tables/cards ใช้ semantic structure เหมาะสม
 
-## 7. Visual Checklist
+## 7. ผลตรวจ Visual และ Accessibility
 
-ตรวจบน feature working tree ของ Issue #73 จาก baseline `51bcf9c` วันที่ 4–5 ตุลาคม 2026; ไม่ใช่ checklist ของ Final-main ใช้ browser assertions ร่วมกับการตรวจภาพตัวแทนของฟอร์ม create/edit, Dashboard cards/empty/failure และ workflow แต่ละขนาด ไม่อ้างว่าตรวจภาพทุกไฟล์ด้วยตา หรือทำ WCAG certification
+ตรวจ Product main `08328cd` วันที่ 12 ตุลาคม 2026 ด้วย Chromium ร่วมกับ component tests, browser assertions และภาพตัวแทน
 
-- [x] Zen Green tokens และ component conventions ต่อเนื่อง: STYLE-01 และภาพ metric/action panels
-- [x] Dashboard navigation และ authenticated identity ถูกต้อง: E2E-03 ทั้ง Requester/IT Staff/Administrator รวมเมนูพับบน mobile
-- [x] Metric cards มี label/value และ drill-down: API-05/06, E2E-03 และ `verification/dashboard-metrics.json`
-- [x] Actions Taken แยก owner, performer และ read-only fields ชัดเจน: E2E-01, ภาพ `*-actions-panel.png`; Requester ไม่มี editor
-- [x] Status/priority/follow-up ใช้ text และ non-color cues: STYLE-01, ภาพ workflow และ Dashboard breakdowns
-- [x] Loading, empty, forbidden, validation, conflict และ failure อ่านง่าย: UI-01–05, AUTH-01 และ E2E-01–03; ภาพ Staff empty/failure เป็น controlled-response scenarios ตาม tests.md
-- [x] Desktop/tablet/mobile ไม่มี clipping หรือ overlap ในหน้าจอที่ตรวจ: 1440×1000, 820×1180, 375×812; visual inspection และ browser button bounds/overlap checks
-- [x] ไม่มี page-level horizontal overflow: browser assertions ทุก viewport ที่เก็บภาพ; container ที่ออกแบบให้ scroll แยกไม่ถือเป็น page overflow
-- [x] Keyboard focus, labels, semantics และ error associations ผ่านการตรวจจริง: STYLE-01, Action description → Result/checkbox, Queue Search → Status และ keyboard Retry; เพิ่ม visible label ให้ Owner ID โดยไม่เปลี่ยน assignment behavior
+- [x] ใช้ Zen Green และรูปแบบ controls เดียวกับหน้าจอเดิม
+- [x] Dashboard มี label/value, role navigation และ drill-down ที่ตรงกับข้อมูล Backend
+- [x] Actions Taken แยก Ticket Owner, performer และ read-only fields; มี create/edit และรายการ 0/1/หลาย Actions
+- [x] Requester อ่าน shared content และ Actions ของตนเอง โดยไม่มี editor หรือ Internal Notes
+- [x] Status, priority และ follow-up มีข้อความกำกับ ไม่สื่อด้วยสีเพียงอย่างเดียว
+- [x] Loading, empty, forbidden, validation, conflict และ safe failure แสดงถูกต้องและคงข้อมูลฟอร์มเมื่อแก้ไขได้
+- [x] Keyboard operation, visible focus, labels และ error associations ผ่านการตรวจ
+- [x] Desktop 1440×1000, tablet 820×1180 และ mobile 375×812 ไม่มี clipping, overlap หรือ page-level horizontal overflow ในขอบเขตที่ตรวจ
+- [x] ภาพตัวแทนที่ตรวจอ่านได้ และแสดง fields/controls ที่เกี่ยวข้อง
 
-Final-main visual checklist: Pending ต้องตรวจซ้ำหลัง Release ใน Issue #74
+กรณี failure/forbidden บางภาพใช้ controlled responses ส่วน Requester empty ใช้บัญชีไม่มี Ticket จริง การตรวจนี้ไม่ใช่ WCAG certification หรือการรับรองทุก browser/device ผลและขอบเขตการทดสอบอยู่ใน `tests.md` ข้อ 5
 
-## 8. Evidence Paths ของ Issue #73
+## 8. ภาพประกอบ
 
-- artifacts/lab-04/screenshots/staff-dashboard/
-- artifacts/lab-04/screenshots/requester-dashboard/
-- artifacts/lab-04/screenshots/actions-taken/
+ภาพหลักเก็บจากรอบ hardening; Product และ browser tests ไม่เปลี่ยนจาก `af6fe86` ถึง final main `08328cd` และมีผลทดสอบ main แยกใน tests.md
 
-ภาพเป็น native browser captures มีทั้งเต็มหน้าและภาพ panel/metrics ที่อ่านง่าย ไม่ใช้ภาพจากรุ่นเดิมอ้างแทนฟอร์มปัจจุบัน:
+| หน้าจอ | ที่เก็บภาพ | เนื้อหา |
+|---|---|---|
+| Staff Dashboard | `artifacts/lab-04/screenshots/staff-dashboard/` | Metrics, current-user Actions, populated/empty/forbidden/failure และ desktop/tablet/mobile |
+| Requester Dashboard | `artifacts/lab-04/screenshots/requester-dashboard/` | Owned metrics, recent Tickets, empty state และ desktop/tablet/mobile |
+| Actions Taken / Workflow | `artifacts/lab-04/screenshots/actions-taken/` | Create validation, edit, follow-up, workflow และภาพฟอร์ม/controls |
+| การทำงานเดิม | `artifacts/lab-04/screenshots/regression-lab-03/` | Authentication, Queue/Detail และ User Management ที่ตรวจต่อเนื่องใน Lab 4 |
+| หลาย Actions และ Requester read-only | `artifacts/lab-04/evidence/final-main/08328cd/supplemental/screenshots/actions-taken/` | ภาพเสริมจาก final Product: สาม Actions, performer ต่างจาก Owner, shared content และ Requester read-only ทั้งสามขนาด |
 
-- Staff Dashboard: `populated-{desktop,tablet,mobile}.png`, ภาพ `*-metrics.png` และ `*-my-actions.png`; `empty-fixture-*`, `forbidden-mobile.png`, `safe-failure-mobile.png`
-- Requester Dashboard: `populated-*`, `*-metrics.png` และ `empty-*` จาก Requester ที่ไม่มี Ticket จริง
-- Actions Taken: `create-validation-*`, `edit-*` และ `workflow-reopen-*` พร้อม `*-actions-panel.png`; editor captures เห็น labels/fields/controls ไม่ใช่เฉพาะรายการ
-- Regression รอบใหม่: `artifacts/lab-04/screenshots/regression-lab-03/` เก็บ authentication, queue/detail และ user management โดยไม่ทับภาพที่ส่งใน Lab 3
-
-รายละเอียด viewport, controlled fault injection, console/network และขอบเขตการตรวจอยู่ใน tests.md ข้อ 16 ภาพชุดนี้เป็น feature-branch verification เดิมและไม่ถูกเขียนทับ ผล staging หลัง merge และภาพรอบใหม่อยู่ใน `artifacts/lab-04/release-candidate/3b7291e/` ตาม tests.md ข้อ 17 ส่วน Final-main ยัง Pending
+ภาพเสริมมีผลทดสอบแยกจาก original-main suite และใช้ helper ตรวจ accessible name ของ native file input ตาม provenance ใน `supplemental/run.json` โดยมี [source และ helper patch](../../artifacts/lab-04/evidence/final-main/08328cd/supplemental/source/README.md) ให้ตรวจย้อนกลับ ไม่เปลี่ยน Product
